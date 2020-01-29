@@ -5,6 +5,10 @@ Kenny Ballou, Marlin Roberts
 
 ### Possible Projects:
 
+- https://github.com/BoiseState/string-constraint-counting (~30k)
+
+  - String Constraint Model-Counting Framework
+
 - https://github.com/mopemope/meghanada-server (~30k)
 
   - Plugin for Emacs for Java
