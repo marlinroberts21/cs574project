@@ -49,14 +49,15 @@ automata types:
 \item{Acyclic Weighted}
 \end{itemize}
 
-A modified solver based on JSA is provided that can be used with any of the
-three automata types to solve various benchmark constraints as well as a set of
-constraints obtained from analysis of actual programs. It can output
-satisfiability results as well as model count results for comparing the
-accuracy of the automata models.  While the current codebase is largely
-compliant with the properties and functionality identified, the instrumentation
-developed here could be used to ensure that automata and automata factory
-classes developed in the future adhere to the requirements of the framework.
+A modified solver based on Java String Analyzer (JSA)~\cite{strings2003} is
+provided that can be used with any of the three automata types to solve various
+benchmark constraints as well as a set of constraints obtained from analysis of
+actual programs. It can output satisfiability results as well as model count
+results for comparing the accuracy of the automata models.  While the current
+codebase is largely compliant with the properties and functionality identified,
+the instrumentation developed here could be used to ensure that automata and
+automata factory classes developed in the future adhere to the requirements of
+the framework.
 
 \subsection{Metrics}
 
