@@ -29,6 +29,69 @@
 \maketitle{}
 \tableofcontents{}
 
+\section{Introduction}
+
+\subsection{Application}
+
+The application is the string constraint solving evaluation framework located
+at: \url{https://github.com/BoiseState/string-constraint-counting}.
+
+\subsubsection{Description}
+
+This codebase provides a framework for demonstrating the applicability of
+various automata types used to represent symbolic strings in a string
+constraint solving system.  It currently has implementations for the following
+automata types:
+
+\begin{itemize}
+\item{Bounded}
+\item{Acyclic}
+\item{Acyclic Weighted}
+\end{itemize}
+
+A modified solver based on JSA is provided that can be used with any of the
+three automata types to solve various benchmark constraints as well as a set of
+constraints obtained from analysis of actual programs. It can output
+satisfiability results as well as model count results for comparing the
+accuracy of the automata models.  While the current codebase is largely
+compliant with the properties and functionality identified, the instrumentation
+developed here could be used to ensure that automata and automata factory
+classes developed in the future adhere to the requirements of the framework.
+
+\subsection{Metrics}
+
+\begin{itemize}
+\item[SLOC]{approximately 14,000}
+\item[Source Files]{approximately 75}
+\item[Classes]{}
+\item[Methods]{}
+\end{itemize}
+
+\subsection{Properties}
+
+\begin{enumerate}
+\item{Operations involving two automata can only be performed on automata of
+    the same type.}
+\item{Automata should be minimized before operations occur.}
+\item{Automata are required to be determinized before they are minimized.}
+\item{Automata should be normalized before they are determinized.}
+\item{Automata are required to have dead states removed before normalization.}
+\item{Chosen solver type has to support the reporter requirements.}
+\end{enumerate}
+
+\subsection{Functionality}
+
+\subsubsection{Desirable}
+
+\begin{itemize}
+\item{Repeated calls to minimize should return unchanged automata if it has not
+    been modified.}
+\item{Operations that are not implemented should return unmodified automata.}
+\item{Automata are required to provide a clone method, with appropriate
+    functionality.}
+\end{itemize}
+\subsubsection{Undesirable}
+
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{references}
