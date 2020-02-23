@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{grffile}
 \usepackage{longtable}
+\usepackage{booktabs}
 \usepackage{wrapfig}
 \usepackage{rotating}
 \usepackage[normalem]{ulem}
@@ -33,65 +34,164 @@
 
 \subsection{Application}
 
-The application is the string constraint solving evaluation framework located
-at: \url{https://github.com/BoiseState/string-constraint-counting}.
-
-\subsubsection{Description}
-
+We propose to examine the string constraint solving evaluation framework
+located at: \url{https://github.com/BoiseState/string-constraint-counting}.
 This codebase provides a framework for demonstrating the applicability of
 various automata types used to represent symbolic strings in a string
-constraint solving system.  It currently has implementations for the following
-automata types:
+constraint solving system.  It currently has implementations for the bounded,
+acyclic and acyclic weighted automata types.
 
-\begin{itemize}
-\item{Bounded}
-\item{Acyclic}
-\item{Acyclic Weighted}
-\end{itemize}
+The major functionality requirement is for the framework to provide a
+comparable set of outputs for the implemented automata.  This requires each
+implementation of an automaton to perform operations in a comparable way that
+matches the equivalent Java string operations.
 
-A modified solver based on Java String Analyzer (JSA)~\cite{strings2003} is
+A modified solver based on Java String Analyzer~(JSA)~\cite{strings2003} is
 provided that can be used with any of the three automata types to solve various
 benchmark constraints as well as a set of constraints obtained from analysis of
-actual programs. It can output satisfiability results as well as model count
-results for comparing the accuracy of the automata models.  While the current
-codebase is largely compliant with the properties and functionality identified,
-the instrumentation developed here could be used to ensure that automata and
-automata factory classes developed in the future adhere to the requirements of
-the framework.
+actual programs.  It can output satisfiability results as well as model count
+results for comparing the accuracy of the automata models.
 
-\subsection{Metrics}
+While the current codebase is largely compliant with the properties and
+functionality identified, the instrumentation developed here could be used to
+ensure that automata and automata factory classes developed in the future
+adhere to the requirements of the framework.  With this in mind, we will try to
+define properties on interfaces and abstract classes where possible.
+
+\subsubsection{Metrics}
+
+The approximate metrics of the application are shown table
+~\ref{tab:app-metrics}.
+
+
+\begin{table}[ht]\label{tab:app-metrics}
+  \centering
+  \begin{tabular}{lr}
+    \toprule
+    Source Lines of Code & \(\sim14,000\) \\
+    Source Files         & \(\sim70\) \\
+    Classes              & \(\sim70\) \\
+    Methods              & \(\sim700\) \\
+    \bottomrule
+  \end{tabular}
+  \caption{Application Metrics}
+\end{table}
+
+\subsection{Areas of Interest}
+
+\subsubsection{Interface Instrumentation vs. Implemented Class Instrumentation}
+
+The bounded and acyclic automata types are implemented through an automata
+modeling framework used by the Java String Analyzer~(JSA)~\cite{strings2003},
+while the acyclic weighted implementation does not.  One of the aspects of
+validation we can examine is the effectiveness of instrumenting an interface
+versus a fully implemented class.  The surrounding AutomatonModel class
+contains an instance of an automaton and is the implementation of an abstract
+class, while the automaton itself does not implement an interface other than
+\texttt{serializable} and \texttt{cloneable}.  We may be able to introduce an
+interface for the automaton classes that does not affect operation of the
+program but allows us have better control and placement of the
+instrumentation.
+
+\subsubsection{Modeling Behaviors}
+
+Some of the desired behaviors involve the modeled String operations. Since the
+framework is meant to be used to model Java String operations, the modeled
+operations should perform as their Java counterpart does.  For instance, Java
+String operation \texttt{substring~(start, end)} has specific behaviors that
+depend on the values of \texttt{start}, \texttt{end}, and the length of the
+string.  Specifically:
 
 \begin{itemize}
-\item[SLOC]{approximately 14,000}
-\item[Source Files]{approximately 75}
-\item[Classes]{}
-\item[Methods]{}
+\item{The \texttt{start} index is included in the returned string.}
+\item{The \texttt{end} index is excluded from the returned string.}
+\item{If \texttt{start} or \texttt{end} is negative, greater than the length of
+    the string, or \texttt{start} is greater than \texttt{end}, then an
+    exception is thrown.}
 \end{itemize}
+
+Any new type of automaton is expected to model these behaviors accurately in
+order to be comparable to other types.  Since strings are represented by
+automata, it may be difficult to express these requirements using JML and
+assertions, since we cannot examine the returned values as an actual string.
+Examining these automata may require introducing methods that are side-effect
+free.  Existing methods used to test returned results will need to be examined
+carefully for side-effects.
 
 \subsection{Properties}
 
-\begin{enumerate}
-\item{Operations involving two automata can only be performed on automata of
-    the same type.}
-\item{Automata should be minimized before operations occur.}
-\item{Automata are required to be determinized before they are minimized.}
-\item{Automata should be normalized before they are determinized.}
-\item{Automata are required to have dead states removed before normalization.}
-\item{Chosen solver type has to support the reporter requirements.}
-\end{enumerate}
+Identified properties of interest are listed in table
+~\ref{tab:app-properties}.  The table includes information about whether the
+property is a sequential or state property, the toolset that may be used to
+model the property, and a general note about how the property could be
+implemented.
 
-\subsection{Functionality}
+\begin{table}[ht]\label{tab:app-properties}
+  \centering{}
+  \begin{tabular}{p{5cm} c p{5cm}}
+    \toprule
+    \textbf{Description} & \textbf{Type} & \textbf{Method} \\
+    \midrule
+    Operations involving two automata can only be performed on automata of the
+    same type. (\(\sim10\) instances) & State Snapshot &  Checking
+                                                      \texttt{instanceOf}
+                                                      for type in
+                                                      pre-conditions \\
+    \midrule
+    Operations that return Automata need to return the correct type. (\(\sim10\)
+    instances) & State Snapshot & Checking \texttt{instanceOf} for type in
+                                  post-conditions \\
+    \midrule
+    Automata should be minimized before operations occur. & Sequential &
+                                                                         Monitoring
+                                                                         of
+                                                                         method
+                                                                         call
+                                                                         sequence
+    \\
+    \midrule
+    Automata are required to be \textit{determinized} before they are
+    \textit{minimized}. & Sequential & Monitoring of method call sequence \\
+    \midrule
+    Automata should be \textit{normalized} before they are
+    \textit{determinized}. & Sequential & Monitoring of method call sequence \\
+    \midrule
+    Operations need to match java string operation behaviors, where it can be
+    tested.  For example, \texttt{substring~(start, end)} has a certain behavior
+    associated with (\texttt{start > end}) that should be reproduced. (\(\sim10\) unique
+    instances) & State Snapshot & Operation behavior for certain argument
+                                  values will have to be determined and written
+                                  into post-conditions. \\
+    \midrule
+    Automata returned from operations should have certain characteristics, if they can be tested in a side-effect-free way.
+    (\(\sim8\) unique instances)
+    For example:
+    \texttt{concatenate}: \texttt{new.automata size >= original.automata size}
+    \texttt{substring}: \texttt{new.automata size <= original.automata size}
+    Other candidates are:
+    \texttt{union}
+    \texttt{intersection}
+    \texttt{insert}
+    \texttt{replace}
+    \texttt{delete}
+    \texttt{trim}
+    \texttt{reverse}
+                         & State Snapshot & Postconditions created that use
+                                            existing methods that we can mark
+                                            as pure or helper methods created
+                                            for the purpose. \\
+    \midrule
+    Automata are required to have dead states and epsilon transitions removed
+    before certain operations. & Sequential & Monitoring of method call
+                                              sequence \\
+    \bottomrule
+  \end{tabular}
+  \caption{Application Properties}
+\end{table}
 
-\subsubsection{Desirable}
-
-\begin{itemize}
-\item{Repeated calls to minimize should return unchanged automata if it has not
-    been modified.}
-\item{Operations that are not implemented should return unmodified automata.}
-\item{Automata are required to provide a clone method, with appropriate
-    functionality.}
-\end{itemize}
-\subsubsection{Undesirable}
+Each state snapshot property type will require the use of either
+\texttt{OpenJML} or \texttt{Java Assertions}.  Similarlly, sequential
+properties will use \texttt{Java MOP}.
 
 \nocite{*}
 \bibliographystyle{plain}
