@@ -1,4 +1,4 @@
-\documentclass[letterpaper,11pt]{article}
+\documentclass[letterpaper,11pt,twocolumn]{article}
 \usepackage{geometry}
 \usepackage{listings}
 \usepackage[utf8]{inputenc}
@@ -30,9 +30,7 @@
 \maketitle{}
 \tableofcontents{}
 
-\section{Introduction}
-
-\subsection{Application}
+\section{Application}
 
 We propose to examine the string constraint solving evaluation framework
 located at: \url{https://github.com/BoiseState/string-constraint-counting}.
@@ -58,7 +56,7 @@ ensure that automata and automata factory classes developed in the future
 adhere to the requirements of the framework.  With this in mind, we will try to
 define properties on interfaces and abstract classes where possible.
 
-\subsubsection{Metrics}
+\subsection{Metrics}
 
 The approximate metrics of the application are shown table
 ~\ref{tab:app-metrics}.
@@ -118,80 +116,79 @@ Examining these automata may require introducing methods that are side-effect
 free.  Existing methods used to test returned results will need to be examined
 carefully for side-effects.
 
+\section{Proposal of Changes}
+
+We propose the usage of several verification tools to verify and otherwise
+implement fixes for the following properties.
+
 \subsection{Properties}
 
-Identified properties of interest are listed in table
-~\ref{tab:app-properties}.  The table includes information about whether the
-property is a sequential or state property, the toolset that may be used to
-model the property, and a general note about how the property could be
-implemented.
+The following properties have been identified to be areas of program
+criticallity.  For each of the properties, we describe the nature of the
+property and the type of property.  For state based properties, we will use
+either \texttt{Java Assertions}~\cite{oracle-java-assertions} or
+\texttt{OpenJML}~\cite{openjml}.  For sequence based properties, we will use
+\texttt{JavaMOP}~\cite{javamop}.
 
-\begin{table}[ht]\label{tab:app-properties}
-  \centering{}
-  \begin{tabular}{p{5cm} c p{5cm}}
-    \toprule
-    \textbf{Description} & \textbf{Type} & \textbf{Method} \\
-    \midrule
-    Operations involving two automata can only be performed on automata of the
-    same type. (\(\sim10\) instances) & State Snapshot &  Checking
-                                                      \texttt{instanceOf}
-                                                      for type in
-                                                      pre-conditions \\
-    \midrule
-    Operations that return Automata need to return the correct type. (\(\sim10\)
-    instances) & State Snapshot & Checking \texttt{instanceOf} for type in
-                                  post-conditions \\
-    \midrule
-    Automata should be minimized before operations occur. & Sequential &
-                                                                         Monitoring
-                                                                         of
-                                                                         method
-                                                                         call
-                                                                         sequence
-    \\
-    \midrule
-    Automata are required to be \textit{determinized} before they are
-    \textit{minimized}. & Sequential & Monitoring of method call sequence \\
-    \midrule
-    Automata should be \textit{normalized} before they are
-    \textit{determinized}. & Sequential & Monitoring of method call sequence \\
-    \midrule
-    Operations need to match java string operation behaviors, where it can be
-    tested.  For example, \texttt{substring~(start, end)} has a certain behavior
-    associated with (\texttt{start > end}) that should be reproduced. (\(\sim10\) unique
-    instances) & State Snapshot & Operation behavior for certain argument
-                                  values will have to be determined and written
-                                  into post-conditions. \\
-    \midrule
-    Automata returned from operations should have certain characteristics, if they can be tested in a side-effect-free way.
-    (\(\sim8\) unique instances)
-    For example:
-    \texttt{concatenate}: \texttt{new.automata size >= original.automata size}
-    \texttt{substring}: \texttt{new.automata size <= original.automata size}
-    Other candidates are:
-    \texttt{union}
-    \texttt{intersection}
-    \texttt{insert}
-    \texttt{replace}
-    \texttt{delete}
-    \texttt{trim}
-    \texttt{reverse}
-                         & State Snapshot & Postconditions created that use
-                                            existing methods that we can mark
-                                            as pure or helper methods created
-                                            for the purpose. \\
-    \midrule
-    Automata are required to have dead states and epsilon transitions removed
-    before certain operations. & Sequential & Monitoring of method call
-                                              sequence \\
-    \bottomrule
-  \end{tabular}
-  \caption{Application Properties}
-\end{table}
+\paragraph{Property 1} Operations involving two automata can only be performed
+on automata of the same type.  We count roughly \(10\) instances of this
+property.  Since this property is specified around operations and not a
+sequence of operations, this is a state snapshot property.
 
-Each state snapshot property type will require the use of either
-\texttt{OpenJML} or \texttt{Java Assertions}.  Similarlly, sequential
-properties will use \texttt{Java MOP}.
+\paragraph{Property 2} Automata that return Automata need to return the correct
+type.  There are about \(10\) instances of this property that will need to be
+verified.  This property is state based since it is centered around individual
+automata operations.
+
+\paragraph{Property 3} Automata should be minimized before operations occur.
+Since this property is concerned with the ordering of methods, this is a
+sequence property.
+
+\paragraph{Property 4} Automata are required to be \textit{determinized} before
+they are \textit{minimized}.  Automata operations need to be in a proper order,
+therefore, this is a sequence property.
+
+\paragraph{Property 5} Automata should be \textit{normalized} before they are
+\textit{determinized}.  Similar to the previous property, the automata
+operations need to be verified via sequential means.
+
+\paragraph{Property 6} Operations need to match Java String operation
+behaviors, where it can be tested.  For example, \texttt{substring~(start,
+  end)} has a certain behavior associated with (\texttt{start > end}) that
+should be replicated. There are about \(10\) unique instances of this property
+that will need to be verified.  Operation behavior for certain argument values
+will have to be determined and written into post-conditions of the operations.
+
+\paragraph{Property 7} Automata returned from operations should have certain
+characteristics, if they can be tested in a side-effect-free way.  There are
+about \(8\) unique instances of this property to be verified.
+
+For example:
+
+\begin{itemize}
+\item{\texttt{concatenate}: \texttt{new.automata size >= original.automata
+      size}}
+\item{\texttt{substring}: \texttt{new.automata size <= original.automata size}}
+\end{itemize}
+
+Other candidates to be considered:
+
+\begin{itemize}
+\item{\texttt{union}}
+\item{\texttt{intersection}}
+\item{\texttt{insert}}
+\item{\texttt{replace}}
+\item{\texttt{delete}}
+\item{\texttt{trim}}
+\item{\texttt{reverse}}
+\end{itemize}
+
+\paragraph{Property 8} Automata are required to have dead states and epsilon
+transitions removed before certain operations.
+
+\paragraph{Property 9} Timers used by solvers should be started before stopped,
+both before requesting the total run time.  Since this property is focusing on
+the ordering of methods on timer objects, this is a sequential property.
 
 \nocite{*}
 \bibliographystyle{plain}
