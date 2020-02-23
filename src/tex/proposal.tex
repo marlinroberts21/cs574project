@@ -123,43 +123,45 @@ implement fixes for the following properties.
 
 \subsection{Properties}
 
-The following properties have been identified to be areas of program
-criticallity.  For each of the properties, we describe the nature of the
-property and the type of property.  For state based properties, we will use
-either \texttt{Java Assertions}~\cite{oracle-java-assertions} or
+The following property classes have been identified to be areas of program
+criticallity.  For each of the classes, we describe the nature of the set of
+properties and the type of the property class.  For state based properties, we
+will use either \texttt{Java Assertions}~\cite{oracle-java-assertions} or
 \texttt{OpenJML}~\cite{openjml}.  For sequence based properties, we will use
 \texttt{JavaMOP}~\cite{javamop}.
 
-\paragraph{Property 1} Operations involving two automata can only be performed
-on automata of the same type.  We count roughly \(10\) instances of this
-property.  Since this property is specified around operations and not a
-sequence of operations, this is a state snapshot property.
+\paragraph{Automata Binary Operations} Operations involving two automata can
+only be performed on automata of the same type.  We count roughly \(10\)
+instances of this property.  Since this property is specified around operations
+and not a sequence of operations, this is a state snapshot property.
 
-\paragraph{Property 2} Automata that return Automata need to return the correct
-type.  There are about \(10\) instances of this property that will need to be
-verified.  This property is state based since it is centered around individual
-automata operations.
+\paragraph{Automata Return Types} Automata that return Automata need to
+return the correct type.  There are about \(10\) instances of this property
+that will need to be verified.  This property is state based since it is
+centered around individual automata operations.
 
-\paragraph{Property 3} Automata should be minimized before operations occur.
-Since this property is concerned with the ordering of methods, this is a
-sequence property.
+\paragraph{Automata Operations} Automata should be \textit{minimized} before
+operations occur.  Since this property is concerned with the ordering of
+methods, this is a sequence property.
 
-\paragraph{Property 4} Automata are required to be \textit{determinized} before
-they are \textit{minimized}.  Automata operations need to be in a proper order,
-therefore, this is a sequence property.
+\paragraph{Automata Determinized Operations} Automata are required to be
+\textit{determinized} before they are \textit{minimized}.  Automata operations
+need to be in a proper order, therefore, this is a sequence property.
 
-\paragraph{Property 5} Automata should be \textit{normalized} before they are
-\textit{determinized}.  Similar to the previous property, the automata
-operations need to be verified via sequential means.
+\paragraph{Automata Normalized Operations} Automata should be
+\textit{normalized} before they are \textit{determinized}.  Similar to the
+previous property, the automata operations need to be verified via sequential
+means.
 
-\paragraph{Property 6} Operations need to match Java String operation
-behaviors, where it can be tested.  For example, \texttt{substring~(start,
-  end)} has a certain behavior associated with (\texttt{start > end}) that
-should be replicated. There are about \(10\) unique instances of this property
-that will need to be verified.  Operation behavior for certain argument values
-will have to be determined and written into post-conditions of the operations.
+\paragraph{String Operation Properties} Operations need to match Java String
+operation behaviors, where it can be tested.  For example,
+\texttt{substring~(start, end)} has a certain behavior associated with
+(\texttt{start > end}) that should be replicated. There are about \(10\) unique
+instances of this property that will need to be verified.  Operation behavior
+for certain argument values will have to be determined and written into
+post-conditions of the operations.
 
-\paragraph{Property 7} Automata returned from operations should have certain
+\paragraph{Automata Types} Automata returned from operations should have certain
 characteristics, if they can be tested in a side-effect-free way.  There are
 about \(8\) unique instances of this property to be verified.
 
@@ -183,10 +185,10 @@ Other candidates to be considered:
 \item{\texttt{reverse}}
 \end{itemize}
 
-\paragraph{Property 8} Automata are required to have dead states and epsilon
+\paragraph{Automata Trimming Operations} Automata are required to have dead states and epsilon
 transitions removed before certain operations.
 
-\paragraph{Property 9} Timers used by solvers should be started before stopped,
+\paragraph{Solver/Timer Operations} Timers used by solvers should be started before stopped,
 both before requesting the total run time.  Since this property is focusing on
 the ordering of methods on timer objects, this is a sequential property.
 
