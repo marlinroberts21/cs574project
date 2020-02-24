@@ -59,7 +59,7 @@ define properties on interfaces and abstract classes where possible.
 
 \subsection{Metrics}
 
-The approximate metrics of the application are shown table
+The approximate metrics of the application are shown in table
 ~\ref{tab:app-metrics}.
 
 
@@ -84,12 +84,12 @@ The bounded and acyclic automata types are implemented through an automata
 modeling framework used by the Java String Analyzer~(JSA)~\cite{strings2003},
 while the acyclic weighted implementation does not.  One of the aspects of
 validation we can examine is the effectiveness of instrumenting an interface
-versus a fully implemented class.  The surrounding AutomatonModel class
-contains an instance of an automaton and is the implementation of an abstract
-class, while the automaton itself does not implement an interface other than
-\texttt{serializable} and \texttt{cloneable}.  We may be able to introduce an
-interface for the automaton classes that does not affect operation of the
-program but allows us have better control and placement of the
+versus a fully implemented class.  The surrounding \texttt{AutomatonModel}
+class contains an instance of an automaton and is the implementation of an
+abstract class, while the automaton itself does not implement an interface
+other than \texttt{serializable} and \texttt{cloneable}.  We may be able to
+introduce an interface for the automaton classes that does not affect operation
+of the program but allows us have better control and placement of the
 instrumentation.
 
 \subsubsection{Modeling Behaviors}
@@ -134,7 +134,7 @@ will use either \texttt{Java Assertions}~\cite{oracle-java-assertions} or
 \paragraph{Automata Binary Operations} Operations involving two automata can
 only be performed on automata of the same type.  We count roughly \(10\)
 instances of this property.  Since this property is specified around operations
-and not a sequence of operations, this is a state snapshot property.
+and not a sequence of operations, this is a state property.
 
 \paragraph{Automata Return Types} Automata that return Automata need to
 return the correct type.  There are about \(10\) instances of this property
@@ -142,7 +142,7 @@ that will need to be verified.  This property is state based since it is
 centered around individual automata operations.
 
 \paragraph{Automata Operations} Automata should be \textit{minimized} before
-operations occur.  Since this property is concerned with the ordering of
+other operations occur.  Since this property is concerned with the ordering of
 methods, this is a sequence property.
 
 \paragraph{Automata Determinized Operations} Automata are required to be
@@ -151,8 +151,8 @@ need to be in a proper order, therefore, this is a sequence property.
 
 \paragraph{Automata Normalized Operations} Automata should be
 \textit{normalized} before they are \textit{determinized}.  Similar to the
-previous property, the automata operations need to be verified via sequential
-means.
+previous property class, the automata operations need to be verified via
+sequential means.
 
 \paragraph{String Operation Properties} Operations need to match Java String
 operation behaviors, where it can be tested.  For example,
@@ -251,9 +251,10 @@ the ordering of methods on timer objects, this is a sequential property.
 \section{Conclusion}
 
 The overall health of the String Constraint Counter framework will be better
-off after the addition of these property verifications.  Furthermore, future
-development can proceed with more confidence as the verification toolings can
-aid in ensuring future additions maintain adherence to the specifications.
+off after the addition of these property verifications.  Furthermore, current
+and future developers and researchers can proceed with more confidence as the
+verification toolings can aid in ensuring new development maintains adherence
+to the specifications.
 
 \bibliographystyle{unsrt}
 \bibliography{references}
