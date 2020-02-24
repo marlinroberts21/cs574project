@@ -157,10 +157,24 @@ means.
 \paragraph{String Operation Properties} Operations need to match Java String
 operation behaviors, where it can be tested.  For example,
 \texttt{substring~(start, end)} has a certain behavior associated with
-(\texttt{start > end}) that should be replicated. There are about \(10\) unique
-instances of this property that will need to be verified.  Operation behavior
-for certain argument values will have to be determined and written into
-post-conditions of the operations.
+(\texttt{start > end}) that should be replicated.  Specifically, the
+\texttt{start} index is included in the returned string; the \texttt{end} index
+is excluded from the returned string; and in the cases where \texttt{start} or
+\texttt{end} are negative, \texttt{start} or \texttt{end} are greater than the
+length of the string, or \texttt{start} is greater than \texttt{end} then
+\texttt{substring} will raise an exception.  However, in the case of the
+automata, an empty automaton is returned.  Similarly, \texttt{delete~(start,
+  end)} has similar behaivor: the \texttt{start} index is included in the
+removed string; \texttt{end} index is excluded from the removed string.
+Furthermore, if the \texttt{end} index is greater than the length of the
+string, all characters from the \texttt{start} index to the end of the string
+are deleted.  If the \texttt{start} index is negative or greater than the
+length of the string then \texttt{delete} raises an exception.  Again, however,
+an empty automaton is returned instead of an exception.
+
+There are about \(10\) unique instances of this property that will need to be
+verified.  Operation behavior for certain argument values will have to be
+determined and written into post-conditions of the operations.
 
 \paragraph{Automata Types} Automata returned from operations should have certain
 characteristics, if they can be tested in a side-effect-free way.  There are
@@ -169,21 +183,62 @@ about \(8\) unique instances of this property to be verified.
 For example:
 
 \begin{itemize}
-\item{\texttt{concatenate}: \texttt{new.automata size >= original.automata
-      size}}
-\item{\texttt{substring}: \texttt{new.automata size <= original.automata size}}
+\item{\texttt{concatenate}}
+  \begin{itemize}
+  \item{The maximum length of the string accepted by the returned automaton
+      should be greater than or equal to the longest string of the original
+      automata.}
+  \end{itemize}
+\item{\texttt{substring}}
+  \begin{itemize}
+  \item{The maximum string accepted by the returned automaton should be less
+      than or equal to the lengths accepted by the original automata.}
+  \end{itemize}
 \end{itemize}
 
 Other candidates to be considered:
 
 \begin{itemize}
 \item{\texttt{union}}
+  \begin{itemize}
+  \item{If either automata has final states, the union should have final
+      states.}
+  \item{The count of strings accepted by the automata should be greater or
+      equal than the larger string count of the original automata.}
+  \end{itemize}
 \item{\texttt{intersection}}
+  \begin{itemize}
+  \item{The resulting automata may not contain final states.}
+  \item{The count of strings accepted by the resulting automaton should be less
+      than or equal to the lesser string count of the original automata.}
+  \end{itemize}
 \item{\texttt{insert}}
 \item{\texttt{replace}}
+  \begin{itemize}
+  \item{The maximum length of the string accepted by the automaton should be
+      unchanged.}
+  \item{The count of strings accepted by the automaton should be unchanged.}
+  \end{itemize}
 \item{\texttt{delete}}
+  \begin{itemize}
+    \item{The maximum string length accepted by the resulting automaton should
+        be less than or equal to the original automaton.}
+  \end{itemize}
 \item{\texttt{trim}}
 \item{\texttt{reverse}}
+  \begin{itemize}
+  \item{The maximum string length accepted by the resulting automaton should be
+      equal to that of the original automaton.}
+  \item{The count of strings accepted by the resulting automaton should be unchanged.}
+  \end{itemize}
+\item{\texttt{assertions}}
+  \begin{itemize}
+    \item{Assertions work to reduce the possible set of strings accepted by the
+        automaton.}
+    \item{Resulting automata returned by \texttt{assertions} should have string
+        lengths accepted be less than or equal to the strings accepted by the
+        original automata.}
+  \end{itemize}
 \end{itemize}
 
 \paragraph{Automata Trimming Operations} Automata are required to have dead states and epsilon
