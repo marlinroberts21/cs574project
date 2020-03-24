@@ -12,7 +12,7 @@
     <property name="public" value="${user.home}/public_html/JSA"/>
 
     <path id="classpath">
-        <fileset dir="." includes="lib/**/*.jar"/>
+      <fileset dir="." includes="lib/**/*.jar"/>
     </path>
 
     <target name="all" depends="jar,doc"/>
@@ -23,6 +23,31 @@
                debug="${debug}">
             <classpath refid="classpath"/>
         </javac>
+    </target>
+
+    <target name="jml-compile">
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <echo>${CLASSPATH}</echo>
+      <mkdir dir="build"/>
+      <java jar="./lib/openjml.jar"
+            fork="true">
+        <arg value="-cp"/>
+        <arg value="${CLASSPATH}"/>
+        <arg value="-dir"/>
+        <arg value="src/"/>
+        <arg value="-no-internalSpecs"/>
+        <arg value="-rac"/>
+      </java>
+    </target>
+
+    <target name="jml-test" depends="jml-compile">
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <java classname="org.junit.runner.JUnitCore"
+            classpath="${CLASSPATH}"
+            fork="true">
+        <jvmarg value="-ea"/>
+        <arg value="dk.brics.string.tests"/>
+      </java>
     </target>
 
     <target name="examples" depends="jar">
