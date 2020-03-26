@@ -15,15 +15,15 @@
       <fileset dir="." includes="lib/**/*.jar"/>
     </path>
 
-    <target name="all" depends="jar,doc"/>
+    <path id="mop_files">
+      <fileset dir="./" includes="src/**/*.mop"/>
+    </path>
 
-    <target name="compile">
-        <mkdir dir="build"/>
-        <javac srcdir="src" includes="dk/**" destdir="build" source="1.5" target="1.5" optimize="${optimize}"
-               debug="${debug}">
-            <classpath refid="classpath"/>
-        </javac>
-    </target>
+    <path id="java_source">
+      <fileset dir="./" includes="src/**/*.java"/>
+    </path>
+
+    <target name="all" depends="jar,doc"/>
 
     <target name="jml-compile">
       <pathconvert property="CLASSPATH" refid="classpath"/>
@@ -50,6 +50,49 @@
       </java>
     </target>
 
+    <target name="mop-translate">
+      <pathconvert property="mop-files" refid="mop_files"/>
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <exec executable="javamop">
+        <env key="CLASSPATH" value="${CLASSPATH}" />
+        <arg value="${mop-files}"/>
+      </exec>
+    </target>
+
+    <target name="mop-compile" depends="mop-translate">
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <java classname="org.aspectj.tools.ajc.Main"
+            classpath="${CLASSPATH}"
+            fork="true">
+        <jvmarg value="-Xmx64M"/>
+        <arg value="-1.8"/>
+        <arg value="-d"/>
+        <arg value="build"/>
+        <arg value="-classpath"/>
+        <arg value="${CLASSPATH}"/>
+        <arg value="-sourceroots"/>
+        <arg value="src/"/>
+      </java>
+    </target>
+
+    <target name="mop-test" depends="mop-compile">
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <java classname="org.junit.runner.JUnitCore"
+            classpath="${CLASSPATH}"
+            fork="true">
+        <jvmarg value="-ea"/>
+        <arg value="dk.brics.string.tests"/>
+      </java>
+    </target>
+
+    <target name="compile">
+      <mkdir dir="build"/>
+      <javac srcdir="src" includes="dk/**" destdir="build" source="1.5" target="1.5" optimize="${optimize}"
+             debug="${debug}">
+        <classpath refid="classpath"/>
+      </javac>
+    </target>
+
     <target name="examples" depends="jar">
         <mkdir dir="build"/>
         <javac srcdir="examples" includes="**" destdir="build" source="1.5" target="1.5" optimize="${optimize}"
@@ -68,6 +111,9 @@
         <delete dir="build"/>
         <delete dir="doc"/>
         <delete dir="dist"/>
+        <delete>
+          <fileset dir="src" includes="**/*.aj"/>
+        </delete>
     </target>
 
     <target name="tgz" depends="clean,doc">
