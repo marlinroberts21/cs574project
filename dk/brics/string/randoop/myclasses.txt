@@ -1,0 +1,15 @@
+dk.brics.string.stringoperations.CharAt1
+dk.brics.string.stringoperations.CharAt2
+dk.brics.string.stringoperations.Contains
+dk.brics.string.stringoperations.Replace1
+dk.brics.string.stringoperations.Replace2
+dk.brics.string.stringoperations.Replace3
+dk.brics.string.stringoperations.Replace4
+dk.brics.string.stringoperations.Replace5
+dk.brics.string.stringoperations.Replace6
+dk.brics.string.stringoperations.Reverse
+dk.brics.string.stringoperations.Split
+dk.brics.string.stringoperations.Substring
+dk.brics.string.stringoperations.ToLowerCase
+dk.brics.string.stringoperations.ToUpperCase
+dk.brics.string.stringoperations.Trim

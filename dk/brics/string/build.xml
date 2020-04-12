@@ -93,6 +93,22 @@
       </javac>
     </target>
 
+    <target name="randoop-compile">
+      <mkdir dir="./build"/>
+      <javac srcdir="src" destdir="./build" source="1.8" target="1.8" optimize="${optimize}"
+             debug="${debug}">
+        <classpath refid="classpath"/>
+      </javac>
+    </target>
+
+    <target name="randoop-generate" depends="randoop-compile">
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <java classname="randoop.GenerateTests"
+            classpath="${CLASSPATH}:build"
+            fork="false">
+      </java>
+    </target>
+
     <target name="examples" depends="jar">
         <mkdir dir="build"/>
         <javac srcdir="examples" includes="**" destdir="build" source="1.5" target="1.5" optimize="${optimize}"
