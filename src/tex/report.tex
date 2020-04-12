@@ -1,4 +1,4 @@
-\documentclass[letterpaper,11pt]{article}
+\documentclass[letterpaper,11pt,acmtog]{acmart}
 \usepackage{listings}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -13,7 +13,7 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
-\title{CS574 Project Report}
+\title{\texttt{dk.brics.string} Property Verification}
 \date{\today}
 \hypersetup{
   pdfauthor={Kenny Ballou \& Marlin Roberts},
@@ -21,12 +21,50 @@
   pdfkeywords={},
   pdfsubject={},
   pdflang={English}}
-\author{Kenny Ballou \& Marlin Roberts}
+
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+%\setcopyright{boisestate}
+\copyrightyear{2020}
+%%\acmYear{2018}\acmDOI{10.1145/1122445.1122456}
+
+
+\author{Kenny Ballou}
+\email{kennyballou@u.boisestate.edu}
+\affiliation{%
+  \institution{Boise State University}
+}
+
+\author{Marlin Roberts}
+\email{marlinroberts@u.boisestate.edu}
+\affiliation{%
+  \institution{Boise State University}
+}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10011007.10011006.10011073</concept_id>
+       <concept_desc>Software and its engineering~Software maintenance tools</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011074.10011099</concept_id>
+       <concept_desc>Software and its engineering~Software verification and validation</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Software and its engineering~Software maintenance tools}
+\ccsdesc[500]{Software and its engineering~Software verification and validation}
 
 \begin{document}
 
 \maketitle{}
-\tableofcontents{}
+%\tableofcontents{}
 
 \nocite{*}
 \bibliographystyle{plain}
