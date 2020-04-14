@@ -51,12 +51,6 @@ benchmark constraints as well as a set of constraints obtained from analysis of
 actual programs.  It can output satisfiability results as well as model count
 results for comparing the accuracy of the automata models.
 
-While the current codebase is largely compliant with the properties and
-functionality identified, the instrumentation developed here could be used to
-ensure that automata and automata factory classes developed in the future
-adhere to the requirements of the framework.  With this in mind, we will try to
-define properties on interfaces and abstract classes where possible.
-
 \subsection{Metrics}
 
 The approximate metrics of the application are shown in table
@@ -122,14 +116,34 @@ carefully for side-effects.
 We propose the usage of several verification tools to verify and otherwise
 implement fixes for the following properties.
 
+The JML compiler fails to compile the \texttt{dk.brics} code, therefore, Java
+assertions will be used in place of JML assertions.  This will require the
+introduction of code into the classes being instrumented to provide similar
+functionality to JML.\@ For instance, JML has the ability to compare previous
+and post values of variables.  Instrumentation code will be added to store
+previous values for later comparison.
+
+\paragraph{\texttt{dk.brics.string.stringoperations}} Checks will be placed in
+the classes that perform specific operations such as \texttt{substring} and
+\texttt{replace} on automata that represent strings.  Where possible, these
+checks will determine if the results of an operation match the results of the
+Java string operation being modeled.  Automata properties that are visible at
+this level, such as whether or not the returned automata is deterministic, can
+be checked here as well.
+
+\paragraph{\texttt{dk.brics.automaton}} Checks will be placed in the
+\texttt{Automaton} and \texttt{BasicOperations} classes.  These checks will
+examine properties that are not visible at the string operations level, such as
+the number of accepting states after an intersection operation being less than
+or equal to the number of accepting states before the intersection operation.
+
 \subsection{Properties}
 
 The following property classes have been identified to be areas of program
 criticallity.  For each of the classes, we describe the nature of the set of
 properties and the type of the property class.  For state based properties, we
-will use either \texttt{Java Assertions}~\cite{oracle-java-assertions} or
-\texttt{OpenJML}~\cite{openjml}.  For sequence based properties, we will use
-\texttt{JavaMOP}~\cite{javamop}.
+will use either \texttt{Java Assertions}~\cite{oracle-java-assertions}. For
+sequence based properties, we will use \texttt{JavaMOP}~\cite{javamop}.
 
 \paragraph{Automata Binary Operations} Operations involving two automata can
 only be performed on automata of the same type.  We count roughly \(10\)
