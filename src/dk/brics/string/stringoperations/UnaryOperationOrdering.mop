@@ -1,0 +1,17 @@
+package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+
+UnaryOperationOrdering(UnaryOperation u){
+    event op_before before(UnaryOperation u, Automaton a) :
+          call(public Automaton UnaryOperation.op(Automaton)) && target(u) && args(a) {}
+    event op_after after(UnaryOperation u, Automaton a) :
+          call(public Automaton UnaryOperation.op(Automaton)) && target(u) && args(a) {}
+
+    ere : (op_before op_after)*
+
+    @fail{
+        System.err.println("!MOP Error! Somehow you done messed up the operation order");
+        __RESET;
+    }
+}
