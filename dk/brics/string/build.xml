@@ -78,10 +78,10 @@
     <target name="mop-test" depends="mop-compile">
       <pathconvert property="CLASSPATH" refid="classpath"/>
       <java classname="org.junit.runner.JUnitCore"
-            classpath="${CLASSPATH}"
+            classpath="${CLASSPATH}:build"
             fork="true">
         <jvmarg value="-ea"/>
-        <arg value="dk.brics.string.tests"/>
+        <arg value="dk.brics.string.tests.ReverseOperationTests"/>
       </java>
     </target>
 
