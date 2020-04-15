@@ -1,0 +1,8 @@
+.classpath
+.project
+doc
+dist
+build
+target
+*.aj
+*.rvm
