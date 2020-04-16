@@ -3,38 +3,35 @@
 Kenny Ballou, Marlin Roberts
 
 
-### Possible Projects:
+### Project Code:
 
-- https://github.com/BoiseState/string-constraint-counting (~30k)
+**BRICS Java String Analyzer String Operations**  
+  * github: 	https://github.com/rodneyxr/brics-jsa  
+  * web: 		http://www.brics.dk/JSA/  
+	
+**BRICS Automata Code**  
+  * github:		https://github.com/cs-au-dk/dk.brics.automaton  
+  * web:		http://www.brics.dk/automaton/  
+	
+### Summary:
 
-  - String Constraint Model-Counting Framework
+We will be examining the properties of string operations provided in the JSA package. The string operations model common Java String and StringBuilder operations. These operations work on strings modeled as automata, and rely upon the dk.brics.automata code. Operations manipulate the automata using set operations such as union and intersection, as well as directly altering states and transitions when set operations alone are insufficient.  
 
-- https://github.com/mopemope/meghanada-server (~30k)
+We will examine these aspects of the string operations and supporting automata code:  
 
-  - Plugin for Emacs for Java
+***Operations accurately model the Java String or StringBuilder operations:***  
 
-- https://github.com/oracle/visualvm (~430k)
+  * Operations that work with concrete strings can be checked by comparing results with those of the Java String or StringBuilder operations they model.  
 
-  - Profiling and Tracing library for JVM
+  * Operations that work with symbolic strings or a combination of concrete and symbolic strings return a set of possible values. These can be checked against a set from an oracle created for the purpose of regression testing.  
 
-- https://sourceforge.net/projects/ditaa/ (~11k)
+  * Checking these properties will occur in Junit tests.  
 
-  - UML/Diagram tool
+***Operations return correct automata:***  
 
-- https://github.com/java-decompiler/jd-gui (~18k)
+  * All operations are expected to return automata that have certain properties, such as being deterministic. These properties will be checked with assertions placed within the operation classes where possible.  
+  
+***Automata operation sequence***  
 
-  - Java Bytecode decompiler
-
-- https://github.com/plantuml/plantuml (~361k)
-
-  - Different but "better" UML diagram tool
-
-- https://github.com/eclipse/eclipse.jdt.ls (~142k)
-
-  - Eclipse Java Language Server (LSP), useful for editor plugins.
-
-- https://github.com/oracle/opengrok (~109k)
-
-  - Source Code search and cross reference utility
-
-
+  * Various sequence properties have been identified in the automata code that will be examined with AspectJ.  
+  
