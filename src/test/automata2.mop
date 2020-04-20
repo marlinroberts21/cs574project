@@ -1,0 +1,111 @@
+package test;
+
+import static org.junit.Assert.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.stringoperations.*;
+
+import java.io.*;
+import java.util.*;
+
+automata(UnaryOperation u) {
+
+	// counters for events
+	int unaryop = 0;
+	
+	event Uop before(UnaryOperation u) : call(public * op(Automaton)) && target(u) {
+		 System.err.println("! Unary.op");
+		 ++unaryop;
+	}
+
+ 
+	// end of program event, used for reporting results. 
+  	event endProg before() : endProgram() {
+ 		System.err.println("UnaryOps: " + unaryop);
+ 	}
+ 
+	ere : Uop* endProg
+ 
+	@fail{
+		System.err.println("! Error: Uop...");
+		__RESET;
+ 	}
+
+}
+
+minimization(Automaton a1) {
+
+	// counters for events
+	static int minimize = 0;
+	static int determinize = 0;
+	
+ 	// event monitor that captures Automata.minimize(), tracks count of calls
+	event m_minimize before(Automaton a1) : call(public * minimize()) && target(a1) {
+		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! minimize call ");
+		 ++minimize;
+	}
+	
+	event m_determinize before(Automaton a1) : call(public * determinize()) && target(a1) {
+		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! determinize call ");
+		 ++determinize;
+	}
+	
+	
+	event m_reduce before(Automaton a1) : call(public * reduce()) && target(a1) {
+		 System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! reduce call ");
+		 //++determinize;
+	}
+	
+	/*
+	event m_totalize before(Automaton a1) : call(public * totalize()) && target(a1) {
+		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! totalize call ");
+		 //++determinize;
+	}
+	*/
+	
+	event m_removeDeadTransitions before(Automaton a1) : call(public * removeDeadTransitions()) && target(a1) {
+		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! removeDeadTransitions call ");
+		 //++determinize;
+	}
+	
+	/*
+	event m_restoreInvariant before(Automaton a1) : call(public * restoreInvariant()) && target(a1) {
+		 System.err.println("! restoreInvariant call");
+		 //++determinize;
+	}
+	*/
+	
+	event m_clearHashCode before(Automaton a1) : call(* clearHashCode()) && target(a1) {
+		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! clearHashCode call ");
+		 //++determinize;
+	}
+	
+	event m_recomputeHashCode before(Automaton a1) : call(* recomputeHashCode()) && target(a1) {
+		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! recomputeHasCode call ");
+		 //++determinize;
+	}
+ 
+	// end of program event, used for reporting results. 
+  	event endProg2 before() : endProgram() {
+ 		System.err.println("Automaton.minimize: " + minimize + "  Automaton.determinize: " + determinize);
+ 	}
+  
+	//   
+	//ere : (m_determinize* | m_determinize m_minimize)* endProg2
+	//ere : (m_determinize | m_minimize |  m_reduce | m_totalize | m_removeDeadTransitions | m_restoreInvariant | m_clearHashCode | m_recomputeHashCode)* endProg2
+	//ere : (m_determinize | m_minimize |  m_reduce | m_totalize | m_removeDeadTransitions | m_restoreInvariant )* endProg2
+
+	ere : (m_determinize | m_minimize |  m_reduce | m_removeDeadTransitions | m_clearHashCode | m_recomputeHashCode)* endProg2
+	
+ 
+	@fail{
+		System.err.println("! Error: ...");
+		__RESET;
+ 	}
+
+}
+

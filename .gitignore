@@ -6,3 +6,5 @@ build
 target
 *.aj
 *.rvm
+/cov-int
+string.tgz

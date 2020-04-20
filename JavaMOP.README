@@ -1,0 +1,11 @@
+MOP Compile
+
+automata2.mop contains the current MOP event definitions.
+
+Location:
+<path to project>cs574project\src\test
+
+javamop -d <path to project>cs574project\src\test <path to project>cs574project\src\test\automata2.mop
+
+This will put automata2Monitor.aj file in the test directory.
+

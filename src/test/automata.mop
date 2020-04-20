@@ -1,0 +1,43 @@
+package test;
+
+import static org.junit.Assert.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import dk.brics.automaton.Automaton;
+
+import java.io.*;
+import java.util.*;
+
+automata(dk.brics.automaton.Automaton a) {
+
+	// counters for events
+	static int minimize = 0;
+	static int determinize = 0;
+	
+ 	// event monitor that captures Automata.minimize(), tracks count of calls
+	event minimize before(dk.brics.automaton.Automaton a) : call(public Object dk.brics.automaton.Automaton.minimize()) && target(a){
+		 ++minimize;
+	}
+
+	// event monitor that captures IXMLParser.setReader(..), tracks count of calls
+	event determinize before(dk.brics.automaton.Automaton a) : call(public Object dk.brics.automaton.Automaton.determinize()) && target(a){
+		 ++determinize;
+	}
+ 
+	// end of program event, used for reporting results. 
+  	event endProg before() : endProgram() {
+ 		System.err.println("Automaton.minimize: " + minimize + "  Automaton.determinize: " + determinize);
+ 	}
+  
+	// logic that accepts a setreader call before a parse call on an IXMLParser object  
+	ere : ( (determinize minimize)* ) endProg
+ 
+	@fail{
+		System.err.println("! Error: det/min...");
+		__RESET;
+ 	}
+
+}
