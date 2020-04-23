@@ -1,4 +1,4 @@
-\documentclass[letterpaper,11pt,acmtog]{acmart}
+\documentclass[letterpaper,sigplan]{acmart}
 \usepackage{listings}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -12,11 +12,15 @@
 \usepackage{textcomp}
 \usepackage{amssymb}
 \usepackage{capt-of}
+\usepackage{microtype}
+\usepackage[htt]{hyphenat}
+\usepackage{multirow}
+\usepackage{booktabs}
 \usepackage{hyperref}
-\title{\texttt{dk.brics.string} Property Verification}
+\title{Testing dk.brics.automaton and dk.brics.string}
 \date{\today}
 \hypersetup{
-  pdfauthor={Kenny Ballou \& Marlin Roberts},
+  pdfauthor={Marlin Roberts \& Kenny Ballou},
   pdftitle={Project Report},
   pdfkeywords={},
   pdfsubject={},
@@ -24,18 +28,12 @@
 
 \AtBeginDocument{%
   \providecommand\BibTeX{{%
-    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+      \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
 
-%\setcopyright{boisestate}
+\setcopyright{iw3c2w3g}
 \copyrightyear{2020}
-%%\acmYear{2018}\acmDOI{10.1145/1122445.1122456}
-
-
-\author{Kenny Ballou}
-\email{kennyballou@u.boisestate.edu}
-\affiliation{%
-  \institution{Boise State University}
-}
+%\acmYear{2018}
+\acmDOI{10.1145/0000000000}
 
 \author{Marlin Roberts}
 \email{marlinroberts@u.boisestate.edu}
@@ -43,31 +41,678 @@
   \institution{Boise State University}
 }
 
+\author{Kenny Ballou}
+\email{kennyballou@u.boisestate.edu}
+\affiliation{%
+  \institution{Boise State University}
+}
+
 \begin{CCSXML}
-<ccs2012>
-   <concept>
-       <concept_id>10011007.10011006.10011073</concept_id>
-       <concept_desc>Software and its engineering~Software maintenance tools</concept_desc>
-       <concept_significance>500</concept_significance>
-       </concept>
-   <concept>
-       <concept_id>10011007.10011074.10011099</concept_id>
-       <concept_desc>Software and its engineering~Software verification and validation</concept_desc>
-       <concept_significance>500</concept_significance>
-       </concept>
-</ccs2012>
+  <ccs2012>
+  <concept>
+  <concept_id>10011007.10011006.10011073</concept_id>
+  <concept_desc>Software and its engineering~Software maintenance tools</concept_desc>
+  <concept_significance>500</concept_significance>
+  </concept>
+  <concept>
+  <concept_id>10011007.10011074.10011099</concept_id>
+  <concept_desc>Software and its engineering~Software verification and validation</concept_desc>
+  <concept_significance>500</concept_significance>
+  </concept>
+  </ccs2012>
 \end{CCSXML}
 
 \ccsdesc[500]{Software and its engineering~Software maintenance tools}
 \ccsdesc[500]{Software and its engineering~Software verification and validation}
 
+%% https://tex.stackexchange.com/questions/205362/should-i-use-lstinline-for-the-language-keywords-embedded-in-text
+\lstset{
+  frameround=fttt,
+  language=Java,
+  numbers=left,
+  breaklines=true,
+  keywordstyle=\color{blue}\bfseries,
+  basicstyle=\ttfamily,
+  numberstyle=\color{black}
+}
+
 \begin{document}
 
-\maketitle{}
-%\tableofcontents{}
+\begin{abstract}
+  The \lstinline{string}~\cite{strings2003} and
+  \lstinline{automaton} libraries were examined and tested to study and perform
+  property verification.  Various assertions and code instrumentation were
+  added to the two libraries to verify several state and sequential properties.
+  Several possible bugs and recommendations will be discussed as a result of
+  this examination.
+\end{abstract}
 
-\nocite{*}
+\maketitle{}
+% \tableofcontents{}
+
+\section{Introduction}
+
+The Java String Analyzer~\cite{strings2003} tool consists of two main
+libraries, \lstinline{string} and \lstinline{automaton}.  The
+\lstinline{automaton} library implements a deterministic and non-deterministic
+finite-state automata with an unrestricted set of regular expression operators.
+The \lstinline{string} library uses the \lstinline{automaton} library to model
+various Java \lstinline{String}~\cite{oracle-java-string} and
+\lstinline{StringBuilder}~\cite{oracle-java-stringbuilder} operations.
+
+The two libraries were examined, instrumented, and tested to verify various
+program properties.  Several tools were used to perform the verification,
+chiefly, Java \lstinline{Assertions}~\cite{oracle-java-assertions},
+\lstinline{JUnit}~\cite{junit4}, and \lstinline{JavaMOP}~\cite{javamop}.
+
+The following is a brief overview of the paper.  First the methodology of the
+approach to property discover, property verification, and program
+testing (\ref{sec:methodology}).  Next, the program properties
+examined (\ref{sec:properties}).  Then, the various aspects of testing the two
+libraries (\ref{sec:testing}).  Before concluding, the analysis and results of
+our program verification study (\ref{sec:results}).
+
+\section{Methodology}\label{sec:methodology}
+
+\subsection{Property Discovery}
+
+Three approaches were used to identify interesting properties: Reading
+documentation within the source code or in \texttt{README} files, examining the
+source code directly, and observing event sequences.  Each approach identified
+interesting properties.
+
+The \lstinline{automaton} package contained comments that directly referenced
+the state of a returned automata, but few were found in the string operations
+with similar detail.  Automata operations that returned determinized or
+minimized automata were usually annotated with comments indicating so.  Some
+properties were determined by the documented purpose of the string operations,
+which is to model the behavior of Java \lstinline{String} and
+\lstinline{StringBuilder} operations.  The expected behaviors of Java
+\lstinline{String} and \lstinline{StringBuilder} operations are available from
+online sources~\cite{oracle-java-string,oracle-java-stringbuilder}.  These
+behaviors were examined to determine additional properties that related
+directly to the correct operation of the software under test.
+
+Examination of the source code provided several interesting properties.  An
+example is the discovery of an assertion in one of the string operations, which
+asserted that the input automata was deterministic.  This shows that the
+programmers expected a certain set of conditions to exist even if they did not
+explicitly indicate so in the documentation.  Interestingly, test cases that
+should have provided a deterministic automata failed this assertion and led to
+the conclusion that some operations for building automata might produce
+automata with incorrect or inconsistent properties.
+
+Observing event sequences during preliminary testing showed interesting
+sequential properties.  For instance, a majority of the string operations ended
+with calls to \lstinline{Automaton.clearHashCode()} followed by
+\lstinline{Automaton.recomputeHashCode()}, while one did not.  This indicated
+that static checks should be put in place to determine if the hash code of
+returned automata was correct, however, this proved problematic due to the
+visibility of the instance variable representing the hash code and the behavior
+of the method that returns the hash code. Sequence checking was then put in
+place in order to observe this property to the extent possible.  Section
+~\ref{sec:properties}, Properties, contains the complete details of identified
+properties.
+
+\subsection{Property Checking}
+
+The primary methods for checking state or static properties are Java Modeling
+Language~\cite{openjml} (JML) and Java
+assertions~\cite{oracle-java-assertions}.  JML has significant advantages over
+assertions, including the ability to easily compare \textit{pre} and
+\textit{post} conditions of variables and results.  Using JML requires the use
+of a specific Java compiler that translates the JML annotations into regular
+Java bytecode for execution.  Attempting to use this compiler exposed
+significant issues that prevented successful compilation.  While workarounds
+did produce a compiled project, further errors were encountered during
+execution that made continued use of JML too problematic.
+
+Java assertions were then implemented in order to check the state properties.
+The assertions are located in test cases where possible, in order to minimize
+intrusion into the classes being observed.  However, in cases where properties
+were not visible to the test cases, assertions were placed in the source code.
+Results of static property checking are discussed in Section~\ref{sec:results}.
+
+Checking for sequential properties was accomplished with the
+Monitoring-Oriented Programming (MOP) tool, Java MOP~\cite{javamop}, along with
+the AspectJ~\cite{eclipse-aspectj} compiler.  Checks provided by these tools
+``cut-across'' classes within the software under test which allows observation
+of events generated anywhere in the source code. These tools were initially
+used to identify interesting sequential properties by defining a wide range of
+possible events and observing the sequences produced during preliminary
+testing.  After these properties were identified, the MOP definition files were
+modified to observe only the events related to these properties.  Logic was
+introduced to check for correct or incorrect sequences.  Results of sequential
+property checking are discussed in Section~\ref{sec:results}.
+
+\subsection{Static Analysis}
+
+Static analysis techniques were applied using
+Coverity~\cite{coverity-scan}.  This online static analysis tool provides the
+ability to run a variety of checks that are provided in sets called
+checkers.  Checkers are specific to a source language and are further targeted
+at specific program types.  For instance, a Java program that provides a web
+service may have a checker that examines the source for specific issues and
+code smells that commonly appear in web services code.  The source code is
+prepared for analysis by performing a build using supplied tools that records
+the build operation and results.  This information is then submitted for
+analysis.
+
+An abundance of false positives tend to be a significant issue when using
+static analysis tools.  False positives are code problems identified by static
+analysis tools, but in fact are not.  Tools like Coverity allow for analysis
+tuning, which is the process of changing the scope of the analysis or the
+definition of what constitutes an actual problem.
+
+Results of the static analysis are discussed in Section~\ref{sec:results}.
+
+
+\section{Properties}\label{sec:properties}
+
+The majority of the properties identified for the string operations involve the
+ability of the operation to match the behavior of the Java String or
+StringBuilder operation it models.  Due to the large number of operations and
+the related behaviors, this set of properties was treated as an opportunity to
+apply some of the regression testing techniques, with the idea that the
+operations likely conform to those behaviors now and tests should be available
+to make sure they continue to operate correctly.  Details of this process is
+provided in Section~\ref{sec:testing}.
+
+Properties identified for the \lstinline{automaton} package relate to the
+structure and validity of the automata they return.  Some of these properties
+could be checked by using available accessor methods, such as whether or not
+automata are deterministic being available through the
+\lstinline{Automaton.isDeterministic()} method.  Other properties, such as
+whether or not an automata is minimal, did not have a readily accessible flag
+for testing.  Various approaches were discussed as to how a property like this
+could be tested.  One approach would be to make a clone of a given automata
+that should be minimal, minimizing it and comparing it with the original.  If
+the two were equivalent, then the original automata was likely minimal to begin
+with.  Another approach was to monitor sequences of events in order to
+determine if the automata had the minimize operation performed on it before
+being returned.  In this particular case it was decided that monitoring the
+sequence of method calls was a less intrusive approach, so this property is
+tested as a sequential property.
+
+\paragraph{String Operation Behavior} String operation behavior properties are
+verified by a set of tests that store the current test output for comparison
+for future executions. There are 23 operations with associated tests for
+each. The string operation classes are listed in
+Table~\ref{tab:string-operations}.
+
+\begin{table}[h]
+  {\footnotesize
+  \begin{tabular}{l l l l}
+    \toprule
+    \texttt{CharAt1} & \texttt{Postfix} & \texttt{Replace5} & \texttt{Split} \\
+    \midrule
+    \texttt{CharAt2} & \texttt{Prefix} & \texttt{Replace6} & \texttt{Substring} \\
+    \midrule
+    \texttt{Contains} & \texttt{Replace1} & \texttt{Reverse} & \texttt{ToLowerCase} \\
+    \midrule
+    \texttt{Delete} & \texttt{Replace2} & \texttt{SetCharAt1} & \texttt{ToUpperCase} \\
+    \midrule
+    \texttt{DeleteCharAt} & \texttt{Replace3} & \texttt{SetCharAt2} & \texttt{Trim} \\
+    \midrule
+    \texttt{Insert} & \texttt{Replace4} & \texttt{SetLength} & \\
+    \bottomrule
+  \end{tabular}
+  }
+  \caption{String Operations}%
+  \label{tab:string-operations}
+\end{table}
+
+\paragraph{String Operation in Sequence} String operations should be able to be
+used in sequence, i.e., operations can be chained together, with the automaton
+returned being used as input to the next in sequence.  Assumptions about the
+returned automata may not hold between operations in the sequence, worse, they
+may not be detected by property checks.  Several tests were created to take
+this possibility into account.  However, due to the large number of possible
+combinations only a small subset of these tests were implemented.
+
+\paragraph{Returned Automata Minimal} Several methods in the automata class
+were commented as returning minimal automata.  These methods were tested in a
+separate JUnit test case, as determining if an automata is minimal required
+several steps.  These methods are listed in Table~\ref{tab:minimal-methods}.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multicolumn{2}{c}{\texttt{MinimizationOperations.java}} \\
+      \midrule
+      \texttt{minimize()} & \texttt{minimizeHuffman()} \\
+      \midrule
+      \texttt{minimizeValmari()} & \texttt{minimizeBrzozowski()} \\
+      \midrule
+      \texttt{minimizeHopcroft()} & \\
+      \bottomrule
+    \end{tabular}
+  }
+  \caption{Minimal Methods}%
+  \label{tab:minimal-methods}
+\end{table}
+
+\paragraph{Returned Automata Deterministic} Nine methods were commented as
+returning deterministic automata.  Since this property could be tested by
+accessing the \lstinline{isDeterministic()} method, all of them were
+instrumented with assertions. These methods are listed in
+Table~\ref{tab:deterministic-methods}.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multicolumn{2}{c}{\texttt{BasicAutomata.java}} \\
+      \midrule
+      \texttt{makeEmtpyString()} & \texttt{makeCharSet()} \\
+      \midrule
+      \texttt{makeAnyString()} & \texttt{makeString()} \\
+      \midrule
+      \texttt{makeAnyChar()} & \texttt{makeStringUnion()} \\
+      \midrule
+      \texttt{makeChar()} & \texttt{makeStringMatcher()} \\
+      \midrule
+      \texttt{makeCharRange()} & \\
+      \bottomrule
+    \end{tabular}
+  }
+  \caption{Deterministic Methods}%
+  \label{tab:deterministic-methods}
+\end{table}
+
+\paragraph{Automata Arguments Immutable} Automata have an instance variable
+that indicates whether or not an operation is allowed to change it.  By
+default, this variable is set to false, which should indicate to string
+operations that the automata is to be considered immutable.  It was found that
+most operations do not check this flag, but do in fact clone arguments in order
+that they remain unchanged inside the method.  Considering this, a desirable
+property for all string operations is to treat all automata arguments as
+immutable.  Checks were placed in the JUnit test cases to capture the state of
+arguments passed to operations in order to compare them after an operation
+completed.
+
+\paragraph{Automata Hashcodes Set} Each automaton contains a basic hashcode
+that is a function of the number of states and transitions comprising the
+automaton.  It is used as part of the equality comparison, and regardless if
+the actual state and transitions in two automata are identical, a hashcode
+inequality will cause the comparison to return false.  Since the hashcode
+accessor method recalculates a cleared hashcode it was difficult to determine
+if the code was correct.  Checks for a hashcode of \lstinline{0} were
+implemented as assertions in the automata operations but sequential checks were
+implemented to look for the \lstinline{Automaton.recalculateHashCode()} method
+call after an occurrence of \lstinline{Automaton.clearHashCode()}.
+
+\paragraph{Consistent Minimization Algorithm} The automaton class provides
+three different minimization algorithms.  A flag is set in the automaton that
+indicates which algorithm to use when \lstinline{Automaton.minimize()} is
+called.  Automata with different minimization algorithms were considered to be
+usable together as arguments to a single operation.  Since there is only one
+minimal representation of a deterministic automata, each algorithm should
+produce identical results.
+
+\paragraph{Automata Set Operations Correct} The basic set operations of union,
+intersection and minus are used repeatedly throughout the string operations.
+These operations have well defined behaviors that can be verified.
+
+\paragraph{Argument Automata Cloning (MOP)} Automata passed as arguments should
+not be changed.  Immediate cloning inside the \lstinline{op()} method protects
+the arguments.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multirow{3}{*}{Events} & \texttt{UnaryOperation.op()} \\
+                              & \texttt{BinaryOperation.op()} \\
+                              & \texttt{Automaton.clone()} \\
+      \midrule
+      Regular Expression & \texttt{c* o c+} \\
+      \bottomrule
+    \end{tabular}
+    \caption{Argument Automata Cloning}%
+    \label{tab:arg-automata-clone}
+  }
+\end{table}
+
+\paragraph{Determinize Before Minimize (MOP)} Automata should be deterministic
+before they are minimized. Calling \lstinline{determinize()} before
+\lstinline{minimize()} ensures this.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multirow{2}{*}{Events} & \texttt{Automaton.determinize()} \\
+                              & \texttt{Automaton.minimize()} \\
+      \midrule
+      Regular Expression & \texttt{(d | d m)*} \\
+      \bottomrule
+    \end{tabular}
+    \caption{Determinize before Minimize}%
+    \label{tab:determinize-before-minimize}
+  }
+\end{table}
+
+\paragraph{Recompute Hashcode after Minimize (MOP)} Minimize calls do not have
+a specific \lstinline{clearHashCode} call within them.  A call to
+\lstinline{recomputeHashCode()} ensures it is correctly set.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multirow{2}{*}{Events} & \texttt{Automaton.minimize()} \\
+                              & \texttt{Automaton.recomputeHashCode} \\
+      \midrule
+      Regular Expression & \texttt{(r | m r)*} \\
+      \bottomrule
+    \end{tabular}
+    \caption{Recompute Hashcode after Minimize}%
+    \label{tab:recompute-hash-after-minimize}
+  }
+\end{table}
+
+\paragraph{Recompute Hashcode After Clearing Hashcode (MOP)} The hashcode needs
+to be recomputed after it is explicitly cleared.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multirow{2}{*}{Events} & \texttt{Automaton.clearHashCode()} \\
+                              & \texttt{Automaton.recomputeHashCode()} \\
+      \midrule
+      Regular Expression & \texttt{(r | c+ r+)*} \\
+      \bottomrule
+    \end{tabular}
+    \caption{Recompute Hashcode After Clearing Hashcode}%
+    \label{tab:recompute-hash-after-clear-hash}
+  }
+\end{table}
+
+\paragraph{Restore Invariant After State Access (MOP)} Modifying states or
+transitions requires a call to \lstinline{restoreInvariant}.  If the states are
+accessed, it is possible they have been modified.
+
+\begin{table}[h]
+  {\footnotesize
+    \begin{tabular}{ll}
+      \toprule
+      \multirow{2}{*}{Events} & \texttt{Automaton.restoreInvariant()} \\
+                              & \texttt{Automaton.getStates()} \\
+      \midrule
+      Regular Expression & \texttt{(rI* | gS+ rI+)*} \\
+      \midrule
+    \end{tabular}
+    \caption{Restore Invariant after State Access}%
+    \label{tab:restore-invariant-after-state-access}
+  }
+\end{table}
+
+\section{Testing}\label{sec:testing}
+
+The software under test in the project is primarily for use in a program used
+for analysis of string constraints in Java, the Java String Analyzer
+(JSA)~\cite{strings2003}.  The string operations can also be used to implement
+other string constraint analysis programs, and the automata package can be used
+to implement automata outside of the string constraint analysis context.
+Therefore, no single interface or program was available for us to test.
+Testing was accomplished by creating JUnit tests that executed string
+operations in isolation or as part of a sequence.  In order to more thoroughly
+test the automaton package, JUnit tests were created that operated directly
+with the automata instead of through the string operations.
+
+\subsection{Test Cases}\label{sec:testing-cases}
+
+Each string operation is designed to modify an automata which represents a
+string or set of strings.  String operations extend either the
+\lstinline{UnaryOperation} or the \lstinline{BinaryOperation} classes.  These
+classes provide a single public method, \lstinline{op()}, that takes one or two
+automata as arguments.  Arguments other than automata are passed to the
+operation through the constructor.  String operations take a variety of other
+argument types such as char and string in this manner.  The string operations
+are used by instantiating an operation with arguments followed by calling the
+\lstinline{op()} method with the target automaton as arguments.  The return
+type of \lstinline{op()} is Automaton.
+
+In order to fully test the operations, characteristics of an automata such as
+length, alphabet and whether or not they accept the empty string or are empty
+were determined.  These characteristics were used in place of input parameters.
+Individual automata were created with characteristic combinations determined
+using two tools, Test Specification Language (TSL)~\cite{Ostrand_1988} and
+Combining Arrays through Simulated Annealing
+(CASA)~\cite{cohen96_combin_desig_approac_to_autom_test_gener}.  These
+characteristics are shown in Table~\ref{tab:automata-characteristics}
+
+\begin{table}[ht]
+  {\footnotesize
+    \begin{tabular}{lll}
+      \toprule
+      \multirow{3}{*}{Length} & MIN & 4 characters long \\
+                              & MED & 100 characters long \\
+                              & MAX & 200 characters long \\
+      \midrule
+      \multirow{3}{*}{Alphabet} & MIN & 4 characters \\
+                              & MED & 26 characters \\
+                              & MAX & All characters \\
+      \midrule
+      \multirow{2}{*}{Empty String} & YES & Accepts empty string \\
+                              & NO & Rejects empty string \\
+      \midrule
+      \multirow{2}{*}{Empty} & YES & Rejects all strings \\
+                              & NO & Accepts some strings \\
+      \bottomrule
+    \end{tabular}
+  }
+  \caption{Automata Characteristics}%
+  \label{tab:automata-characteristics}
+\end{table}
+
+TSL applies the Category Partition Method in order to determine test case
+parameter values.  Parameters are first categorized and further partitioned
+within each category.  These are then analyzed by the TSL tool and a
+comprehensive list of parameter value combinations produced.  Using the
+categories and partitions except the Empty category defined in
+Table~\ref{tab:automata-characteristics} as input to TSL generated \(18\)
+combinations.  The Empty category was implemented as a separate, empty
+automaton since being empty precluded having any other property.
+
+CASA applies Combinatorial Interaction Testing (CIT) as a way of reducing the
+number of required parameter value combinations.  Research has shown that a
+majority of errors are the result of pairs of input parameter values.  This
+means that it is possible to find a majority of errors by testing all possible
+pairs of input parameters.  Using CASA with the categories for length, alphabet
+and empty string produced \(9\) combinations.  These were matched to the
+corresponding TSL cases and \(9\) automata definitions were created.  Each
+string operation was tested with automata that fit these 9 definitions.
+
+A similar process was attempted in order to create the string operation
+sequences for testing.  Due to the large number of string operations the number
+of test cases required to achieve pair-wise testing in a sequence of \(3\)
+operations was \(529\) test cases.  Two of these combinations were implemented,
+but the length of time required to run them on the various automata types
+proved prohibitive.
+
+Input and output files from the TSL and CASA processes are provided in the TSL
+and CASA directories in the repository.
+
+\subsection{Testing Correctness}\label{sec:testing-correctness}
+
+Testing the correctness of the string operations was treated as an opportunity
+to create a set of regression tests rather than implementing specific tests for
+each string operation that targeted a specific behavior of a Java string
+operation.  In order to create these regression tests, correct behavior is
+assumed, and tests are created that are intended to verify continued correct
+behavior.
+
+In order to create the oracle of correct results, the ability to save the
+resulting automata from all string operation tests was built into the JUnit
+tests.  The resulting automata are serialized and stored in files under a
+specific directory.  The tests can be run in a mode that creates the test result
+files or uses the result files to verify correct behavior.
+
+\section{Results}\label{sec:results}
+
+\subsection{Coverage}\label{sec:results-coverage}
+
+All but three of the string operations achieved 100\% coverage in the
+\lstinline{op()} method.  The three operations where 100\% coverage of the
+\lstinline{op()} method was not achieved expose weaknesses in our choice of
+inputs.  In the case of \lstinline{ToUpperCase}, there is a branch that is
+taken only with extended character sets.  The use of these character sets was
+not considered when determining the characteristics of input automata.  There
+are two special cases in \lstinline{Contains} that were not covered with the
+input combinations: An input automata that is empty, and an input automata that
+is infinite.  Finally, the \lstinline{Replace6} operation has a special case in
+which the target of the replace is an empty string.
+
+The \lstinline{op()} method in \lstinline{Replace5}, \lstinline{CharAt2}, and
+\lstinline{Split} consist of a single statement that executes other operations.
+This led to low instruction and line coverage for these operations.
+
+Summarized coverage results are presented in Table~\ref{tab:code-coverage}.  A
+full coverage report in \texttt{HTML} format is provided in the \path{coverage}
+directory in the repository.
+
+\begin{table}[ht]
+  {\scriptsize
+    \begin{tabular}{lrrrr}
+      \toprule
+      \bf{Class} & \bf{Instruction} & \bf{Branch} & \bf{Line} & \bf{op()} \\
+      \midrule
+      Automaton & 74\% & 77\% & 74\% & NA \\
+      \midrule
+      MinimizationOperations & 99\% & 93\% & 97\% & NA \\
+      \midrule
+      CharAt1 & 92\% & 92\% & 90\% & 100\% \\
+      \midrule
+      CharAt2 & 50\% & NA & 40\% & 100\% \\
+      \midrule
+      Contains & 86\% & 79\% & 76\% & 88\% \\
+      \midrule
+      Delete & 89\% & 100\% & 83\% & 100\% \\
+      \midrule
+      DeleteCharAt & 89\% & 100\% & 82\% & 100\% \\
+      \midrule
+      Insert & 86\% & 100\% & 77\% & 100\% \\
+      \midrule
+      Postfix & 77\% & 100\% & 69\% & 100\% \\
+      \midrule
+      Prefix & 77\% & 100\% & 69\% & 100\% \\
+      \midrule
+      Replace1 & 65\% & 60\% & 69\% & 100\% \\
+      \midrule
+      Replace2 & 64\% & 57\% & 62\% & 100\% \\
+      \midrule
+      Replace3 & 62\% & 50\% & 62\% & 100\% \\
+      \midrule
+      Replace4 & 81\% & 100\% & 72\% & 100\% \\
+      \midrule
+      Replace5 & 32\% & NA & 38\% & 100\% \\
+      \midrule
+      Replace6 & 80\% & 72\% & 84\% & 98\% \\
+      \midrule
+      Reverse & 88\% & 100\% & 81\% & 100\% \\
+      \midrule
+      SetCharAt1 & 75\% & 75\% & 73\% & 100\% \\
+      \midrule
+      SetCharAt2 & 89\% & 100\% & 81\% & 100\% \\
+      \midrule
+      SetLength & 81\% & 100\% & 76\% & 100\% \\
+      \midrule
+      Split & 50\% & NA & 40\% & 100\% \\
+      \midrule
+      Substring & 81\% & 100\% & 74\% & 100\% \\
+      \midrule
+      ToLowerCase & 83\% & 90\% & 77\% & 100\% \\
+      \midrule
+      ToUpperCase & 64\% & 71\% & 63\% & 72\% \\
+      \midrule
+      Trim & 96\% & 87\% & 94\% & 100\% \\
+      \bottomrule
+    \end{tabular}
+  }
+  \caption{Code Coverage}%
+  \label{tab:code-coverage}
+\end{table}
+
+\subsection{Static Analysis}\label{sec:results-static-analysis}
+
+Coverity identified \(12\) defects in \(2\) categories and a defect density of
+\(0.63\).  These were easily examined and classified without the need for
+further tuning.  A general observation is that the default Java checks appear
+to be very conservative in what they identify as problems, which could be an
+attempt to avoid large amounts of false positives that require verification by
+developers.  The most interesting of these defects were resource leaks
+identified in the serialization and deserialization of several classes in the
+automaton package.  These defects could have been the source of specific
+problems that occurred when attempting to serialize and deserialize automata.
+Repeated serialization and deserialization of large automata led to a stack
+overflow exception.  Examination of the stack showed that the error happens at
+a point when input and output streams are in use.
+
+\subsection{Hash Code Not Set}\label{sec:results-hashcode-not-set}
+
+Sequential checks put in place to observe the sequence of
+\lstinline{clearHashcode()} and \lstinline{recomputeHashcode()} calls
+identified a string operation that failed to correctly set the hash code before
+returning.  The accessor method for the hashcode will recompute a hashcode of
+zero before returning a result.  This behavior masks the fact that an operation
+failed to set the hashcode correctly.  However, the instance variable that
+holds the hashcode in the automaton class is marked package private, which
+gives code inside the automaton package visibility to the value of this
+variable.  It is possible, therefore, that code exists within the automaton
+package that accesses this value directly and could possibly obtain an
+incorrect hashcode.
+
+\subsection{Assertion Failure}\label{sec:results-assertion-failure}
+
+Certain automata failed a deterministic assertion check in the string operation
+\lstinline{Replace6()}.  This assertion was present in the source code before
+analysis began.  The assertion asserts that an automata passed as an argument is
+deterministic after it was cloned.  It is difficult to say if the intent was to
+make sure that an argument was deterministic or that the clone operation
+returned a deterministic automata.  In either case, it appears that some
+automata operations that are used to return new automata or modify existing
+ones do not return deterministic automata.  In this case the functions related
+to repeating a given automata a number of times in order to make one that
+accepts longer strings does not return a deterministic automata when it appears
+it should.
+
+\subsection{Determinize and Minimize Calls}%
+\label{sec:results-determinize-minimize}
+
+The sequence of determinizing an automaton before minimizing was difficult to
+observe through MOP\@.  A call to \lstinline{determinize()} is the first
+statement within the \lstinline{minimize()} method.  While this would normally
+ensure that an automata was deterministic before the minimization occurs, it
+also led to multiple instances of a call sequence such as
+\lstinline{determinize()}-\lstinline{minimize()}-\lstinline{determinize()}.
+This is not necessarily a defect, but does indicate that the performance of the
+libraries could be improved with careful consideration of how the
+determinization and minimization occur.
+
+\section{Conclusion}
+
+The \lstinline{automaton} and \lstinline{string} libraries tend to be very
+robust, as expected from a mature pair of libraries.  There are certain issues
+of this age and the overall maintenance, but this did not impact the overall
+examination to a large degree.
+
+There are, however, several standout results of the two libraries.  There is a
+bug in the handling of hash codes.  Furthermore, there is a defect in the
+instance variable accessor modifiers that may allow more problematic code in
+future versions.  Some of the assumptions that are encoded by the assertions do
+not universally hold for all combinations of automata and operations.  Overall,
+a deeper inspection of the method call sequence may yield further improvements
+of both code organization and performance.
+
 \bibliographystyle{plain}
 \bibliography{references}
 
 \end{document}
+
+% LocalWords:  JML AspectJ JUnit accessor deserialization deserialize Coverity
+% LocalWords:  dereferences determinized determinizing automata hashcode TSL
+% LocalWords:  Determinize Postfix CASA Combinatorial Substring
