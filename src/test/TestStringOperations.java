@@ -12,7 +12,22 @@ import org.junit.runners.Suite.SuiteClasses;
 				Test_Replace5.class,
 				Test_Replace6.class,
 				Test_CharAt1.class,
-				Test_CharAt2.class})
+				Test_CharAt2.class,
+				Test_Contains.class,
+				Test_Delete.class,
+				Test_DeleteCharAt.class,
+				Test_Insert.class,
+				Test_Prefix.class,
+				Test_Postfix.class,
+				Test_Reverse.class,
+				Test_SetCharAt1.class,
+				Test_SetCharAt2.class,
+				Test_SetLength.class,
+				Test_Split.class,
+				Test_Substring.class,
+				Test_ToLowerCase.class,
+				Test_ToUpperCase.class,
+				Test_Trim.class})
 
 public class TestStringOperations {
 
