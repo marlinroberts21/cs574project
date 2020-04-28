@@ -96,6 +96,16 @@
       </javac>
     </target>
 
+    <target name="test" depends="compile">
+      <pathconvert property="CLASSPATH" refid="classpath"/>
+      <java classname="org.junit.runner.JUnitCore"
+            classpath="${CLASSPATH}:build"
+            fork="true">
+        <jvmarg value="-ea"/>
+        <arg value="test.TestStringOperations"/>
+      </java>
+    </target>
+
     <target name="randoop-compile">
       <mkdir dir="./build"/>
       <javac srcdir="src" destdir="./build" source="1.8" target="1.8" optimize="${optimize}"
