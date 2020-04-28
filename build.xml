@@ -84,7 +84,7 @@
             classpath="${CLASSPATH}:build"
             fork="true">
         <jvmarg value="-ea"/>
-        <arg value="dk.brics.string.tests.ReverseOperationTests"/>
+        <arg value="test.TestStringOperations"/>
       </java>
     </target>
 
