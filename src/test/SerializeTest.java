@@ -1,6 +1,7 @@
 package test;
 
 import dk.brics.automaton.Automaton;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -19,7 +20,7 @@ public class SerializeTest {
     //
     //		fileStream.close();
 
-    FileInputStream fileIn = new FileInputStream("cmp\\replace1_4");
+    FileInputStream fileIn = new FileInputStream("cmp" + File.separator + "replace1_4");
 
     a2 = Automaton.load(fileIn);
 

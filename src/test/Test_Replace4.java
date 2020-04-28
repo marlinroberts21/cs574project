@@ -6,6 +6,7 @@ import static test.FileOps.*;
 import dk.brics.automaton.Automaton;
 import dk.brics.string.stringoperations.Replace4;
 import dk.brics.string.stringoperations.UnaryOperation;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,7 +38,7 @@ public class Test_Replace4 {
   // common test settings
   static final boolean OUTPUT_AUTOMATA = true;
   static final boolean TEST_STRING_RESULTS = true;
-  static final String testDir = "cmp\\";
+  static final String testDir = "cmp" + File.separator;
 
   // parameter data source
   @Parameters(name = "replace4_{index}")

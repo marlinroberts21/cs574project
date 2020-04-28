@@ -6,6 +6,7 @@ import static test.FileOps.*;
 import dk.brics.automaton.Automaton;
 import dk.brics.string.stringoperations.Trim;
 import dk.brics.string.stringoperations.UnaryOperation;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,7 +22,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class Test_Trim {
-	static final String testDir = "cmp\\";
 
   private static final int MULT_LENGTH = 4;
 
@@ -38,6 +38,7 @@ public class Test_Trim {
   // common test settings
   static final boolean OUTPUT_AUTOMATA = true;
   static final boolean TEST_STRING_RESULTS = true;
+  static final String testDir = "cmp" + File.separator;
 
   // parameter data source
   @Parameters(name = "trim_{index}")
