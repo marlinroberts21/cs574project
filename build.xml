@@ -55,6 +55,9 @@
       <pathconvert property="CLASSPATH" refid="classpath"/>
       <exec executable="javamop">
         <env key="CLASSPATH" value="${CLASSPATH}" />
+        <arg value="-n"/>
+        <arg value="BricsStringMonitor"/>
+        <arg value="-merge"/>
         <arg value="${mop-files}"/>
       </exec>
     </target>
