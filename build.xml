@@ -51,7 +51,7 @@
     </target>
 
     <target name="mop-translate">
-      <pathconvert property="mop-files" refid="mop_files"/>
+      <pathconvert property="mop-files" refid="mop_files" pathsep=" "/>
       <pathconvert property="CLASSPATH" refid="classpath"/>
       <exec executable="javamop">
         <env key="CLASSPATH" value="${CLASSPATH}" />
