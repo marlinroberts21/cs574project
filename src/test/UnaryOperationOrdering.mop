@@ -1,5 +1,6 @@
-package dk.brics.string.stringoperations;
+package test;
 
+import dk.brics.string.stringoperations.UnaryOperation;
 import dk.brics.automaton.Automaton;
 
 UnaryOperationOrdering(UnaryOperation u){

@@ -1,5 +1,6 @@
-package dk.brics.string.stringoperations;
+package test;
 
+import dk.brics.string.stringoperations.Replace1;
 import dk.brics.automaton.Automaton;
 
 Replace1Ordering(Replace1 r){

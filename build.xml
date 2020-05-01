@@ -56,7 +56,7 @@
       <exec executable="javamop">
         <env key="CLASSPATH" value="${CLASSPATH}" />
         <arg value="-n"/>
-        <arg value="BricsStringMonitor"/>
+        <arg value="BricsString"/>
         <arg value="-merge"/>
         <arg value="${mop-files}"/>
       </exec>
