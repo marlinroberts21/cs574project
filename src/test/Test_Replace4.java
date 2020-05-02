@@ -23,10 +23,23 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class Test_Replace4 {
 
-  private static final int MULT_LENGTH = 4;
+	private final static int MULT_LENGTH = 4;
+	private final static int MIN_LENGTH = 4;
+	private final static int MED_LENGTH = 100;
+	private final static int MAX_LENGTH = 200;
 
-  // test specific objects
-  static Automaton a1, a2, a3, a4, a5, a6, b1, c1, preMin;
+	// test specific objects
+	static Automaton a1,a2,a3,a4,a5,a6,b1,c1,preMin,empty,emptyString,minAlpha,medAlpha,maxAlpha;
+	
+	static Automaton 	a_min_min_n,
+						a_min_med_y,
+						a_min_max_y,
+						a_med_min_n,
+						a_med_med_y,
+						a_med_max_n,
+						a_max_min_y,
+						a_max_med_n,
+						a_max_max_y;
 
   // assign parameters to public variables
   @Parameter(value = 0)
@@ -44,46 +57,66 @@ public class Test_Replace4 {
   @Parameters(name = "replace4_{index}")
   public static Collection<Object[]> parms() throws Exception {
     setUpBeforeClass();
-    return Arrays.asList(
-        new Object[][] {
-          {a1, "replace4_0"},
-          {a2, "replace4_1"},
-          {a3, "replace4_2"},
-          {a4, "replace4_3"},
-          {a5, "replace4_4"},
-          {a6, "replace4_5"}
-        });
+	return Arrays.asList(new Object[][]{	
+		{a_min_min_n,"replace4_0"},
+		{a_min_med_y,"replace4_1"},
+		{a_min_max_y,"replace4_2"},
+		{a_med_min_n,"replace4_3"},
+		{a_med_med_y,"replace4_4"},
+		{a_med_max_n,"replace4_5"},
+		{a_max_min_y,"replace4_6"},
+		{a_max_med_n,"replace4_7"},
+		{a_max_max_y,"replace4_8"}});
   }
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-
-    // short, concrete
-    a1 = Automaton.makeString("ABCD");
-    a1.setInfo("a1");
-
-    // short, symbolic
-    a2 = Automaton.makeAnyChar();
-    a2.setInfo("a2");
-    a2 = a2.repeat(1, MULT_LENGTH);
-
-    // medium, concrete
-    a3 = a1.repeat(MULT_LENGTH, MULT_LENGTH);
-    a3.setInfo("a3");
-
-    // medium, symbolic
-    a4 = Automaton.makeAnyChar();
-    a4.setInfo("a4");
-    a4 = a4.repeat(1, MULT_LENGTH ^ 2);
-
-    // long, concrete
-    a5 = a3.repeat(MULT_LENGTH, MULT_LENGTH);
-    a5.setInfo("a5");
-
-    // long, symbolic
-    a6 = Automaton.makeAnyChar();
-    a6.setInfo("a6");
-    a6 = a6.repeat(1, MULT_LENGTH ^ 3);
+		emptyString = Automaton.makeEmptyString();
+		empty = Automaton.makeEmpty();
+		
+		minAlpha = Automaton.makeCharRange('A', 'C');
+		minAlpha = minAlpha.union(Automaton.makeCharRange('a', 'c'));
+		
+		medAlpha = Automaton.makeCharRange('A', 'Z');
+		medAlpha = medAlpha.union(Automaton.makeCharRange('a', 'Z'));
+		
+		maxAlpha = Automaton.makeAnyChar();
+		
+		a_min_min_n = minAlpha.repeat(MIN_LENGTH);
+		a_min_med_y = medAlpha.repeat(MIN_LENGTH).union(emptyString);
+		a_min_max_y = maxAlpha.repeat(MIN_LENGTH).union(emptyString);		
+		a_med_min_n = minAlpha.repeat(MED_LENGTH);
+		a_med_med_y = medAlpha.repeat(MED_LENGTH).union(emptyString);
+		a_med_max_n = maxAlpha.repeat(MED_LENGTH);
+		a_max_min_y = minAlpha.repeat(MAX_LENGTH).union(emptyString);
+		a_max_med_n = medAlpha.repeat(MAX_LENGTH);
+		a_max_max_y = maxAlpha.repeat(MAX_LENGTH).union(emptyString);
+		// short, concrete
+		a1 = Automaton.makeString("ABCD");
+		a1.setInfo("a1");
+		
+		// short, symbolic
+		a2 = Automaton.makeAnyChar();
+		a2.setInfo("a2");
+		a2 = a2.repeat(1, MULT_LENGTH);
+		
+		// medium, concrete
+		a3 = a1.repeat(MULT_LENGTH, MULT_LENGTH);
+		a3.setInfo("a3");
+		
+		// medium, symbolic
+		a4 = Automaton.makeAnyChar();
+		a4.setInfo("a4");
+		a4 = a4.repeat(1, MULT_LENGTH^2);
+		
+		// long, concrete
+		a5 = a3.repeat(MULT_LENGTH, MULT_LENGTH);
+		a5.setInfo("a5");
+		
+		// long, symbolic
+		a6 = Automaton.makeAnyChar();
+		a6.setInfo("a6");
+		a6 = a6.repeat(1, MULT_LENGTH^3);
   }
 
   @AfterClass
@@ -96,15 +129,7 @@ public class Test_Replace4 {
 
   @After
   public void tearDown() throws Exception {
-    a1 = null;
-    // a2 = null;
-    a3 = null;
-    // a4 = null;
-    a5 = null;
-    // a6 = null;
-    b1 = null;
-    c1 = null;
-    preMin = null;
+
   }
 
   @Test

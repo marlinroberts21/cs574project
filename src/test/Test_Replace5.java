@@ -23,10 +23,23 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class Test_Replace5 {
 
-  private static final int MULT_LENGTH = 4;
+	private final static int MULT_LENGTH = 4;
+	private final static int MIN_LENGTH = 4;
+	private final static int MED_LENGTH = 100;
+	private final static int MAX_LENGTH = 200;
 
-  // test specific objects
-  static Automaton a1, a2, a3, a4, a5, a6, b1, c1, c2, preMin;
+	// test specific objects
+	static Automaton a1,a2,a3,a4,a5,a6,b1,c1,c2,preMin,empty,emptyString,minAlpha,medAlpha,maxAlpha;
+	
+	static Automaton 	a_min_min_n,
+						a_min_med_y,
+						a_min_max_y,
+						a_med_min_n,
+						a_med_med_y,
+						a_med_max_n,
+						a_max_min_y,
+						a_max_med_n,
+						a_max_max_y;
 
   // assign parameters to public variables
   @Parameter(value = 0)
@@ -49,10 +62,13 @@ public class Test_Replace5 {
     setUpBeforeClass();
     return Arrays.asList(
         new Object[][] {
-          {a2, a1, "replace5_0"},
-          {a1, a2, "replace5_1"},
-          {a4, a3, "replace5_2"},
-          {a3, a4, "replace5_3"},
+          {a_min_min_n, a_min_med_y, "replace5_0"},
+          {a_min_max_y, a_med_min_n, "replace5_1"},
+          {a_med_med_y, a_med_max_n, "replace5_2"},
+          
+          // serialization stack overflow *********
+          //{a_max_min_y, a_max_med_n, "replace5_3"},
+          
           {a6, a5, "replace5_4"},
           {a5, a6, "replace5_5"}
         });
@@ -60,7 +76,26 @@ public class Test_Replace5 {
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-
+		emptyString = Automaton.makeEmptyString();
+		empty = Automaton.makeEmpty();
+		
+		minAlpha = Automaton.makeCharRange('A', 'C');
+		minAlpha = minAlpha.union(Automaton.makeCharRange('a', 'c'));
+		
+		medAlpha = Automaton.makeCharRange('A', 'Z');
+		medAlpha = medAlpha.union(Automaton.makeCharRange('a', 'Z'));
+		
+		maxAlpha = Automaton.makeAnyChar();
+		
+		a_min_min_n = minAlpha.repeat(MIN_LENGTH);
+		a_min_med_y = medAlpha.repeat(MIN_LENGTH).union(emptyString);
+		a_min_max_y = maxAlpha.repeat(MIN_LENGTH).union(emptyString);		
+		a_med_min_n = minAlpha.repeat(MED_LENGTH);
+		a_med_med_y = medAlpha.repeat(MED_LENGTH).union(emptyString);
+		a_med_max_n = maxAlpha.repeat(MED_LENGTH);
+		a_max_min_y = minAlpha.repeat(MAX_LENGTH).union(emptyString);
+		a_max_med_n = medAlpha.repeat(MAX_LENGTH);
+		a_max_max_y = maxAlpha.repeat(MAX_LENGTH).union(emptyString);
     // short, concrete
     a1 = Automaton.makeString("ABCD");
     a1.setInfo("a1");
@@ -99,15 +134,7 @@ public class Test_Replace5 {
 
   @After
   public void tearDown() throws Exception {
-    a1 = null;
-    // a2 = null;
-    a3 = null;
-    // a4 = null;
-    a5 = null;
-    // a6 = null;
-    b1 = null;
-    c1 = null;
-    preMin = null;
+
   }
 
   @Test

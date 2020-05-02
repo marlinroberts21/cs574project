@@ -27,7 +27,11 @@ import org.junit.runners.Suite.SuiteClasses;
 				Test_Substring.class,
 				Test_ToLowerCase.class,
 				Test_ToUpperCase.class,
-				Test_Trim.class})
+				Test_Trim.class,
+				Test_Minimize.class,
+				Test_Union.class,
+				Test_Intersect.class,
+				Test_Minus.class})
 
 public class TestStringOperations {
 

@@ -22,11 +22,28 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class Test_Replace1 {
+	
+	private final static int MULT_LENGTH = 4;
+	private final static int MIN_LENGTH = 4;
+	private final static int MED_LENGTH = 100;
+	private final static int MAX_LENGTH = 200;
 
-  private static final int MULT_LENGTH = 4;
-
-  // test specific objects
-  static Automaton a1, a2, a3, a4, a5, a6, b1, c1, preMin;
+	// test specific objects
+	static Automaton 	a1,a2,a3,a4,a5,a6,
+						b1,c1,
+						preMin,empty,emptyString,
+						minAlpha,medAlpha,maxAlpha;
+	
+	static Automaton 	a_min_min_n,
+						a_min_med_y,
+						a_min_max_y,
+						a_med_min_n,
+						a_med_med_y,
+						a_med_max_n,
+						a_max_min_y,
+						a_max_med_n,
+						a_max_max_y;
+	
 
   // assign parameters to public variables
   @Parameter(value = 0)
@@ -50,28 +67,48 @@ public class Test_Replace1 {
   @Parameters(name = "replace1_{index}")
   public static Collection<Object[]> parms() throws Exception {
     setUpBeforeClass();
-    return Arrays.asList(
-        new Object[][] {
-          {'A', 'Z', a1, "replace1_0"},
-          {'Z', 'B', a1, "replace1_1"},
-          {'A', 'Z', a3, "replace1_2"},
-          {'Z', 'B', a3, "replace1_3"},
-          {'A', 'Z', a5, "replace1_4"},
-          {'Z', 'B', a5, "replace1_5"}
-        });
+	return Arrays.asList(new Object[][]{	
+		{'A','Z',a_min_min_n,"replace1_0"},
+		{'Z','B',a_min_med_y,"replace1_1"},
+		{'A','Z',a_min_max_y,"replace1_2"},
+		{'Z','B',a_med_min_n,"replace1_3"},
+		{'A','Z',a_med_med_y,"replace1_4"},
+		{'Z','B',a_med_max_n,"replace1_5"},
+		{'Z','B',a_max_min_y,"replace1_6"},
+		{'Z','B',a_max_med_n,"replace1_7"},
+		{'Z','B',a_max_max_y,"replace1_8"}});
   }
 
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-
-    a1 = Automaton.makeString("ABCD");
-    a1.setInfo("a1");
-
-    a3 = a1.repeat(MULT_LENGTH, MULT_LENGTH);
-    a3.setInfo("a3");
-
-    a5 = a3.repeat(MULT_LENGTH, MULT_LENGTH);
-    a5.setInfo("a5");
+	  
+		emptyString = Automaton.makeEmptyString();
+		empty = Automaton.makeEmpty();
+		
+		minAlpha = Automaton.makeCharRange('A', 'C');
+		minAlpha = minAlpha.union(Automaton.makeCharRange('a', 'c'));
+		medAlpha = Automaton.makeCharRange('A', 'Z');
+		medAlpha = medAlpha.union(Automaton.makeCharRange('a', 'Z'));
+		maxAlpha = Automaton.makeAnyChar();
+		
+		a_min_min_n = minAlpha.repeat(MIN_LENGTH);
+		a_min_med_y = medAlpha.repeat(MIN_LENGTH).union(emptyString);
+		a_min_max_y = maxAlpha.repeat(MIN_LENGTH).union(emptyString);		
+		a_med_min_n = minAlpha.repeat(MED_LENGTH);
+		a_med_med_y = medAlpha.repeat(MED_LENGTH).union(emptyString);
+		a_med_max_n = maxAlpha.repeat(MED_LENGTH);
+		a_max_min_y = minAlpha.repeat(MAX_LENGTH).union(emptyString);
+		a_max_med_n = medAlpha.repeat(MAX_LENGTH);
+		a_max_max_y = maxAlpha.repeat(MAX_LENGTH).union(emptyString);
+		
+		a1 = Automaton.makeString("ABCD");
+		a1.setInfo("a1");
+		
+		a3 = a1.repeat(MULT_LENGTH, MULT_LENGTH);
+		a3.setInfo("a3");
+		
+		a5 = a3.repeat(MULT_LENGTH, MULT_LENGTH);
+		a5.setInfo("a5");
   }
 
   @AfterClass
@@ -84,15 +121,7 @@ public class Test_Replace1 {
 
   @After
   public void tearDown() throws Exception {
-    a1 = null;
-    // a2 = null;
-    a3 = null;
-    // a4 = null;
-    a5 = null;
-    // a6 = null;
-    b1 = null;
-    c1 = null;
-    preMin = null;
+
   }
 
   @Test
