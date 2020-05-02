@@ -12,100 +12,143 @@ import dk.brics.string.stringoperations.*;
 import java.io.*;
 import java.util.*;
 
-automata(UnaryOperation u) {
 
-	// counters for events
-	int unaryop = 0;
+// Argument Automata Cloning
+// checks for cloning of automata passed as argument to unary operation
+// ----------------------------------------------------------------------
+automata_arg_clone_unary (UnaryOperation u, Automaton a) {
 	
-	event Uop before(UnaryOperation u) : call(public * op(Automaton)) && target(u) {
-		 System.err.println("! Unary.op");
-		 ++unaryop;
+	event Uop before(UnaryOperation u, Automaton a) : call(public * op(Automaton)) && target(u)  && args(a) {
+		 // System.err.println("! Unary.op");
 	}
-
- 
-	// end of program event, used for reporting results. 
-  	event endProg before() : endProgram() {
- 		System.err.println("UnaryOps: " + unaryop);
- 	}
- 
-	ere : Uop* endProg
+	
+	event aClone before(Automaton a) : call(public * clone()) && target(a) {
+		 // System.err.println("! a.clone");
+	}
+	  
+	ere : aClone* Uop aClone+
  
 	@fail{
-		System.err.println("! Error: Uop...");
-		__RESET;
- 	}
+		System.err.println("! Warning: UnaryOp without argument clone ...");
+		__RESET;}
+} // ----------------------------------------------------------------------
 
-}
 
-minimization(Automaton a1) {
 
-	// counters for events
-	static int minimize = 0;
-	static int determinize = 0;
+// Argument Automata Cloning
+// checks for cloning of automata passed as argument to binary operation
+// ---------------------------------------------------------------------- 
+automata_arg_clone_binary (BinaryOperation bo, Automaton a, Automaton b) {
 	
- 	// event monitor that captures Automata.minimize(), tracks count of calls
-	event m_minimize before(Automaton a1) : call(public * minimize()) && target(a1) {
-		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! minimize call ");
-		 ++minimize;
+	event Bop before (BinaryOperation bo, Automaton a, Automaton b) : call(public * op(Automaton,Automaton)) && target(bo)  && args(a,b) {
+		 // System.err.println("! Binary.op");
 	}
 	
-	event m_determinize before(Automaton a1) : call(public * determinize()) && target(a1) {
-		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! determinize call ");
-		 ++determinize;
+	event aBinClone before (Automaton a) : call(public * clone()) && target(a) {
+		 // System.err.println("! a.clone");
 	}
 	
-	
-	event m_reduce before(Automaton a1) : call(public * reduce()) && target(a1) {
-		 System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! reduce call ");
-		 //++determinize;
+	event bBinClone before (Automaton b) : call(public * clone()) && target(b) {
+		 // System.err.println("! b.clone");
 	}
-	
-	/*
-	event m_totalize before(Automaton a1) : call(public * totalize()) && target(a1) {
-		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! totalize call ");
-		 //++determinize;
-	}
-	*/
-	
-	event m_removeDeadTransitions before(Automaton a1) : call(public * removeDeadTransitions()) && target(a1) {
-		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! removeDeadTransitions call ");
-		 //++determinize;
-	}
-	
-	/*
-	event m_restoreInvariant before(Automaton a1) : call(public * restoreInvariant()) && target(a1) {
-		 System.err.println("! restoreInvariant call");
-		 //++determinize;
-	}
-	*/
-	
-	event m_clearHashCode before(Automaton a1) : call(* clearHashCode()) && target(a1) {
-		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! clearHashCode call ");
-		 //++determinize;
-	}
-	
-	event m_recomputeHashCode before(Automaton a1) : call(* recomputeHashCode()) && target(a1) {
-		  System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! recomputeHasCode call ");
-		 //++determinize;
-	}
- 
-	// end of program event, used for reporting results. 
-  	event endProg2 before() : endProgram() {
- 		System.err.println("Automaton.minimize: " + minimize + "  Automaton.determinize: " + determinize);
- 	}
-  
-	//   
-	//ere : (m_determinize* | m_determinize m_minimize)* endProg2
-	//ere : (m_determinize | m_minimize |  m_reduce | m_totalize | m_removeDeadTransitions | m_restoreInvariant | m_clearHashCode | m_recomputeHashCode)* endProg2
-	//ere : (m_determinize | m_minimize |  m_reduce | m_totalize | m_removeDeadTransitions | m_restoreInvariant )* endProg2
-
-	ere : (m_determinize | m_minimize |  m_reduce | m_removeDeadTransitions | m_clearHashCode | m_recomputeHashCode)* endProg2
-	
+	  
+	ere : (aBinClone* | bBinClone*)* Bop ((aBinClone+ bBinClone+) | (bBinClone+ aBinClone+))*
  
 	@fail{
-		System.err.println("! Error: ...");
-		__RESET;
- 	}
+		System.err.println("! Warning: BinaryOp without argument clone(s) ...");
+		__RESET;}
+} // ----------------------------------------------------------------------
 
-}
+
+
+// Recompute Hashcode After Clearing Hashcode
+// checks for clearHashCode without recomputeHashCode
+// NOTE: CharAt2() fails this check *outside* of the test environment
+// ---------------------------------------------------------------------- 
+automata_hashcode (Automaton a) {
+
+	event clearHash before (Automaton a) : call(* clearHashCode()) && target(a) {
+		 // System.err.println(((a.getInfo() != null) ? (String) a.getInfo() : "??") + " ! clearHashCode call ");
+	}
+	
+	event recomputeHash before (Automaton a) : call(* recomputeHashCode()) && target(a) {
+		 // System.err.println(((a.getInfo() != null) ? (String) a.getInfo() : "??") + " ! recomputeHasCode call ");
+	}
+
+	ere : (recomputeHash* | clearHash+ recomputeHash+)*
+ 
+	@fail{
+		System.err.println("! Warning: clearHashCode without recomputeHashCode ...");
+		__RESET;}
+} // ----------------------------------------------------------------------
+
+
+
+// Determinize Before Minimize
+// checks for determinize before minimize
+// NOTE: minimize changed to after to preserve order. Determinize placed inside minimize.
+// NOTE: the contains() operations STILL manages to fail this. Huh?
+// ---------------------------------------------------------------------- 
+automata_determinize (Automaton a) {
+
+	event determinize before (Automaton a) : call(* determinize()) && target(a) {
+		 // System.err.println(((a.getInfo() != null) ? (String) a.getInfo() : "??") + " ! determinize call ");
+	}
+	
+	event minimize after (Automaton a) : call(* minimize()) && target(a) {
+		 // System.err.println(((a.getInfo() != null) ? (String) a.getInfo() : "??") + " ! minimize call ");
+	}
+
+	ere : (determinize | determinize minimize)*
+ 
+	@fail{
+		System.err.println("! Warning: minimize without determinize ...");
+		__RESET;}
+} // ----------------------------------------------------------------------
+
+
+
+// Recompute Hashcode After Minimize
+// checks for recomputeHashCode after minimize
+// NOTE: minimize call chain has no specific recomputeHashCode() call. 
+// ---------------------------------------------------------------------- 
+automata_minimize_recomputehashcode (Automaton a) {
+
+	event amr_recomputeHashCode before (Automaton a) : call(* recomputeHashCode()) && target(a) {
+		 // System.err.println(((a.getInfo() != null) ? (String) a.getInfo() : "??") + " ! recomputeHashCode call ");
+	}
+	
+	event amr_minimize after (Automaton a) : call(* minimize()) && target(a) {
+		 // System.err.println(((a.getInfo() != null) ? (String) a.getInfo() : "??") + " ! minimize call ");
+	}
+
+	ere : (amr_recomputeHashCode | amr_minimize amr_recomputeHashCode)*
+ 
+	@fail{
+		System.err.println("! Warning: minimize without recomputeHashCode ...");
+		__RESET;}
+} // ----------------------------------------------------------------------
+
+
+
+// Restore Invariant After Accessing States
+// checks for restoreInvariant after getStates
+// NOTE: if the states are accessed they are likely changed, so we check to see if  restoreInvariant called
+// ---------------------------------------------------------------------- 
+automata_restoreinvariant(Automaton a1) {
+
+	event ri_getStates before(Automaton a1) : call(public * getStates()) && target(a1) {
+		  // System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! m_getStates call ");
+	}
+	
+	event ri_restoreInvariant before(Automaton a1) : call(public * restoreInvariant()) && target(a1) {
+		  // System.err.println(((a1.getInfo() != null) ? (String) a1.getInfo() : "??") + " ! m_restoreInvariant call ");
+	}
+ 
+	ere : (ri_getStates* | ri_restoreInvariant* | ri_getStates+  ri_restoreInvariant+)*
+	
+	@fail{
+		System.err.println("! Warning: states accessed with no restoreInvariant");
+		__RESET;}
+} // ----------------------------------------------------------------------
 
