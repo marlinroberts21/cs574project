@@ -1,0 +1,885 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Jimple2Intermediate.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">Jimple2Intermediate.java</span></div><h1>Jimple2Intermediate.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.log4j.Logger;
+
+import soot.ArrayType;
+import soot.BooleanType;
+import soot.ByteType;
+import soot.CharType;
+import soot.DoubleType;
+import soot.FloatType;
+import soot.Hierarchy;
+import soot.IntType;
+import soot.LongType;
+import soot.NullType;
+import soot.PrimType;
+import soot.RefType;
+import soot.Scene;
+import soot.ShortType;
+import soot.SootClass;
+import soot.SootField;
+import soot.SootMethod;
+import soot.Type;
+import soot.Value;
+import soot.ValueBox;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.ParameterRef;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.MethodNameTaintAnalysisStrategy;
+import dk.brics.string.StringAnalysis;
+import dk.brics.string.external.ExternalVisibility;
+import dk.brics.string.external.Resolver;
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.ArrayCorrupt;
+import dk.brics.string.intermediate.AssertStatement;
+import dk.brics.string.intermediate.Call;
+import dk.brics.string.intermediate.FieldAssignment;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Nop;
+import dk.brics.string.intermediate.ObjectCorrupt;
+import dk.brics.string.intermediate.PrimitiveInit;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.StringAssignment;
+import dk.brics.string.intermediate.StringBufferCorrupt;
+import dk.brics.string.intermediate.StringInit;
+import dk.brics.string.intermediate.StringStatement;
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.intermediate.VariableType;
+import dk.brics.string.stringoperations.Basic;
+
+/**
+ * Converter from Jimple code to intermediate representation.
+ * &lt;p/&gt;
+ * Basic rundown of the translation process:
+ * &lt;ol&gt;
+ * &lt;li&gt;Create intermediate {@link Method} objects with empty bodies for each
+ * method in the application.
+ * &lt;li&gt;Create the &lt;i&gt;wrapper&lt;/i&gt; method, which is a special method that calls
+ * all externally visible methods with corrupt/unknown arguments.
+ * &lt;li&gt;Create methods modelling the &lt;tt&gt;toString&lt;/tt&gt;-method for each
+ * application class.
+ * &lt;li&gt;Translate the method bodies from jimple into intermediate code.
+ * &lt;/ol&gt;
+ * The first three steps are handled by this class, while the fourth and most
+ * complicated step is delegated to several other classes. See
+ * {@link MethodTranslator} for an overview how how step four is executed.
+ * 
+ * @see dk.brics.string.StringAnalysis
+ * @see MethodTranslator
+ */
+public class Jimple2Intermediate implements TranslationContext {
+
+    /**
+     * Methods being generated.
+     */
+<span class="nc" id="L86">    private List&lt;Method&gt; methods = new LinkedList&lt;Method&gt;();</span>
+
+    /**
+     * Map from signatures to methods.
+     */
+<span class="nc" id="L91">    private Map&lt;String, Method&gt; sms_m = new HashMap&lt;String, Method&gt;();</span>
+
+    /**
+     * For each method signature, map from real-arg number to relevant-arg
+     * number.
+     */
+<span class="nc" id="L97">    private Map&lt;String, int[]&gt; sms_sa_ma = new HashMap&lt;String, int[]&gt;();</span>
+
+    /**
+     * For each method signature, map from relevant-arg number to real-arg
+     * number.
+     */
+<span class="nc" id="L103">    private Map&lt;String, int[]&gt; sms_ma_sa = new HashMap&lt;String, int[]&gt;();</span>
+
+    /**
+     * Defines which methods are accessible from external code.
+     */
+    private ExternalVisibility ext;
+
+    /**
+     * The taint analysis strategy for determining taint strings
+     */
+<span class="nc" id="L113">    private TaintAnalysisStrategy taintAnalysisStrategy = new MethodNameTaintAnalysisStrategy(</span>
+<span class="nc" id="L114">            Collections.&lt;String&gt; emptyList());</span>
+
+    /**
+     * Hotspots (all expressions if null).
+     */
+    private Collection&lt;ValueBox&gt; hotspots;
+
+    /**
+     * Map from classes to their &lt;code&gt;toString&lt;/code&gt; methods.
+     */
+<span class="nc" id="L124">    private Map&lt;SootClass, Method&gt; tostring_targets = new HashMap&lt;SootClass, Method&gt;();</span>
+
+    /**
+     * Map from names of a classes to their &lt;code&gt;toString&lt;/code&gt; methods.
+     */
+<span class="nc" id="L129">    private Map&lt;String, Method&gt; tostring_methods = new HashMap&lt;String, Method&gt;();</span>
+
+    /**
+     * Hotspots for &lt;code&gt;toString&lt;/code&gt; methods. Used by
+     * {@link StringAnalysis#getTypeAutomaton(VariableType)}.
+     */
+<span class="nc" id="L135">    private Map&lt;SootClass, StringStatement&gt; tostring_hotspots = new HashMap&lt;SootClass, StringStatement&gt;();</span>
+
+    /**
+     * Cache of automata for primitive types and null type.
+     */
+<span class="nc" id="L140">    private Map&lt;Type, Automaton&gt; type_automaton = new HashMap&lt;Type, Automaton&gt;();</span>
+
+    /**
+     * Class hierarchy, provided by Soot.
+     */
+    private Hierarchy class_hierarchy;
+
+    /**
+     * Map from Jimple expression to intermediate representation statement.
+     */
+<span class="nc" id="L150">    private Map&lt;ValueBox, Statement&gt; trans_map = new HashMap&lt;ValueBox, Statement&gt;();</span>
+
+    /**
+     * Map from Jimple expression to source file name.
+     */
+<span class="nc" id="L155">    private Map&lt;ValueBox, String&gt; sourcefile_map = new HashMap&lt;ValueBox, String&gt;();</span>
+
+    /**
+     * Map from Jimple expression to class name.
+     */
+<span class="nc" id="L160">    private Map&lt;ValueBox, String&gt; class_map = new HashMap&lt;ValueBox, String&gt;();</span>
+
+    /**
+     * Map from Jimple expression to method name.
+     */
+<span class="nc" id="L165">    private Map&lt;ValueBox, String&gt; method_map = new HashMap&lt;ValueBox, String&gt;();</span>
+
+    /**
+     * Map from Jimple expression to line number.
+     */
+<span class="nc" id="L170">    private Map&lt;ValueBox, Integer&gt; line_map = new HashMap&lt;ValueBox, Integer&gt;();</span>
+    
+<span class="nc" id="L172">    private Map&lt;Value, Variable&gt; expression_map = new HashMap&lt;Value, Variable&gt;();</span>
+
+<span class="nc" id="L174">    private Logger log = Logger.getLogger(Jimple2Intermediate.class); // FIXME: check uses of log4j ?!</span>
+
+    private VariableManager variableManager;
+    
+    private AbstractDispatchStrategy abstractDispatchStrategy;
+    
+    private StaticStringTypes staticStringTypes;
+    
+    /**
+     * Number of skipped string expressions. String constants are skipped if
+     * arguments to non-application class methods that are not hotspots.
+     */
+    int skipped;
+
+    private MethodTranslator methodTranslator;
+
+    private Application application;
+
+    /**
+     * Constructs a new converter using no resolvers.
+     */
+    @Deprecated
+    public Jimple2Intermediate(ExternalVisibility ext) {
+<span class="nc" id="L197">        this(new Jimple2IntermediateFactoryImpl(ext, Collections.&lt;Resolver&gt; emptySet()));</span>
+<span class="nc" id="L198">    }</span>
+
+    /**
+     * Constructs a new converter using the given resolvers.
+     */
+    @Deprecated
+    public Jimple2Intermediate(ExternalVisibility ext,
+            Collection&lt;? extends Resolver&gt; resolvers) {
+<span class="nc" id="L206">        this(new Jimple2IntermediateFactoryImpl(ext, resolvers));</span>
+<span class="nc" id="L207">    }</span>
+
+    @Deprecated
+    public Jimple2Intermediate(TaintAnalysisStrategy taintAnalysisStrategy,
+            Collection&lt;? extends Resolver&gt; resolvers, ExternalVisibility ext) {
+<span class="nc" id="L212">        this(new Jimple2IntermediateFactoryImpl(ext, taintAnalysisStrategy, resolvers));</span>
+<span class="nc" id="L213">    }</span>
+
+<span class="nc" id="L215">    public Jimple2Intermediate(Jimple2IntermediateFactory af) {</span>
+<span class="nc" id="L216">        this.taintAnalysisStrategy = af.getTaintAnalysisStrategy();</span>
+<span class="nc" id="L217">        this.ext = af.getExternallyVisible();</span>
+<span class="nc" id="L218">        this.methodTranslator = af.getMethodTranslator();</span>
+<span class="nc" id="L219">        this.staticStringTypes = af.getStaticStringTypes();</span>
+<span class="nc" id="L220">    }</span>
+    
+    /**
+     * Translates the application classes considering all expressions as
+     * hotspots.
+     */
+    public Application translateApplicationClasses() {
+<span class="nc" id="L227">        return translateApplicationClasses(null);</span>
+    }
+    
+    /**
+     * Translates the application classes considering the given expressions as
+     * hotspots.
+     */
+    public Application translateApplicationClasses(Collection&lt;ValueBox&gt; hotspots) {
+<span class="nc" id="L235">        applicationClasses = new ArrayList&lt;SootClass&gt;();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">        for (SootClass clazz : Scene.v().getApplicationClasses()) {</span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">            if (!clazz.isPhantom() &amp;&amp; !clazz.isPhantomClass()) {// no idea what the difference between these two are</span>
+<span class="nc" id="L238">                applicationClasses.add(clazz);</span>
+            }
+        }
+        
+<span class="nc" id="L242">        this.application = new Application();</span>
+<span class="nc" id="L243">        this.variableManager = new VariableManager(application, this);</span>
+<span class="nc" id="L244">        log.info(&quot;Translating classes to intermediate form...&quot;);</span>
+<span class="nc" id="L245">        this.hotspots = hotspots;</span>
+        
+        // load ALL classes we might need before creating the hierarchy!!
+<span class="nc" id="L248">        Scene.v().getSootClass(&quot;java.util.Iterator&quot;);</span>
+<span class="nc" id="L249">        Scene.v().getSootClass(&quot;java.util.Collection&quot;);</span>
+<span class="nc" id="L250">        class_hierarchy = new Hierarchy();</span>
+<span class="nc" id="L251">        this.abstractDispatchStrategy = new AbstractDispatchClassHierarchy(class_hierarchy);</span>
+<span class="nc" id="L252">        skipped = 0;</span>
+<span class="nc" id="L253">        makeMethods();</span>
+<span class="nc" id="L254">        makeWrapperMethod();</span>
+<span class="nc" id="L255">        makeToStringMethods();</span>
+<span class="nc" id="L256">        translate();</span>
+<span class="nc" id="L257">        removeNops();</span>
+<span class="nc" id="L258">        return application;</span>
+    }
+
+    public boolean isHotspot(ValueBox expr) {
+<span class="nc bnc" id="L262" title="All 4 branches missed.">        return hotspots == null || hotspots.contains(expr);</span>
+    }
+
+    /**
+     * Returns the method object for the given signature.
+     */
+    public Method getMethod(String signature) {
+<span class="nc" id="L269">        return sms_m.get(signature);</span>
+    }
+
+    /**
+     * Returns the relevant-arg numbers for the given method.
+     */
+    public int[] getRelevantArgNumbers(String signature) {
+<span class="nc" id="L276">        return sms_sa_ma.get(signature);</span>
+    }
+
+    /**
+     * Returns the translation map. &lt;code&gt;translateApplicationClasses&lt;/code&gt;
+     * must be called first.
+     * 
+     * @return map from Jimple expression to intermediate representation
+     *         statement
+     */
+    public Map&lt;ValueBox, Statement&gt; getTranslationMap() {
+<span class="nc" id="L287">        return trans_map;</span>
+    }
+
+    /**
+     * Returns the number of string constants that have been skipped because
+     * they are non-hotspot arguments to non-application class methods.
+     */
+    public int getNumberOfExpsSkipped() {
+<span class="nc" id="L295">        return skipped;</span>
+    }
+
+    /**
+     * Returns hotspots for &lt;code&gt;toString&lt;/code&gt; methods.
+     */
+    public Map&lt;SootClass, StringStatement&gt; getToStringHotspotMap() {
+<span class="nc" id="L302">        return tostring_hotspots;</span>
+    }
+
+    /**
+     * Returns source file name for each expression.
+     */
+    public Map&lt;ValueBox, String&gt; getSourceFileMap() {
+<span class="nc" id="L309">        return sourcefile_map;</span>
+    }
+
+    /**
+     * Returns class name for each expression.
+     */
+    public Map&lt;ValueBox, String&gt; getClassNameMap() {
+<span class="nc" id="L316">        return class_map;</span>
+    }
+
+    /**
+     * Returns method name for each expression.
+     */
+    public Map&lt;ValueBox, String&gt; getMethodNameMap() {
+<span class="nc" id="L323">        return method_map;</span>
+    }
+
+    /**
+     * Returns line number for each expression.
+     */
+    public Map&lt;ValueBox, Integer&gt; getLineNumberMap() {
+<span class="nc" id="L330">        return line_map;</span>
+    }
+
+    /**
+     * Prepares &lt;code&gt;Method&lt;/code&gt; objects for application classes.
+     */
+    void makeMethods() {
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        for (SootClass sc : getApplicationClasses()) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            for (SootMethod sm : sc.getMethods()) {</span>
+<span class="nc" id="L339">                List&lt;Variable&gt; vars = new LinkedList&lt;Variable&gt;();</span>
+<span class="nc" id="L340">                List&lt;Type&gt; params = getParameterTypes(sm);</span>
+<span class="nc" id="L341">                int[] sa_ma = new int[params.size()];</span>
+<span class="nc" id="L342">                int[] ma_sa = new int[params.size()];</span>
+<span class="nc" id="L343">                int ma = 0;</span>
+<span class="nc" id="L344">                int sa = 0;</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                for (Type pt : params) {</span>
+                    // if (isSType(pt)) {
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                    if (fromSootType(pt) != VariableType.NONE) {</span>
+<span class="nc" id="L348">                        vars.add(makeVariable(pt));</span>
+<span class="nc" id="L349">                        sa_ma[sa] = ma;</span>
+<span class="nc" id="L350">                        ma_sa[ma] = sa;</span>
+<span class="nc" id="L351">                        ma++;</span>
+<span class="nc" id="L352">                    } else {</span>
+<span class="nc" id="L353">                        sa_ma[sa] = -1;</span>
+                    }
+<span class="nc" id="L355">                    sa++;</span>
+                }
+<span class="nc" id="L357">                Variable[] var_array = vars.toArray(new Variable[0]);</span>
+<span class="nc" id="L358">                Method m = new Method(application, sm.getName(), var_array);</span>
+<span class="nc" id="L359">                methods.add(m);</span>
+<span class="nc" id="L360">                sms_m.put(sm.getSignature(), m);</span>
+<span class="nc" id="L361">                sms_sa_ma.put(sm.getSignature(), sa_ma);</span>
+<span class="nc" id="L362">                sms_ma_sa.put(sm.getSignature(), ma_sa);</span>
+            }
+        }
+<span class="nc" id="L365">    }</span>
+
+    /**
+     * Makes &lt;code&gt;toString&lt;/code&gt; methods for basic wrapper classes and
+     * application classes.
+     */
+    void makeToStringMethods() {
+        // Make basic tostring methods
+<span class="nc" id="L373">        makeBasicToStringMethod(null, &quot;java.lang.Object&quot;, Basic</span>
+<span class="nc" id="L374">                .makeObjectString());</span>
+<span class="nc" id="L375">        makeBasicToStringMethod(BooleanType.v(), &quot;java.lang.Boolean&quot;, Basic</span>
+<span class="nc" id="L376">                .makeBooleanString());</span>
+<span class="nc" id="L377">        makeBasicToStringMethod(ByteType.v(), &quot;java.lang.Byte&quot;, Basic</span>
+<span class="nc" id="L378">                .makeByteString());</span>
+<span class="nc" id="L379">        makeBasicToStringMethod(CharType.v(), &quot;java.lang.Character&quot;, Basic</span>
+<span class="nc" id="L380">                .makeCharacterString());</span>
+<span class="nc" id="L381">        makeBasicToStringMethod(DoubleType.v(), &quot;java.lang.Double&quot;, Basic</span>
+<span class="nc" id="L382">                .makeDoubleString());</span>
+<span class="nc" id="L383">        makeBasicToStringMethod(FloatType.v(), &quot;java.lang.Float&quot;, Basic</span>
+<span class="nc" id="L384">                .makeFloatString());</span>
+<span class="nc" id="L385">        makeBasicToStringMethod(IntType.v(), &quot;java.lang.Integer&quot;, Basic</span>
+<span class="nc" id="L386">                .makeIntegerString());</span>
+<span class="nc" id="L387">        makeBasicToStringMethod(LongType.v(), &quot;java.lang.Long&quot;, Basic</span>
+<span class="nc" id="L388">                .makeLongString());</span>
+<span class="nc" id="L389">        makeBasicToStringMethod(ShortType.v(), &quot;java.lang.Short&quot;, Basic</span>
+<span class="nc" id="L390">                .makeShortString());</span>
+        
+        // Make tostring methods for application classes
+        // Link toString calls to the hotspots for all superclasses of the
+        // receiver type
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        for (SootClass ac : getApplicationClasses()) {</span>
+<span class="nc" id="L396">            Method m = new Method(application, ac.getName() + &quot;.toString&quot;,</span>
+<span class="nc" id="L397">                    new Variable[0]);</span>
+<span class="nc" id="L398">            methods.add(m);</span>
+<span class="nc" id="L399">            tostring_methods.put(ac.getName(), m);</span>
+<span class="nc" id="L400">            Variable var = application.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L401">            StringStatement spot = new StringAssignment(var, var);</span>
+<span class="nc" id="L402">            m.addStatement(spot);</span>
+<span class="nc" id="L403">            Return ret = new Return(var);</span>
+<span class="nc" id="L404">            m.addStatement(ret);</span>
+<span class="nc" id="L405">            spot.addSucc(ret);</span>
+<span class="nc" id="L406">            tostring_hotspots.put(ac, spot); // these hotspots are used by</span>
+                                             // StringAnalysis.getTypeAutomaton
+            Collection&lt;SootClass&gt; subtypes;
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            if (ac.isInterface())</span>
+<span class="nc" id="L410">                subtypes = class_hierarchy.getImplementersOf(ac);</span>
+            else
+<span class="nc" id="L412">                subtypes = class_hierarchy.getSubclassesOfIncluding(ac);</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">            for (SootClass ac2 : subtypes) {</span>
+<span class="nc bnc" id="L414" title="All 6 branches missed.">                if (ac2.isPhantom() || ac2.isPhantomClass() || ac2.isInterface())</span>
+<span class="nc" id="L415">                    continue;</span>
+<span class="nc" id="L416">                Method target = tostring_targets.get(ac2);</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">                if (target == null)</span>
+<span class="nc" id="L418">                    continue;</span>
+<span class="nc" id="L419">                Call call = new Call(var, target, new Variable[0]);</span>
+<span class="nc" id="L420">                m.addStatement(call);</span>
+<span class="nc" id="L421">                m.getEntry().addSucc(call);</span>
+<span class="nc" id="L422">                call.addSucc(spot);</span>
+            }
+            
+            /*for (SootClass ac2 : getApplicationClasses()) {
+                if (ac2.isInterface()) // skip interfaces here
+                    continue;
+                if (class_hierarchy.isClassSubclassOfIncluding(ac2, ac)) {
+                    // Calling tostring with a receiver of type ac,
+                    // the method in class ac2 might be called.
+                    // ac2 might not implement it directly,
+                    // so we search upwards for the implementation
+                    while (!tostring_targets.containsKey(ac2)) {
+                        ac2 = ac2.getSuperclass();
+                    }
+                    Method target = tostring_targets.get(ac2);
+                    Call call = new Call(var, target, new Variable[0]);
+                    m.addStatement(call);
+                    m.getEntry().addSucc(call);
+                    call.addSucc(spot);
+                }
+            }*/
+        }
+<span class="nc" id="L444">    }</span>
+
+    /**
+     * Makes a method that simulates the &lt;code&gt;toString&lt;/code&gt; method of a basic
+     * wrapper classes.
+     */
+    void makeBasicToStringMethod(Type prim, String classname, Automaton a) {
+<span class="nc" id="L451">        Method m = new Method(application, classname + &quot;.toString&quot;,</span>
+<span class="nc" id="L452">                new Variable[0]);</span>
+<span class="nc" id="L453">        SootClass c = Scene.v().getSootClass(classname);</span>
+<span class="nc" id="L454">        Variable var = application.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L455">        StringStatement ss = new StringInit(var, a);</span>
+<span class="nc" id="L456">        m.addStatement(ss);</span>
+<span class="nc" id="L457">        m.getEntry().addSucc(ss);</span>
+<span class="nc" id="L458">        Return ret = new Return(var);</span>
+<span class="nc" id="L459">        m.addStatement(ret);</span>
+<span class="nc" id="L460">        ss.addSucc(ret);</span>
+
+<span class="nc" id="L462">        methods.add(m);</span>
+<span class="nc" id="L463">        tostring_targets.put(c, m);</span>
+<span class="nc" id="L464">        tostring_methods.put(classname, m);</span>
+
+<span class="nc" id="L466">        type_automaton.put(prim, a);</span>
+<span class="nc" id="L467">    }</span>
+
+    /**
+     * Translates the method bodies.
+     */
+    void translate() {
+<span class="nc bnc" id="L473" title="All 2 branches missed.">        for (SootClass ac : getApplicationClasses()) {</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">            for (SootMethod sm : ac.getMethods()) {</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">                if (sm.isConcrete()) {</span>
+<span class="nc" id="L476">                    List&lt;HotspotInfo&gt; hotspots = methodTranslator.translateMethod(sm, this);</span>
+
+                    // add all the hotspots we found
+<span class="nc bnc" id="L479" title="All 2 branches missed.">                    for (HotspotInfo hot : hotspots) {</span>
+<span class="nc" id="L480">                        registerHotspot(hot);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L485">    }</span>
+
+    /**
+     * Makes wrapper method that calls all externally visible methods in
+     * application classes, using arbitrary arguments.
+     */
+    void makeWrapperMethod() {
+<span class="nc" id="L492">        Method wrapper = new Method(application, &quot;&lt;wrapper&gt;&quot;, new Variable[0]);</span>
+<span class="nc" id="L493">        methods.add(wrapper);</span>
+        
+        // build the wrapper's body
+<span class="nc" id="L496">        ControlFlowBuilder cfg = new ControlFlowBuilder(wrapper);</span>
+<span class="nc" id="L497">        cfg.moveToStatement(wrapper.getEntry());</span>
+        
+        // create a variable holding any string
+<span class="nc" id="L500">        Variable anyVar = application.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L501">        Statement assignAny = new StringInit(anyVar, Basic.makeAnyString());</span>
+<span class="nc" id="L502">        cfg.addStatement(assignAny);</span>
+
+        // create a variable holding the null string
+<span class="nc" id="L505">        Variable nullVar = application.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L506">        Statement assignNull = new StringInit(nullVar, Automatons.getNull());</span>
+<span class="nc" id="L507">        cfg.addStatement(assignNull);</span>
+        
+        // initialize externally visible field variables to anything
+        // and set string fields to &quot;null&quot;
+<span class="nc bnc" id="L511" title="All 2 branches missed.">        for (SootClass ac : getApplicationClasses()) {</span>
+<span class="nc bnc" id="L512" title="All 2 branches missed.">            for (SootField field : ac.getFields()) {</span>
+                // String fields should be assigned to &quot;null&quot; because they are
+                // exempt from the
+                // null-pointer analysis we use for other objects
+<span class="nc bnc" id="L516" title="All 2 branches missed.">                if (field.getType().equals(RefType.v(&quot;java.lang.String&quot;))) {</span>
+<span class="nc" id="L517">                    FieldAssignment assignment = new FieldAssignment(</span>
+<span class="nc" id="L518">                            variableManager.getField(field), nullVar);</span>
+<span class="nc" id="L519">                    cfg.addStatement(assignment);</span>
+                }
+
+                // corrupt externally visible fields
+<span class="nc bnc" id="L523" title="All 2 branches missed.">                if (ext.isExternallyVisibleField(field)) {</span>
+<span class="nc" id="L524">                    VariableType type = fromSootType(field</span>
+<span class="nc" id="L525">                            .getType());</span>
+
+<span class="nc bnc" id="L527" title="All 2 branches missed.">                    if (type == VariableType.NONE)</span>
+<span class="nc" id="L528">                        continue;</span>
+
+                    Variable fieldInit;
+
+<span class="nc bnc" id="L532" title="All 4 branches missed.">                    switch (type) {</span>
+                    case OBJECT:
+                    case STRING:
+                    case PRIMITIVE:
+<span class="nc" id="L536">                        fieldInit = anyVar;</span>
+<span class="nc" id="L537">                        break;</span>
+
+                    case STRINGBUFFER: {
+<span class="nc" id="L540">                        fieldInit = application.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L541">                        Statement s = new StringBufferCorrupt(fieldInit);</span>
+<span class="nc" id="L542">                        cfg.addStatement(s);</span>
+<span class="nc" id="L543">                        break;</span>
+                    }
+
+                    case ARRAY: {
+<span class="nc" id="L547">                        fieldInit = application.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L548">                        Statement s = new ArrayCorrupt(fieldInit);</span>
+<span class="nc" id="L549">                        cfg.addStatement(s);</span>
+<span class="nc" id="L550">                        break;</span>
+                    }
+                    default:
+<span class="nc" id="L553">                        throw new RuntimeException(&quot;Unknown field type &quot; + type);</span>
+                    }// switch
+
+<span class="nc" id="L556">                    FieldAssignment assignment = new FieldAssignment(variableManager.getField(field), fieldInit);</span>
+<span class="nc" id="L557">                    cfg.addStatement(assignment);</span>
+                }
+            }
+        }
+        
+        // split control here, and call a random externally visible method
+<span class="nc" id="L563">        cfg.startBranch();</span>
+        
+        // call externally visible methods
+<span class="nc bnc" id="L566" title="All 2 branches missed.">        for (SootClass ac : getApplicationClasses()) {</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">            for (SootMethod sm : ac.getMethods()) {</span>
+<span class="nc bnc" id="L568" title="All 2 branches missed.">                if (ext.isExternallyVisibleMethod(sm)) {</span>
+<span class="nc" id="L569">                    Method m = sms_m.get(sm.getSignature());</span>
+<span class="nc" id="L570">                    Variable[] params = m.getEntry().params;</span>
+<span class="nc" id="L571">                    Variable[] args = new Variable[params.length];</span>
+<span class="nc bnc" id="L572" title="All 2 branches missed.">                    for (int i = 0; i &lt; params.length; i++) {</span>
+<span class="nc" id="L573">                        Variable arg = application.createVariable(params[i].getType());</span>
+<span class="nc" id="L574">                        args[i] = arg;</span>
+                        Statement s;
+<span class="nc bnc" id="L576" title="All 5 branches missed.">                        switch (arg.getType()) {</span>
+                        case STRING:
+<span class="nc" id="L578">                            s = new StringInit(arg, Basic.makeAnyString());</span>
+<span class="nc" id="L579">                            break;</span>
+                        case STRINGBUFFER:
+<span class="nc" id="L581">                            s = new StringBufferCorrupt(arg);</span>
+<span class="nc" id="L582">                            break;</span>
+                        case ARRAY:
+<span class="nc" id="L584">                            s = new ArrayCorrupt(arg);</span>
+<span class="nc" id="L585">                            break;</span>
+                        case PRIMITIVE:
+                            // TODO: Integers can contain two characters, right? look deeper into which primitive type
+<span class="nc" id="L588">                            s = new PrimitiveInit(arg, Automaton.makeAnyChar());</span>
+<span class="nc" id="L589">                            break;</span>
+                        default:
+<span class="nc" id="L591">                            s = new ObjectCorrupt(arg);</span>
+                            // (case NONE or NULL cannot occur because such
+                            // parameters do not get created for intermediate
+                            // methods)
+                        }
+<span class="nc" id="L596">                        cfg.addStatement(s);</span>
+                    }
+<span class="nc" id="L598">                    Variable retvar = makeVariable(sm.getReturnType());</span>
+<span class="nc" id="L599">                    Call c = new Call(retvar, m, args);</span>
+<span class="nc" id="L600">                    cfg.addStatement(c);</span>
+                    // If this is toString, remember the return value
+<span class="nc bnc" id="L602" title="All 2 branches missed.">                    if (sm.getName().equals(&quot;toString&quot;)</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">                            &amp;&amp; sm.getParameterCount() == 0</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">                            &amp;&amp; sm.getReturnType().toString().equals(&quot;java.lang.String&quot;)) {</span>
+<span class="nc" id="L605">                        tostring_targets.put(ac, m);</span>
+                    }
+                    
+<span class="nc" id="L608">                    cfg.useBranch();</span>
+                }
+            }
+        }
+        
+        // also add the possibility of no method being called.
+        // in case the application has no externally visible methods, we still want
+        // the return statement to be reachable so we don't create a malformed program.
+<span class="nc" id="L616">        cfg.useBranch();</span>
+        
+<span class="nc" id="L618">        cfg.endBranch();</span>
+        
+        // add a return statement
+<span class="nc" id="L621">        Return ret = new Return(application.createVariable(VariableType.NONE));</span>
+<span class="nc" id="L622">        cfg.addStatement(ret);</span>
+<span class="nc" id="L623">    }</span>
+
+    /**
+     * Removes all &lt;code&gt;Nop&lt;/code&gt;s in the generated code.
+     */
+    void removeNops() {
+<span class="nc" id="L629">    	Set&lt;Statement&gt; protectedNops = new HashSet&lt;Statement&gt;();</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">        for (Method m : methods) {</span>
+<span class="nc" id="L631">        	protectedNops.clear();</span>
+        	// assertions referring to a nop statement must have their target updated to the nop's predecessor,
+        	// or in case there are multiple predecessors, the nop must not be removed
+<span class="nc bnc" id="L634" title="All 2 branches missed.">        	for (Statement s : m.getStatements()) {</span>
+<span class="nc bnc" id="L635" title="All 2 branches missed.">        		if (s instanceof AssertStatement) {</span>
+<span class="nc" id="L636">        			AssertStatement a = (AssertStatement)s;</span>
+<span class="nc" id="L637">        			Statement target = a.targetStatement;</span>
+<span class="nc bnc" id="L638" title="All 4 branches missed.">        			while (target instanceof Nop &amp;&amp; target.getPreds().size() == 1) {</span>
+<span class="nc" id="L639">        				target = target.getPreds().iterator().next();</span>
+<span class="nc" id="L640">        				a.targetStatement = target;</span>
+        			}
+<span class="nc bnc" id="L642" title="All 2 branches missed.">        			if (target instanceof Nop) {</span>
+<span class="nc" id="L643">        				protectedNops.add(target);</span>
+        			}
+        		}
+        	}
+        	
+<span class="nc bnc" id="L648" title="All 2 branches missed.">            for (Statement s : new ArrayList&lt;Statement&gt;(m.getStatements())) {</span>
+<span class="nc bnc" id="L649" title="All 4 branches missed.">                if (s instanceof Nop &amp;&amp; !protectedNops.contains(s)) {</span>
+<span class="nc" id="L650">                    m.removeNop((Nop) s);</span>
+                }
+            }
+        }
+<span class="nc" id="L654">    }</span>
+
+    /**
+     * Makes a new variable, using the given Soot type.
+     */
+    Variable makeVariable(Type t) {
+<span class="nc" id="L660">        return application.createVariable(fromSootType(t));</span>
+    }
+
+    /**
+     * Returns the type corresponding to the given Soot value.
+     */
+    VariableType getValueType(Value v) {
+<span class="nc" id="L667">        return getType(v.getType());</span>
+    }
+
+    /**
+     * Returns the type corresponding to the given Soot type.
+     */
+    VariableType getType(Type type) {
+<span class="nc" id="L674">        return fromSootType(type);</span>
+    }
+
+    public List&lt;SootMethod&gt; getTargetsOf(InstanceInvokeExpr expr) {
+<span class="nc" id="L678">        return abstractDispatchStrategy.getTargetsOf(expr);</span>
+    }
+
+    public Method getToStringMethod(SootClass c) {
+<span class="nc" id="L682">        return tostring_methods.get(c.getName());</span>
+    }
+
+    public Automaton getTypeAutomaton(Type t) {
+<span class="nc bnc" id="L686" title="All 2 branches missed.">        if (t instanceof PrimType) {</span>
+<span class="nc" id="L687">            return type_automaton.get(t);</span>
+<span class="nc bnc" id="L688" title="All 2 branches missed.">        } else if (t instanceof NullType) {</span>
+<span class="nc" id="L689">            return Automaton.makeString(&quot;null&quot;);</span>
+        } else {
+<span class="nc" id="L691">            return null;</span>
+        }
+    }
+
+    /**
+     * Checks whether the given class is an application class.
+     */
+    public boolean isApplicationClass(SootClass c) {
+<span class="nc bnc" id="L699" title="All 2 branches missed.">        for (SootClass ac : getApplicationClasses()) {</span>
+<span class="nc bnc" id="L700" title="All 2 branches missed.">            if (c.getName().equals(ac.getName())) {</span>
+<span class="nc" id="L701">                return true;</span>
+            }
+        }
+<span class="nc" id="L704">        return false;</span>
+    }
+
+    private void registerHotspot(HotspotInfo hotspot) {
+<span class="nc" id="L708">        ValueBox box = hotspot.getBox();</span>
+<span class="nc" id="L709">        trans_map.put(box, hotspot.getStatement());</span>
+<span class="nc" id="L710">        sourcefile_map.put(box, hotspot.getSourcefile());</span>
+<span class="nc" id="L711">        class_map.put(box, hotspot.getClassName());</span>
+<span class="nc" id="L712">        method_map.put(box, hotspot.getMethodName());</span>
+<span class="nc" id="L713">        line_map.put(box, hotspot.getLineNumber());</span>
+<span class="nc" id="L714">    }</span>
+
+    /**
+     * Returns the parameter variable for the given relevant-arg number in the
+     * current method.
+     */
+    public Variable getParameter(SootMethod sm, int index) {
+<span class="nc" id="L721">        int ma = getRelevantArgNumbers(sm.getSignature())[index];</span>
+<span class="nc bnc" id="L722" title="All 2 branches missed.">        if (ma != -1) {</span>
+<span class="nc" id="L723">            return getMethod(sm.getSignature()).getEntry().params[ma];</span>
+        } else {
+<span class="nc" id="L725">            return application.createVariable(VariableType.NONE);</span>
+        }
+    }
+
+    public TaintAnalysisStrategy getTaintAnalysisStrategy() {
+<span class="nc" id="L730">        return taintAnalysisStrategy;</span>
+    }
+    
+    private Collection&lt;SootClass&gt; applicationClasses;
+
+    private Collection&lt;SootClass&gt; getApplicationClasses() {
+<span class="nc" id="L736">        return applicationClasses;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private List&lt;Type&gt; getParameterTypes(SootMethod sm) {
+<span class="nc" id="L741">        return sm.getParameterTypes();</span>
+    }
+
+    public Variable getParameter(SootMethod sm, ParameterRef ref) {
+<span class="nc" id="L745">        return getParameter(sm, ref.getIndex());</span>
+    }
+
+    public Method getMethod(SootMethod method) {
+<span class="nc" id="L749">        return getMethod(method.getSignature());</span>
+    }
+
+    public Application getApplication() {
+<span class="nc" id="L753">        return application;</span>
+    }
+
+    public VariableManager getVariableManager() {
+<span class="nc" id="L757">        return variableManager;</span>
+    }
+    
+    public void setExpressionVariable(Value value, Variable variable) {
+<span class="nc" id="L761">        expression_map.put(value, variable);</span>
+<span class="nc" id="L762">    }</span>
+    
+    public Variable getExpressionVariable(Value value) {
+<span class="nc" id="L765">        return expression_map.get(value);</span>
+    }
+
+    public Automaton getFieldType(SootField field) {
+<span class="nc" id="L769">        return staticStringTypes.getFieldType(field);</span>
+    }
+
+    public Automaton getMethodReturnType(SootMethod method) {
+<span class="nc" id="L773">        return staticStringTypes.getMethodReturnType(method);</span>
+    }
+
+    public Automaton getParameterType(SootMethod method, int paramIndex) {
+<span class="nc" id="L777">        return staticStringTypes.getParameterType(method, paramIndex);</span>
+    }
+    
+    public boolean isSubtypeOf(SootClass a, SootClass b) {
+<span class="nc bnc" id="L781" title="All 2 branches missed.">    	if (a.equals(b))</span>
+<span class="nc" id="L782">    		return true;</span>
+<span class="nc bnc" id="L783" title="All 2 branches missed.">    	if (b.getType().equals(RefType.v(&quot;java.lang.Object&quot;)))</span>
+<span class="nc" id="L784">    		return true;</span>
+<span class="nc bnc" id="L785" title="All 2 branches missed.">    	if (a.isInterface()) {</span>
+<span class="nc bnc" id="L786" title="All 4 branches missed.">    		return b.isInterface() &amp;&amp; class_hierarchy.isInterfaceSubinterfaceOf(a, b);</span>
+    	}
+<span class="nc bnc" id="L788" title="All 2 branches missed.">    	if (b.isInterface()) {</span>
+<span class="nc" id="L789">    		return class_hierarchy.getImplementersOf(b).contains(a);</span>
+    	}
+<span class="nc" id="L791">    	return class_hierarchy.isClassSubclassOf(a, b);</span>
+    }
+    
+    /**
+     * Given the static type of a variable, returns the most specific variable type
+     * we can assign to it.
+     * &lt;p/&gt;
+     * For example, a variable of type &lt;tt&gt;Cloneable&lt;/tt&gt; might be an array, so this returns
+     * &lt;tt&gt;ARRAY&lt;/tt&gt; if the argument equals &lt;tt&gt;java.lang.Cloneable&lt;/tt&gt;. On the other hand, if
+     * the argument is &lt;tt&gt;java.io.Serializable&lt;/tt&gt;, it returns &lt;tt&gt;OBJECT&lt;/tt&gt; because all
+     * the interesting types implement &lt;tt&gt;Serializable&lt;/tt&gt;.
+     * @param type a soot type
+     * @return a variable type. &lt;tt&gt;null&lt;/tt&gt; and {@link VariableType#NULL} are never returned.
+     */
+    public VariableType fromSootType(Type type) {
+<span class="nc bnc" id="L806" title="All 2 branches missed.">        if (type instanceof RefType) {</span>
+<span class="nc" id="L807">        	SootClass clazz = ((RefType)type).getSootClass();</span>
+<span class="nc bnc" id="L808" title="All 2 branches missed.">        	if (isSubtypeOf(clazz, Scene.v().getSootClass(&quot;java.util.Collection&quot;))</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">        			|| isSubtypeOf(clazz, Scene.v().getSootClass(&quot;java.util.Iterator&quot;))) {</span>
+<span class="nc" id="L810">        		return VariableType.ARRAY;</span>
+        	}
+        	// otherwise, look in the table
+<span class="nc" id="L813">            String className = ((RefType)type).getClassName();</span>
+<span class="nc" id="L814">            return fromCanonicalName(className);</span>
+<span class="nc bnc" id="L815" title="All 2 branches missed.">        } else if (type instanceof ArrayType) {</span>
+            // TODO because of covariant arrays, we currently assume String[]. 
+            // find out exactly which array types might be a covariant of String[]. (for example int[] cannot be)
+            // XXX now that primitive arrays are also supported, char[], etc. is actually allowed
+<span class="nc" id="L819">            return VariableType.ARRAY;  </span>
+<span class="nc bnc" id="L820" title="All 2 branches missed.">        } else if (type instanceof NullType) {</span>
+<span class="nc" id="L821">            return VariableType.NULL; </span>
+<span class="nc bnc" id="L822" title="All 2 branches missed.">        } else if (type instanceof PrimType) {</span>
+        	// FIXME ignore int,long,float,double here? only 16-bit primitives are suported anyway
+<span class="nc" id="L824">            return VariableType.PRIMITIVE;</span>
+        }
+<span class="nc" id="L826">        return VariableType.NONE;</span>
+    }
+    
+    /**
+     * Given the static type of a variable, returns the most specific variable type
+     * we can assign to it.
+     * &lt;p/&gt;
+     * For example, a variable of type &lt;tt&gt;Cloneable&lt;/tt&gt; might be an array, so this returns
+     * &lt;tt&gt;ARRAY&lt;/tt&gt; if the argument equals &lt;tt&gt;java.lang.Cloneable&lt;/tt&gt;. On the other hand, if
+     * the argument is &lt;tt&gt;java.lang.Serializable&lt;/tt&gt;, it returns &lt;tt&gt;OBJECT&lt;/tt&gt; because all
+     * the interesting types implement &lt;tt&gt;Serializable&lt;/tt&gt;.
+     * @param canonicalName fully qualified name of a Java class.
+     * @return a variable type. &lt;tt&gt;NONE&lt;/tt&gt; is (rightfully) returned for unknown types. &lt;tt&gt;null&lt;/tt&gt; is never returned.
+     */
+    private static VariableType fromCanonicalName(String canonicalName) {
+<span class="nc" id="L841">        VariableType type = javaTypesToVariableTypes.get(canonicalName);</span>
+<span class="nc bnc" id="L842" title="All 2 branches missed.">        if (type == null)</span>
+<span class="nc" id="L843">            return VariableType.NONE;</span>
+<span class="nc" id="L844">        return type;</span>
+    }
+    
+    private static final HashMap&lt;String, VariableType&gt; javaTypesToVariableTypes;
+    static {
+<span class="nc" id="L849">        javaTypesToVariableTypes = new HashMap&lt;String, VariableType&gt;();</span>
+<span class="nc" id="L850">        javaTypesToVariableTypes.put(&quot;java.lang.Object&quot;, VariableType.OBJECT);</span>
+<span class="nc" id="L851">        javaTypesToVariableTypes.put(&quot;java.io.Serializable&quot;, VariableType.OBJECT);</span>
+<span class="nc" id="L852">        javaTypesToVariableTypes.put(&quot;java.lang.String&quot;, VariableType.STRING);</span>
+<span class="nc" id="L853">        javaTypesToVariableTypes.put(&quot;java.lang.StringBuffer&quot;, VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L854">        javaTypesToVariableTypes.put(&quot;java.lang.StringBuilder&quot;, VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L855">        javaTypesToVariableTypes.put(&quot;java.lang.Appendable&quot;, VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L856">        javaTypesToVariableTypes.put(&quot;java.lang.Cloneable&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L857">        javaTypesToVariableTypes.put(&quot;java.lang.CharSequence&quot;, VariableType.OBJECT);</span>
+        //javaTypesToVariableTypes.put(&quot;java.lang.Comparable&quot;, STRING);     // String implements Comparable&lt;String&gt;
+        
+<span class="nc" id="L860">        javaTypesToVariableTypes.put(&quot;java.lang.AbstractStringBuilder&quot;, VariableType.STRINGBUFFER);</span>
+        
+        // collections
+<span class="nc" id="L863">        javaTypesToVariableTypes.put(&quot;java.util.Collection&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L864">        javaTypesToVariableTypes.put(&quot;java.util.List&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L865">        javaTypesToVariableTypes.put(&quot;java.util.ArrayList&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L866">        javaTypesToVariableTypes.put(&quot;java.util.Vector&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L867">        javaTypesToVariableTypes.put(&quot;java.util.LinkedList&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L868">        javaTypesToVariableTypes.put(&quot;java.util.Set&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L869">        javaTypesToVariableTypes.put(&quot;java.util.HashSet&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L870">        javaTypesToVariableTypes.put(&quot;java.util.LinkedHashSet&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L871">        javaTypesToVariableTypes.put(&quot;java.util.TreeSet&quot;, VariableType.ARRAY);</span>
+        
+        // iterators
+<span class="nc" id="L874">        javaTypesToVariableTypes.put(&quot;java.util.Iterator&quot;, VariableType.ARRAY);</span>
+<span class="nc" id="L875">        javaTypesToVariableTypes.put(&quot;java.util.ListIterator&quot;, VariableType.ARRAY);</span>
+
+        // AbstractStringBuilder is a package-private class in the Java API that
+        // Soot may decide to use as variable type. Both StringBuffer and StringBuilder extend it.
+        
+        // Comparable has been commented out because Strings are immutable, so we
+        // don't care which strings might be aliases
+<span class="nc" id="L882">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StatePair.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">StatePair.java</span></div><h1>StatePair.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+/**
+ * Pair of states.
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class StatePair {
+	State s;
+	State s1;
+	State s2;
+	
+<span class="fc" id="L41">	StatePair(State s, State s1, State s2) {</span>
+<span class="fc" id="L42">		this.s = s;</span>
+<span class="fc" id="L43">		this.s1 = s1;</span>
+<span class="fc" id="L44">		this.s2 = s2;</span>
+<span class="fc" id="L45">	}</span>
+	
+	/**
+	 * Constructs a new state pair.
+	 * @param s1 first state
+	 * @param s2 second state
+	 */
+<span class="fc" id="L52">	public StatePair(State s1, State s2) {</span>
+<span class="fc" id="L53">		this.s1 = s1;</span>
+<span class="fc" id="L54">		this.s2 = s2;</span>
+<span class="fc" id="L55">	}</span>
+	
+	/**
+	 * Returns first component of this pair.
+	 * @return first state
+	 */
+	public State getFirstState() {
+<span class="fc" id="L62">		return s1;</span>
+	}
+	
+	/**
+	 * Returns second component of this pair.
+	 * @return second state
+	 */
+	public State getSecondState() {
+<span class="fc" id="L70">		return s2;</span>
+	}
+	
+	/** 
+	 * Checks for equality.
+	 * @param obj object to compare with
+	 * @return true if &lt;tt&gt;obj&lt;/tt&gt; represents the same pair of states as this pair
+	 */
+	@Override
+	public boolean equals(Object obj) {
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		if (obj instanceof StatePair) {</span>
+<span class="fc" id="L81">			StatePair p = (StatePair)obj;</span>
+<span class="pc bpc" id="L82" title="2 of 4 branches missed.">			return p.s1 == s1 &amp;&amp; p.s2 == s2;</span>
+		}
+		else
+<span class="nc" id="L85">			return false;</span>
+	}
+	
+	/** 
+	 * Returns hash code.
+	 * @return hash code
+	 */
+	@Override
+	public int hashCode() {
+<span class="fc" id="L94">		return s1.hashCode() + s2.hashCode();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

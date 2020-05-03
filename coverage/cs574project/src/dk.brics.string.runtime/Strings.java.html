@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Strings.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.runtime</a> &gt; <span class="el_source">Strings.java</span></div><h1>Strings.java</h1><pre class="source lang-java linenums">package dk.brics.string.runtime;
+
+import dk.brics.automaton.Automaton;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Runtime system.
+ *
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class Strings { // TODO: note that runtime.RegExp is now called runtime.Strings
+
+<span class="nc" id="L17">    static Map&lt;String, Automaton&gt; automata = new HashMap&lt;String, Automaton&gt;();</span>
+
+    private Strings() {
+    }
+
+    /**
+     * Casts string to regular language specified by regular expression.
+     *
+     * @param s      string
+     * @param regexp regular expression written in the full syntax of
+     *               {@link dk.brics.automaton.RegExp dk.brics.automaton.RegExp}.
+     * @return the string &lt;tt&gt;s&lt;/tt&gt;
+     * @throws ClassCastException       if the string is not in the given regular language
+     * @throws IllegalArgumentException if the regular expression uses an unbound identifier
+     */
+    public static String cast(String s, String regexp) throws IllegalArgumentException {
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (!check(s, regexp)) {</span>
+<span class="nc" id="L34">            throw new ClassCastException(&quot;string does not match regular expression&quot;);</span>
+        }
+<span class="nc" id="L36">        return s;</span>
+    }
+
+    /**
+     * Casts string to regular language specified by serialized &lt;code&gt;Automaton&lt;/code&gt; located by URL.
+     *
+     * @param s   string
+     * @param url URL of serialized automaton
+     * @return the string &lt;tt&gt;s&lt;/tt&gt;
+     * @throws IOException        if unserialization errors occurred
+     * @throws ClassCastException if the string is not in the given regular language
+     */
+    public static String cast(String s, URL url) throws IOException {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (!check(s, url)) {</span>
+<span class="nc" id="L50">            throw new ClassCastException(&quot;string does not match regular expression&quot;);</span>
+        }
+<span class="nc" id="L52">        return s;</span>
+    }
+
+    /**
+     * Instructs the string analyzer to verify that the string is in the regular language
+     * specified by the regular expression.
+     *
+     * @param s      string
+     * @param regexp regular expression written in the full syntax of
+     *               {@link dk.brics.automaton.RegExp dk.brics.automaton.RegExp}.
+     * @return the string &lt;tt&gt;s&lt;/tt&gt;
+     * @throws IllegalArgumentException if the regular expression uses an unbound identifier
+     */
+    public static String analyze(String s, String regexp) throws IllegalArgumentException {
+<span class="nc" id="L66">        return s;</span>
+    }
+
+    /**
+     * Instructs the string analyzer to verify that the string is in the regular language
+     * specified by a serialized &lt;code&gt;Automaton&lt;/code&gt; located by a URL.
+     *
+     * @param s   string
+     * @param url URL of serialized automaton
+     * @return the string &lt;tt&gt;s&lt;/tt&gt;
+     * @throws IOException if unserialization errors occurred
+     */
+    public static String analyze(String s, URL url) {
+<span class="nc" id="L79">        return s;</span>
+    }
+
+    /**
+     * Checks that the given string is in the regular language specified by the given regular expression.
+     *
+     * @param s      string
+     * @param regexp regular expression written in the full syntax of
+     *               {@link dk.brics.automaton.RegExp dk.brics.automaton.RegExp}.
+     * @return true if the string is in the given regular language
+     * @throws IllegalArgumentException if the regular expression uses an unbound identifier
+     */
+    public static boolean check(String s, String regexp) throws IllegalArgumentException {
+<span class="nc" id="L92">        return (new dk.brics.automaton.RegExp(regexp)).toAutomaton(automata).run(s);</span>
+    }
+
+    /**
+     * Checks that the given string is in regular language specified by
+     * the given serialized &lt;code&gt;Automaton&lt;/code&gt; located by URL.
+     *
+     * @param s   string
+     * @param url URL of serialized automaton
+     * @return true if the string is in the given regular language
+     * @throws IOException if unserialization errors occurred
+     */
+    public static boolean check(String s, URL url) throws IOException {
+        try {
+<span class="nc" id="L106">            return Automaton.load(url).run(s);</span>
+<span class="nc" id="L107">        } catch (Exception e) {</span>
+<span class="nc" id="L108">            throw new IOException(&quot;automaton load failed&quot;);</span>
+        }
+    }
+
+    /**
+     * Binds a regular language to an identifier.
+     * Subsequent uses of regular expressions may then use the identifier.
+     *
+     * @param id     identifier
+     * @param regexp regular expression written in the full syntax of
+     *               {@link dk.brics.automaton.RegExp dk.brics.automaton.RegExp}.
+     * @throws IllegalArgumentException if the identifier already has been bound
+     *                                  or the regular expression uses an unbound identifier
+     */
+    public static void bind(String id, String regexp) throws IllegalArgumentException {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (automata.containsKey(id)) {</span>
+<span class="nc" id="L124">            throw new IllegalArgumentException(&quot;identifier '&quot; + id + &quot;' already bound&quot;);</span>
+        }
+<span class="nc" id="L126">        automata.put(id, (new dk.brics.automaton.RegExp(regexp)).toAutomaton(automata));</span>
+<span class="nc" id="L127">    }</span>
+
+    /**
+     * Binds a regular language to an identifier.
+     * Subsequent uses of regular expressions may then use the identifier.
+     *
+     * @param id  identifier
+     * @param url URL of serialized automaton
+     * @throws IOException              if unserialization errors occurred
+     * @throws IllegalArgumentException if the identifier already has been bound
+     *                                  or the regular expression uses an unbound identifier
+     */
+    public static void bind(String id, URL url) throws IOException, IllegalArgumentException {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (automata.containsKey(id)) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(&quot;identifier '&quot; + id + &quot;' already bound&quot;);</span>
+        }
+        try {
+<span class="nc" id="L144">            automata.put(id, Automaton.load(url));</span>
+<span class="nc" id="L145">        } catch (Exception e) {</span>
+<span class="nc" id="L146">            throw new IOException(&quot;automaton load failed&quot;);</span>
+        }
+<span class="nc" id="L148">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

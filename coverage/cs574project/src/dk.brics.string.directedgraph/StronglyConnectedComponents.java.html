@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StronglyConnectedComponents.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.directedgraph</a> &gt; <span class="el_source">StronglyConnectedComponents.java</span></div><h1>StronglyConnectedComponents.java</h1><pre class="source lang-java linenums">package dk.brics.string.directedgraph;
+
+import java.util.*;
+
+/**
+ * Finds strongly connected components of a directed graph.
+ */
+public class StronglyConnectedComponents&lt;N extends GraphNode, C extends GraphComponent&lt;N&gt;&gt; {
+
+    private DirectedGraph&lt;N, C&gt; g;
+
+    private Collection&lt;C&gt; components;
+
+    private List&lt;C&gt; node_component;
+
+    private List&lt;Collection&lt;N&gt;&gt; nexts;
+    private int[] dfnumber, lowlink;
+    private boolean[] newmark, onstack;
+
+    // FIXME: check that components are indeed ordered bottom-up
+
+    /**
+     * Finds strongly connected components using Tarjan's algorithm.
+     * Components are ordered bottom-up, i.e. leaves in the SCC tree appear first and roots last.
+     */
+<span class="nc" id="L26">    public StronglyConnectedComponents(DirectedGraph&lt;N, C&gt; g) {</span>
+<span class="nc" id="L27">        this.g = g;</span>
+<span class="nc" id="L28">        components = new ArrayList&lt;C&gt;();</span>
+<span class="nc" id="L29">        int n = g.getNodes().size();</span>
+<span class="nc" id="L30">        node_component = new ArrayList&lt;C&gt;();</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L32">            node_component.add(null);</span>
+        }
+<span class="nc" id="L34">        nexts = g.getSuccesors();</span>
+<span class="nc" id="L35">        dfnumber = new int[n];</span>
+<span class="nc" id="L36">        lowlink = new int[n];</span>
+<span class="nc" id="L37">        newmark = new boolean[n];</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L39">            newmark[i] = true;</span>
+        }
+<span class="nc" id="L41">        onstack = new boolean[n];</span>
+<span class="nc" id="L42">        Stack&lt;N&gt; stack = new Stack&lt;N&gt;();</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (N v : g.getNodes()) {</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            if (newmark[v.getKey()]) {</span>
+<span class="nc" id="L45">                searchc(v, 0, stack);</span>
+            }
+        }
+<span class="nc" id="L48">    }</span>
+
+    private int searchc(N v, int count, Stack&lt;N&gt; stack) {
+<span class="nc" id="L51">        int vn = v.getKey();</span>
+<span class="nc" id="L52">        newmark[vn] = false;</span>
+<span class="nc" id="L53">        lowlink[vn] = dfnumber[vn] = count++;</span>
+<span class="nc" id="L54">        stack.push(v);</span>
+<span class="nc" id="L55">        onstack[vn] = true;</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        for (N w : nexts.get(vn)) {</span>
+<span class="nc" id="L57">            int wn = w.getKey();</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (newmark[wn]) {</span>
+<span class="nc" id="L59">                count = searchc(w, count, stack);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">                if (lowlink[wn] &lt; lowlink[vn]) {</span>
+<span class="nc" id="L61">                    lowlink[vn] = lowlink[wn];</span>
+                }
+<span class="nc bnc" id="L63" title="All 6 branches missed.">            } else if (dfnumber[wn] &lt; dfnumber[vn] &amp;&amp; onstack[wn] &amp;&amp; dfnumber[wn] &lt; lowlink[vn]) {</span>
+<span class="nc" id="L64">                lowlink[vn] = dfnumber[wn];</span>
+            }
+        }
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (lowlink[vn] == dfnumber[vn]) {</span>
+<span class="nc" id="L68">            C c = g.makeComponent();</span>
+<span class="nc" id="L69">            components.add(c);</span>
+            N x;
+            do {
+<span class="nc" id="L72">                x = stack.pop();</span>
+<span class="nc" id="L73">                int xn = x.getKey();</span>
+<span class="nc" id="L74">                onstack[xn] = false;</span>
+<span class="nc" id="L75">                c.add(x);</span>
+<span class="nc" id="L76">                node_component.set(x.getKey(), c);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            } while (x != v);</span>
+        }
+<span class="nc" id="L79">        return count;</span>
+    }
+
+    /**
+     * Adds a new node to a component.
+     */
+    public void add(N n, C c) {
+<span class="nc" id="L86">        c.add(n);</span>
+<span class="nc" id="L87">        node_component.add(c);</span>
+<span class="nc" id="L88">    }</span>
+
+    /**
+     * Returns the (unmodifiable) collection of components.
+     */
+    public Collection&lt;C&gt; getComponents() {
+<span class="nc" id="L94">        return Collections.unmodifiableCollection(components);</span>
+    }
+
+    /**
+     * Returns the component of the given node.
+     */
+    public C getComponent(N n) {
+<span class="nc" id="L101">        return node_component.get(n.getKey());</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L106">        return components.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

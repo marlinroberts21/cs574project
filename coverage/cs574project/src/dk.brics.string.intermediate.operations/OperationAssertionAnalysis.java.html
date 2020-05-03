@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OperationAssertionAnalysis.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">OperationAssertionAnalysis.java</span></div><h1>OperationAssertionAnalysis.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.AssertAliases;
+import dk.brics.string.intermediate.AssertBinaryOp;
+import dk.brics.string.intermediate.AssertStatement;
+import dk.brics.string.intermediate.AssertUnaryOp;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.Variable;
+
+/**
+ * Determines which assertions are &quot;safe&quot;. An assertion statement asserts that some condition was true
+ * the last time a target statement was executed. An assertion is safe if that condition is guaranteed
+ * to also hold at the location of the assertion, assuming it was true when the target statement was executed.
+ * 
+ * @author Asger
+ *
+ */
+public class OperationAssertionAnalysis {
+    
+<span class="nc" id="L25">    private Set&lt;AssertStatement&gt; validAssertions = new HashSet&lt;AssertStatement&gt;();</span>
+    private ReachingDefinitions definitions;
+    
+<span class="nc" id="L28">    public OperationAssertionAnalysis(Application app, ReachingDefinitions definitions) {</span>
+<span class="nc" id="L29">        this.definitions = definitions;</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">        for (Method method : app.getMethods()) {</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">            for (Statement statement : method.getStatements()) {</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">                if (statement instanceof AssertStatement) {</span>
+<span class="nc" id="L33">                    inspectAssertion((AssertStatement)statement);</span>
+                }
+            }
+        }
+<span class="nc" id="L37">    }</span>
+    
+    private void inspectAssertion(AssertStatement statement) {
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (statement instanceof AssertBinaryOp) {</span>
+<span class="nc" id="L41">            AssertBinaryOp a = (AssertBinaryOp)statement;</span>
+<span class="nc bnc" id="L42" title="All 4 branches missed.">            if (isVariableAssertable(a.from, a.targetStatement, a) &amp;&amp; isVariableAssertable(a.to, a.targetStatement, a)) {</span>
+<span class="nc" id="L43">                validAssertions.add(a);</span>
+            }
+<span class="nc" id="L45">        }</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        else if (statement instanceof AssertUnaryOp) {</span>
+<span class="nc" id="L47">            AssertUnaryOp a = (AssertUnaryOp)statement;</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">            if (isVariableAssertable(a.to, a.targetStatement, a)) {</span>
+<span class="nc" id="L49">                validAssertions.add(a);</span>
+            }
+        }
+<span class="nc" id="L52">    }</span>
+    private boolean isVariableAssertable(Variable var, Statement target, Statement assertion) {
+<span class="nc" id="L54">        Set&lt;Statement&gt; reachTarget = definitions.getReachingDefs(target, var);</span>
+<span class="nc" id="L55">        Set&lt;Statement&gt; reachAssertion = definitions.getReachingDefs(assertion, var);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        for (Statement s : reachAssertion) {</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (s instanceof AssertStatement)</span>
+<span class="nc" id="L58">                continue;</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (!reachTarget.contains(s))</span>
+<span class="nc" id="L60">                return false;</span>
+        }
+<span class="nc" id="L62">        return true;</span>
+    }
+    
+    public boolean isAssertionValid(AssertStatement statement) {
+<span class="nc bnc" id="L66" title="All 2 branches missed.">    	if (statement instanceof AssertAliases)</span>
+<span class="nc" id="L67">    		throw new IllegalArgumentException(&quot;Aliasing assertions must be queried with the early assertion analysis&quot;);</span>
+<span class="nc" id="L68">        return validAssertions.contains(statement);</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

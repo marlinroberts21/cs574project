@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Grammar.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar</a> &gt; <span class="el_source">Grammar.java</span></div><h1>Grammar.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.directedgraph.StronglyConnectedComponents;
+import dk.brics.string.grammar.operations.Component;
+import dk.brics.string.grammar.operations.Component.Recursion;
+import dk.brics.string.grammar.operations.AssertionCycleApproximation;
+import dk.brics.string.grammar.operations.GrammarAsDirectedGraph;
+import dk.brics.string.grammar.operations.OperationCycleApproximation;
+import dk.brics.string.grammar.operations.RegularApproximation;
+import dk.brics.string.stringoperations.BinaryOperation;
+import dk.brics.string.stringoperations.UnaryOperation;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Context-free grammar with regular operations.
+ *
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class Grammar {
+
+    private List&lt;Nonterminal&gt; nonterminals;
+
+    /**
+     * Constructs new empty grammar.
+     */
+<span class="nc" id="L31">    public Grammar() {</span>
+<span class="nc" id="L32">        nonterminals = new ArrayList&lt;Nonterminal&gt;();</span>
+<span class="nc" id="L33">    }</span>
+
+    /**
+     * Adds new nonterminal.
+     */
+    public Nonterminal addNonterminal() {
+<span class="nc" id="L39">        Nonterminal n = new Nonterminal(nonterminals.size());</span>
+<span class="nc" id="L40">        nonterminals.add(n);</span>
+<span class="nc" id="L41">        return n;</span>
+    }
+
+    /**
+     * Returns the (unmodifiable) list of nonterminals in this grammar.
+     */
+    public List&lt;Nonterminal&gt; getNonterminals() {
+<span class="nc" id="L48">        return Collections.unmodifiableList(nonterminals);</span>
+    }
+
+    /**
+     * Adds new unit production [&lt;tt&gt;a -&gt; b&lt;/tt&gt;].
+     * Ignored if &lt;tt&gt;a==b&lt;/tt&gt;.
+     */
+    public void addUnitProduction(Nonterminal a, Nonterminal b) {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (a != b) {</span>
+<span class="nc" id="L57">            a.getProductions().add(new UnitProduction(b));</span>
+        }
+<span class="nc" id="L59">    }</span>
+
+    /**
+     * Adds new pair production [&lt;tt&gt;a -&gt; b c&lt;/tt&gt;].
+     */
+    public void addPairProduction(Nonterminal a, Nonterminal b, Nonterminal c) {
+<span class="nc" id="L65">        a.getProductions().add(new PairProduction(b, c));</span>
+<span class="nc" id="L66">    }</span>
+
+    /**
+     * Adds new automaton production [&lt;tt&gt;a -&gt; reg&lt;/tt&gt;].
+     * Ignored if &lt;tt&gt;reg&lt;/tt&gt; is empty.
+     */
+    public void addAutomatonProduction(Nonterminal a, Automaton reg) {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (!reg.isEmpty()) {</span>
+<span class="nc" id="L74">            a.getProductions().add(new AutomatonProduction(reg));</span>
+        }
+<span class="nc" id="L76">    }</span>
+
+    /**
+     * Adds new epsilon production [&lt;tt&gt;a -&gt; &quot;&quot;&lt;/tt&gt;].
+     */
+    public void addEpsilonProduction(Nonterminal a) {
+<span class="nc" id="L82">        a.getProductions().add(new EpsilonProduction());</span>
+<span class="nc" id="L83">    }</span>
+
+    /**
+     * Adds new unary operation production [&lt;tt&gt;a -&gt; op1(b)&lt;/tt&gt;].
+     */
+    public void addUnaryProduction(Nonterminal a, UnaryOperation op, Nonterminal b) {
+<span class="nc" id="L89">        a.getProductions().add(new UnaryProduction(op, b));</span>
+<span class="nc" id="L90">    }</span>
+
+    /**
+     * Adds new binary operation production [&lt;tt&gt;a -&gt; op2(b,c)&lt;/tt&gt;].
+     */
+    public void addBinaryProduction(Nonterminal a, BinaryOperation op, Nonterminal b, Nonterminal c) {
+<span class="nc" id="L96">        a.getProductions().add(new BinaryProduction(op, b, c));</span>
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Returns number of nonterminals in this grammar.
+     */
+    public int getNumberOfNonterminals() {
+<span class="nc" id="L103">        return nonterminals.size();</span>
+    }
+
+    /**
+     * Returns number of productions in this grammar.
+     */
+    public int getNumberOfProductions() {
+<span class="nc" id="L110">        int x = 0;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        for (Nonterminal n : nonterminals) {</span>
+<span class="nc" id="L112">            x += n.getProductions().size();</span>
+        }
+<span class="nc" id="L114">        return x;</span>
+    }
+
+    /**
+     * Returns string representation of this grammar.
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L122">        StringBuilder s = new StringBuilder();</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (Nonterminal v : nonterminals) {</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            for (Production p : v.getProductions()) {</span>
+<span class="nc" id="L125">                s.append(v).append(&quot; -&gt; &quot;).append(p).append(&quot;\n&quot;);</span>
+            }
+        }
+<span class="nc" id="L128">        return s.toString();</span>
+    }
+
+    /**
+     * Visits all productions with the given visitor.
+     */
+    public void visitProductions(ProductionVisitor v) {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (Nonterminal a : nonterminals) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            for (Production p : a.getProductions()) {</span>
+<span class="nc" id="L137">                p.visitBy(a, v);</span>
+            }
+        }
+<span class="nc" id="L140">    }</span>
+    
+    /**
+     * Breaks operation cycles using {@link AssertionCycleApproximation} and then
+     * approximates the remaining operation cycles with {@link OperationCycleApproximation}.
+     */
+    public void approximateOperationCycles() {
+<span class="nc" id="L147">        new AssertionCycleApproximation(this).approximate();</span>
+<span class="nc" id="L148">        new OperationCycleApproximation(this).approximate();</span>
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * See {@link OperationCycleApproximation#countCycles()}.
+     */
+    public int getNumberOfOperationCycles() {
+<span class="nc" id="L155">        return new OperationCycleApproximation(this).countCycles();</span>
+    }
+
+    /**
+     * Finds the strongly connected components and their recursion kinds.
+     */
+    public StronglyConnectedComponents&lt;Nonterminal, Component&gt; getComponents(boolean find_recursion_kinds) {
+<span class="nc" id="L162">        StronglyConnectedComponents&lt;Nonterminal, Component&gt; comp =</span>
+<span class="nc" id="L163">                new StronglyConnectedComponents&lt;Nonterminal, Component&gt;(new GrammarAsDirectedGraph(this));</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (find_recursion_kinds) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            for (Component c : comp.getComponents()) {</span>
+<span class="nc" id="L166">                c.findRecursion();</span>
+            }
+        }
+<span class="nc" id="L169">        return comp;</span>
+    }
+
+    /**
+     * Returns number of components.
+     */
+    public int getNumberOfComponents() {
+<span class="nc" id="L176">        return getComponents(false).getComponents().size();</span>
+    }
+
+    /**
+     * Returns number of non-linear components.
+     */
+    public int getNumberOfNonLinearComponents() {
+<span class="nc" id="L183">        int nonreg = 0;</span>
+<span class="nc" id="L184">        StronglyConnectedComponents&lt;Nonterminal, Component&gt; comp = getComponents(true);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        for (Component c : comp.getComponents()) {</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            if (c.getRecursion() == Recursion.BOTH) {</span>
+<span class="nc" id="L187">                nonreg++;</span>
+            }
+        }
+<span class="nc" id="L190">        return nonreg;</span>
+    }
+
+    /**
+     * See {@link OperationCycleApproximation#getCharsets()}.
+     */
+    public String getCharsets() {
+<span class="nc" id="L197">        return new OperationCycleApproximation(this).getCharsets();</span>
+    }
+
+    /**
+     * See {@link RegularApproximation}.
+     */
+    public void approximateNonLinear(Collection&lt;Nonterminal&gt; hotspots) {
+<span class="nc" id="L204">        new RegularApproximation(this).approximate(hotspots);</span>
+<span class="nc" id="L205">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

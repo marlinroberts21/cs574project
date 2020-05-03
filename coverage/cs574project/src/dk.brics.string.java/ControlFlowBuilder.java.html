@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ControlFlowBuilder.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">ControlFlowBuilder.java</span></div><h1>ControlFlowBuilder.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.Stack;
+
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Nop;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.util.Pair;
+
+/**
+ * Utility class assisting in the construction of method bodies.
+ * &lt;p/&gt;
+ * The control-flow builder acts as a &lt;i&gt;cursor&lt;/i&gt; in the control-flow graph.
+ * When a new statement is added, it becomes the successor of the statement under the cursor,
+ * and the cursor then moves to the new statement. As a result, successive calls to {@link #addStatement}
+ * creates a chain of statement nodes.
+ * &lt;p/&gt;
+ * The control-flow graph can be split with {@link #startBranch()}. After calling, one or more calls
+ * to {@link #useBranch()} must be made at points where the branches should join. Finally {@link #endBranch()}
+ * should be called after the last {@link #useBranch()}. For example, to create the following control-flow,
+ * &lt;pre&gt;
+ *     A
+ *   / | \
+ *  B  C  D
+ *  |  |  |
+ *  E  |  |
+ *   \ | /
+ *     F
+ * &lt;/pre&gt;
+ * one could add the statements in this fashion:
+ * &lt;pre&gt;
+ * A
+ * startBranch()
+ * B
+ * E
+ * useBranch()
+ * C
+ * useBranch()
+ * D
+ * useBranch()
+ * endBranch()
+ * F
+ * &lt;/pre&gt;
+ */
+public class ControlFlowBuilder {
+    private Method method;
+<span class="nc" id="L47">    private boolean branchWasUsed = false;</span>
+<span class="nc" id="L48">    private Stack&lt;Branching&gt; branches = new Stack&lt;Branching&gt;();</span>
+    
+    /**
+     * Entry point for the graph being created for the current jimple statement.
+     */
+    private Statement firstStatement;
+    
+    /**
+     * The most recently added statement. When all statement are created, this will
+     * be the exit point for the statement's graph, because they can only be
+     * created in topological order.
+     */
+    private Statement lastStatement;
+    
+    private static final class Branching {
+        public Statement start;
+        public Statement end;
+<span class="nc" id="L65">        public Branching(Statement start, Statement end) {</span>
+<span class="nc" id="L66">            this.start = start;</span>
+<span class="nc" id="L67">            this.end = end;</span>
+<span class="nc" id="L68">        }</span>
+    }
+    
+    /**
+     * Creates a builder for inserting statements in the specified method's body.
+     * The builder's cursor will initially be in isolation, so added statements will not
+     * be reachable.
+     * @param method an intermediate method to add statements to.
+     */
+<span class="nc" id="L77">    public ControlFlowBuilder(Method method) {</span>
+<span class="nc" id="L78">        this.method = method;</span>
+<span class="nc" id="L79">    }</span>
+    
+    /**
+     * Moves the cursor to the specified statement, so new statements will
+     * be successors of the specified statement.
+     * @param to statement to add from.
+     * @exception IllegalStateException if a branch is currently unclosed.
+     * @exception IllegalArgumentException if the specified statement belongs to a different method than the builder 
+     */
+    public void moveToStatement(Statement to) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (branches.size() &gt; 0)</span>
+<span class="nc" id="L90">            throw new IllegalStateException(&quot;Unclosed branch&quot;);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (to.getMethod() != method)</span>
+<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;Statement belongs to a different method&quot;);</span>
+<span class="nc" id="L93">        firstStatement = to;</span>
+<span class="nc" id="L94">        lastStatement = to;</span>
+<span class="nc" id="L95">    }</span>
+    
+    /**
+     * Removes the cursor from the control-flow graph, so statements will be placed in
+     * an isolated subgraph of their own. The statements can later be connected with
+     * the of the graph.
+     */
+    public void moveToIsolation() {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (branches.size() &gt; 0)</span>
+<span class="nc" id="L104">            throw new IllegalStateException(&quot;Unclosed branch&quot;);</span>
+<span class="nc" id="L105">        firstStatement = null;</span>
+<span class="nc" id="L106">        lastStatement = null;</span>
+<span class="nc" id="L107">    }</span>
+    
+    /**
+     * Finishes the subgraph created by the builder, and returns the first and last statement in the subgraph.
+     * The first statement will be either:
+     * &lt;ul&gt;
+     * &lt;li&gt;the statement set with {@link #moveToStatement},
+     * &lt;li&gt;the first statement added with {@link #addStatement}, or
+     * &lt;li&gt;a {@link Nop} statement preceeding all statements added with {@link #addStatement}.
+     * &lt;/ul&gt;
+     * The last statement will either be the last statement added with {@link #addStatement}, or a {@link Nop}
+     * succeeding it.
+     */
+    public Pair&lt;Statement, Statement&gt; finish() {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (branches.size() &gt; 0) {</span>
+<span class="nc" id="L122">            throw new IllegalStateException(&quot;A local branch was not closed. Each startBranch must have a corresponding call to endBranch&quot;);</span>
+        }
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (firstStatement == null) {</span>
+<span class="nc" id="L125">            addStatement(new Nop());</span>
+        }
+<span class="nc" id="L127">        Pair&lt;Statement, Statement&gt; pair = new Pair&lt;Statement, Statement&gt;(firstStatement, lastStatement);</span>
+<span class="nc" id="L128">        firstStatement = null;</span>
+<span class="nc" id="L129">        lastStatement = null;</span>
+<span class="nc" id="L130">        return pair;</span>
+    }
+    
+    /**
+     * Starts a new branching and opens one branch in it.
+     * Multiple levels of branching can open at once.
+     * See {@link ControlFlowBuilder} for a description of the branching methods.
+     */
+    public void startBranch() {
+        // if no statement has been created, add a Nop as the start of the branch
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (firstStatement == null) {</span>
+<span class="nc" id="L141">            addStatement(new Nop());</span>
+        }
+<span class="nc" id="L143">        Statement start = lastStatement;</span>
+<span class="nc" id="L144">        Statement end = new Nop();</span>
+<span class="nc" id="L145">        branchWasUsed = false;</span>
+<span class="nc" id="L146">        branches.add(new Branching(start, end));</span>
+<span class="nc" id="L147">        method.addStatement(end);</span>
+<span class="nc" id="L148">    }</span>
+
+    /**
+     * Ends the current branch and starts a new one.
+     * See {@link ControlFlowBuilder} for a description of the branching methods.
+     */
+    public void useBranch() {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (branches.empty()) {</span>
+<span class="nc" id="L156">            throw new IllegalStateException(&quot;No open branch. Call startBranch first&quot;);</span>
+        }
+        // if more than one empty branch is used, we could get double edges,
+        // so we use the -IfAbsent variant to avoid those.
+<span class="nc" id="L160">        lastStatement.addSuccIfAbsent(branches.peek().end);</span>
+<span class="nc" id="L161">        lastStatement = branches.peek().start;</span>
+<span class="nc" id="L162">        branchWasUsed = true;</span>
+<span class="nc" id="L163">    }</span>
+
+    /**
+     * Ends the current branching. Must be called directly after {@link #useBranch()}.
+     * See {@link ControlFlowBuilder} for a description of the branching methods.
+     */
+    public void endBranch() {
+<span class="nc bnc" id="L170" title="All 4 branches missed.">        if (branches.empty() || lastStatement != branches.lastElement().start) {</span>
+<span class="nc" id="L171">            throw new IllegalStateException(&quot;endBranch must be immediately preceeded by useBranch or startBranch&quot;);</span>
+        }
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (!branchWasUsed) {</span>
+<span class="nc" id="L174">            throw new IllegalStateException(&quot;A branch must have at least one possible path&quot;);</span>
+        }
+<span class="nc" id="L176">        Branching branch = branches.pop();</span>
+<span class="nc" id="L177">        lastStatement = branch.end;</span>
+<span class="nc" id="L178">    }</span>
+    
+    /**
+     * Adds a statement at the current position in the control flow graph
+     * being built. The statement will be added to the method, set as successor
+     * to the previous &quot;cursor&quot; statement, and then made the &quot;cursor&quot; statement itself.
+     * @param s a statement to add.
+     */
+    public void addStatement(Statement s) {
+<span class="nc" id="L187">        method.addStatement(s);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (firstStatement == null) {</span>
+<span class="nc" id="L189">            firstStatement = s;</span>
+<span class="nc" id="L190">        } else {</span>
+<span class="nc" id="L191">            lastStatement.addSucc(s);</span>
+        }
+<span class="nc" id="L193">        lastStatement = s;</span>
+<span class="nc" id="L194">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

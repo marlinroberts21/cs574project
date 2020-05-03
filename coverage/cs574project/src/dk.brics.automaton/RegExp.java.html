@@ -1,0 +1,888 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RegExp.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">RegExp.java</span></div><h1>RegExp.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Regular Expression extension to &lt;code&gt;Automaton&lt;/code&gt;.
+ * &lt;p&gt;
+ * Regular expressions are built from the following abstract syntax:
+ * &lt;table border=0&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;regexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;unionexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;unionexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;interexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;|&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;unionexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;(union)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;interexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;interexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;concatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;&amp;amp;&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;interexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;(intersection)&lt;/td&gt;&lt;td&gt;&lt;small&gt;[OPTIONAL]&lt;/small&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;concatexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;concatexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;i&gt;concatexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;(concatenation)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;?&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(zero or one occurrence)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;*&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(zero or more occurrences)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;+&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(one or more occurrences)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;{&lt;/b&gt;&lt;i&gt;n&lt;/i&gt;&lt;b&gt;}&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(&lt;tt&gt;&lt;i&gt;n&lt;/i&gt;&lt;/tt&gt; occurrences)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;{&lt;/b&gt;&lt;i&gt;n&lt;/i&gt;&lt;b&gt;,}&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(&lt;tt&gt;&lt;i&gt;n&lt;/i&gt;&lt;/tt&gt; or more occurrences)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;repeatexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;{&lt;/b&gt;&lt;i&gt;n&lt;/i&gt;&lt;b&gt;,&lt;/b&gt;&lt;i&gt;m&lt;/i&gt;&lt;b&gt;}&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(&lt;tt&gt;&lt;i&gt;n&lt;/i&gt;&lt;/tt&gt; to &lt;tt&gt;&lt;i&gt;m&lt;/i&gt;&lt;/tt&gt; occurrences, including both)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;complexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;complexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;~&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;complexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;(complement)&lt;/td&gt;&lt;td&gt;&lt;small&gt;[OPTIONAL]&lt;/small&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;charclassexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;charclassexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;[&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;charclasses&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;]&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(character class)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;[^&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;charclasses&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;]&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(negated character class)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;simpleexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;charclasses&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;charclass&lt;/i&gt;&amp;nbsp;&lt;i&gt;charclasses&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;charclass&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;charclass&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;charexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;-&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;charexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;(character range, including end-points)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;i&gt;charexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;simpleexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&lt;i&gt;charexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;.&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(any single character)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;#&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(the empty language)&lt;/td&gt;&lt;td&gt;&lt;small&gt;[OPTIONAL]&lt;/small&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;@&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(any string)&lt;/td&gt;&lt;td&gt;&lt;small&gt;[OPTIONAL]&lt;/small&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;&quot;&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&amp;lt;Unicode string without double-quotes&amp;gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;&quot;&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(a string)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;(&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;)&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(the empty string)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;(&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&lt;i&gt;unionexp&lt;/i&gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;)&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(precedence override)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;&amp;lt;&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&amp;lt;identifier&amp;gt;&amp;nbsp;&lt;tt&gt;&lt;b&gt;&amp;gt;&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(named automaton)&lt;/td&gt;&lt;td&gt;&lt;small&gt;[OPTIONAL]&lt;/small&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;&amp;lt;&lt;/b&gt;&lt;i&gt;n&lt;/i&gt;-&lt;i&gt;m&lt;/i&gt;&lt;b&gt;&amp;gt;&lt;/b&gt;&lt;/tt&gt;&lt;/td&gt;&lt;td&gt;(numerical interval)&lt;/td&gt;&lt;td&gt;&lt;small&gt;[OPTIONAL]&lt;/small&gt;&lt;/td&gt;&lt;/tr&gt;
+ *
+ * &lt;tr&gt;&lt;td&gt;&lt;i&gt;charexp&lt;/i&gt;&lt;/td&gt;&lt;td&gt;::=&lt;/td&gt;&lt;td&gt;&amp;lt;Unicode character&amp;gt;&lt;/td&gt;&lt;td&gt;(a single non-reserved character)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;td&gt;|&lt;/td&gt;&lt;td&gt;&lt;tt&gt;&lt;b&gt;\&lt;/b&gt;&lt;/tt&gt;&amp;nbsp;&amp;lt;Unicode character&amp;gt;&amp;nbsp;&lt;/td&gt;&lt;td&gt;(a single character)&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+ * &lt;/table&gt;
+ * &lt;p&gt;
+ * The productions marked &lt;small&gt;[OPTIONAL]&lt;/small&gt; are only allowed
+ * if specified by the syntax flags passed to the &lt;code&gt;RegExp&lt;/code&gt;
+ * constructor.  The reserved characters used in the (enabled) syntax
+ * must be escaped with backslash (&lt;tt&gt;&lt;b&gt;\&lt;/b&gt;&lt;/tt&gt;) or double-quotes
+ * (&lt;tt&gt;&lt;b&gt;&quot;...&quot;&lt;/b&gt;&lt;/tt&gt;). (In contrast to other regexp syntaxes,
+ * this is required also in character classes.)  Be aware that
+ * dash (&lt;tt&gt;&lt;b&gt;-&lt;/b&gt;&lt;/tt&gt;) has a special meaning in &lt;i&gt;charclass&lt;/i&gt; expressions.
+ * An identifier is a string not containing right angle bracket
+ * (&lt;tt&gt;&lt;b&gt;&amp;gt;&lt;/b&gt;&lt;/tt&gt;) or dash (&lt;tt&gt;&lt;b&gt;-&lt;/b&gt;&lt;/tt&gt;).  Numerical intervals are
+ * specified by non-negative decimal integers and include both end
+ * points, and if &lt;tt&gt;&lt;i&gt;n&lt;/i&gt;&lt;/tt&gt; and &lt;tt&gt;&lt;i&gt;m&lt;/i&gt;&lt;/tt&gt; have the
+ * same number of digits, then the conforming strings must have that
+ * length (i.e. prefixed by 0's).
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt; 
+ * */
+public class RegExp {
+	
+<span class="fc" id="L108">	enum Kind {</span>
+<span class="fc" id="L109">		REGEXP_UNION,</span>
+<span class="fc" id="L110">		REGEXP_CONCATENATION,</span>
+<span class="fc" id="L111">		REGEXP_INTERSECTION,</span>
+<span class="fc" id="L112">		REGEXP_OPTIONAL,</span>
+<span class="fc" id="L113">		REGEXP_REPEAT,</span>
+<span class="fc" id="L114">		REGEXP_REPEAT_MIN,</span>
+<span class="fc" id="L115">		REGEXP_REPEAT_MINMAX,</span>
+<span class="fc" id="L116">		REGEXP_COMPLEMENT,</span>
+<span class="fc" id="L117">		REGEXP_CHAR,</span>
+<span class="fc" id="L118">		REGEXP_CHAR_RANGE,</span>
+<span class="fc" id="L119">		REGEXP_ANYCHAR,</span>
+<span class="fc" id="L120">		REGEXP_EMPTY,</span>
+<span class="fc" id="L121">		REGEXP_STRING,</span>
+<span class="fc" id="L122">		REGEXP_ANYSTRING,</span>
+<span class="fc" id="L123">		REGEXP_AUTOMATON,</span>
+<span class="fc" id="L124">		REGEXP_INTERVAL</span>
+	}
+	
+	/** 
+	 * Syntax flag, enables intersection (&lt;tt&gt;&amp;amp;&lt;/tt&gt;). 
+	 */
+	public static final int INTERSECTION = 0x0001;
+	
+	/** 
+	 * Syntax flag, enables complement (&lt;tt&gt;~&lt;/tt&gt;). 
+	 */
+	public static final int COMPLEMENT = 0x0002;
+	
+	/** 
+	 * Syntax flag, enables empty language (&lt;tt&gt;#&lt;/tt&gt;). 
+	 */
+	public static final int EMPTY = 0x0004;
+	
+	/** 
+	 * Syntax flag, enables anystring (&lt;tt&gt;@&lt;/tt&gt;). 
+	 */
+	public static final int ANYSTRING = 0x0008;
+	
+	/** 
+	 * Syntax flag, enables named automata (&lt;tt&gt;&amp;lt;&lt;/tt&gt;identifier&lt;tt&gt;&amp;gt;&lt;/tt&gt;). 
+	 */
+	public static final int AUTOMATON = 0x0010;
+	
+	/** 
+	 * Syntax flag, enables numerical intervals (&lt;tt&gt;&amp;lt;&lt;i&gt;n&lt;/i&gt;-&lt;i&gt;m&lt;/i&gt;&amp;gt;&lt;/tt&gt;). 
+	 */
+	public static final int INTERVAL = 0x0020;
+	
+	/** 
+	 * Syntax flag, enables all optional regexp syntax. 
+	 */
+	public static final int ALL = 0xffff;
+	
+	/** 
+	 * Syntax flag, enables no optional regexp syntax. 
+	 */
+	public static final int NONE = 0x0000;
+	
+<span class="fc" id="L167">	private static boolean allow_mutation = false;</span>
+	
+	Kind kind;
+	RegExp exp1, exp2;
+	String s;
+	char c;
+	int min, max, digits;
+	char from, to;
+	
+	String b;
+	int flags;
+	int pos;
+	
+<span class="fc" id="L180">	RegExp() {}</span>
+	
+	/** 
+	 * Constructs new &lt;code&gt;RegExp&lt;/code&gt; from a string. 
+	 * Same as &lt;code&gt;RegExp(s, ALL)&lt;/code&gt;.
+	 * @param s regexp string
+	 * @exception IllegalArgumentException if an error occured while parsing the regular expression
+	 */
+	public RegExp(String s) throws IllegalArgumentException {
+<span class="fc" id="L189">		this(s, ALL);</span>
+<span class="fc" id="L190">	}</span>
+	
+	/** 
+	 * Constructs new &lt;code&gt;RegExp&lt;/code&gt; from a string. 
+	 * @param s regexp string
+	 * @param syntax_flags boolean 'or' of optional syntax constructs to be enabled
+	 * @exception IllegalArgumentException if an error occured while parsing the regular expression
+	 */
+<span class="fc" id="L198">	public RegExp(String s, int syntax_flags) throws IllegalArgumentException {</span>
+<span class="fc" id="L199">		b = s;</span>
+<span class="fc" id="L200">		flags = syntax_flags;</span>
+		RegExp e;
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (s.length() == 0)</span>
+<span class="nc" id="L203">			e = makeString(&quot;&quot;);</span>
+		else {
+<span class="fc" id="L205">			e = parseUnionExp();</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">			if (pos &lt; b.length())</span>
+<span class="nc" id="L207">				throw new IllegalArgumentException(&quot;end-of-string expected at position &quot; + pos);</span>
+		}
+<span class="fc" id="L209">		kind = e.kind;</span>
+<span class="fc" id="L210">		exp1 = e.exp1;</span>
+<span class="fc" id="L211">		exp2 = e.exp2;</span>
+<span class="fc" id="L212">		this.s = e.s;</span>
+<span class="fc" id="L213">		c = e.c;</span>
+<span class="fc" id="L214">		min = e.min;</span>
+<span class="fc" id="L215">		max = e.max;</span>
+<span class="fc" id="L216">		digits = e.digits;</span>
+<span class="fc" id="L217">		from = e.from;</span>
+<span class="fc" id="L218">		to = e.to;</span>
+<span class="fc" id="L219">		b = null;</span>
+<span class="fc" id="L220">	}</span>
+	
+	/** 
+	 * Constructs new &lt;code&gt;Automaton&lt;/code&gt; from this &lt;code&gt;RegExp&lt;/code&gt;. 
+	 * Same as &lt;code&gt;toAutomaton(null)&lt;/code&gt; (empty automaton map).
+	 */
+	public Automaton toAutomaton() {
+<span class="fc" id="L227">		return toAutomatonAllowMutate(null, null, true);</span>
+	}
+	
+	/** 
+	 * Constructs new &lt;code&gt;Automaton&lt;/code&gt; from this &lt;code&gt;RegExp&lt;/code&gt;. 
+	 * Same as &lt;code&gt;toAutomaton(null,minimize)&lt;/code&gt; (empty automaton map).
+	 */
+	public Automaton toAutomaton(boolean minimize) {
+<span class="nc" id="L235">		return toAutomatonAllowMutate(null, null, minimize);</span>
+	}
+	
+	/** 
+	 * Constructs new &lt;code&gt;Automaton&lt;/code&gt; from this &lt;code&gt;RegExp&lt;/code&gt;. 
+	 * The constructed automaton is minimal and deterministic and has no 
+	 * transitions to dead states. 
+	 * @param automaton_provider provider of automata for named identifiers
+	 * @exception IllegalArgumentException if this regular expression uses
+	 *   a named identifier that is not available from the automaton provider
+	 */
+	public Automaton toAutomaton(AutomatonProvider automaton_provider) throws IllegalArgumentException {
+<span class="nc" id="L247">		return toAutomatonAllowMutate(null, automaton_provider, true);</span>
+	}
+		
+	/** 
+	 * Constructs new &lt;code&gt;Automaton&lt;/code&gt; from this &lt;code&gt;RegExp&lt;/code&gt;. 
+	 * The constructed automaton has no transitions to dead states. 
+	 * @param automaton_provider provider of automata for named identifiers
+	 * @param minimize if set, the automaton is minimized and determinized
+	 * @exception IllegalArgumentException if this regular expression uses
+	 *   a named identifier that is not available from the automaton provider
+	 */
+	public Automaton toAutomaton(AutomatonProvider automaton_provider, boolean minimize) throws IllegalArgumentException {
+<span class="nc" id="L259">		return toAutomatonAllowMutate(null, automaton_provider, minimize);</span>
+	}
+		
+	/** 
+	 * Constructs new &lt;code&gt;Automaton&lt;/code&gt; from this &lt;code&gt;RegExp&lt;/code&gt;. 
+	 * The constructed automaton is minimal and deterministic and has no 
+	 * transitions to dead states. 
+	 * @param automata a map from automaton identifiers to automata 
+	 *   (of type &lt;code&gt;Automaton&lt;/code&gt;).
+	 * @exception IllegalArgumentException if this regular expression uses
+	 *   a named identifier that does not occur in the automaton map
+	 */
+	public Automaton toAutomaton(Map&lt;String, Automaton&gt; automata) throws IllegalArgumentException {
+<span class="nc" id="L272">		return toAutomatonAllowMutate(automata, null, true);</span>
+	}
+	
+	/** 
+	 * Constructs new &lt;code&gt;Automaton&lt;/code&gt; from this &lt;code&gt;RegExp&lt;/code&gt;. 
+	 * The constructed automaton has no transitions to dead states. 
+	 * @param automata a map from automaton identifiers to automata 
+	 *   (of type &lt;code&gt;Automaton&lt;/code&gt;).
+	 * @param minimize if set, the automaton is minimized and determinized
+	 * @exception IllegalArgumentException if this regular expression uses
+	 *   a named identifier that does not occur in the automaton map
+	 */
+	public Automaton toAutomaton(Map&lt;String, Automaton&gt; automata, boolean minimize) throws IllegalArgumentException {
+<span class="nc" id="L285">		return toAutomatonAllowMutate(automata, null, minimize);</span>
+	}
+	
+	/**
+	 * Sets or resets allow mutate flag.
+	 * If this flag is set, then automata construction uses mutable automata,
+	 * which is slightly faster but not thread safe. 
+	 * By default, the flag is not set.
+	 * @param flag if true, the flag is set
+	 * @return previous value of the flag
+	 */
+	public boolean setAllowMutate(boolean flag) {
+<span class="nc" id="L297">		boolean b = allow_mutation;</span>
+<span class="nc" id="L298">		allow_mutation = flag;</span>
+<span class="nc" id="L299">		return b;</span>
+	}
+	
+	private Automaton toAutomatonAllowMutate(Map&lt;String, Automaton&gt; automata, 
+			AutomatonProvider automaton_provider,
+			boolean minimize) throws IllegalArgumentException {
+<span class="fc" id="L305">		boolean b = false;</span>
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">		if (allow_mutation)</span>
+<span class="nc" id="L307">			b = Automaton.setAllowMutate(true); // thread unsafe</span>
+<span class="fc" id="L308">		Automaton a = toAutomaton(automata, automaton_provider, minimize);</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		if (allow_mutation)</span>
+<span class="nc" id="L310">			Automaton.setAllowMutate(b);</span>
+<span class="fc" id="L311">		return a;</span>
+	}
+		
+	private Automaton toAutomaton(Map&lt;String, Automaton&gt; automata, 
+			AutomatonProvider automaton_provider,
+			boolean minimize) throws IllegalArgumentException {
+		List&lt;Automaton&gt; list;
+<span class="fc" id="L318">		Automaton a = null;</span>
+<span class="pc bpc" id="L319" title="11 of 17 branches missed.">		switch (kind) {</span>
+		case REGEXP_UNION:
+<span class="fc" id="L321">			list = new ArrayList&lt;Automaton&gt;();</span>
+<span class="fc" id="L322">			findLeaves(exp1, Kind.REGEXP_UNION, list, automata, automaton_provider, minimize);</span>
+<span class="fc" id="L323">			findLeaves(exp2, Kind.REGEXP_UNION, list, automata, automaton_provider, minimize);</span>
+<span class="fc" id="L324">			a = BasicOperations.union(list);</span>
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">			if (minimize)</span>
+<span class="pc" id="L326">				a.minimize();</span>
+<span class="fc" id="L327">			break;</span>
+		case REGEXP_CONCATENATION:
+<span class="fc" id="L329">			list = new ArrayList&lt;Automaton&gt;();</span>
+<span class="fc" id="L330">			findLeaves(exp1, Kind.REGEXP_CONCATENATION, list, automata, automaton_provider, minimize);</span>
+<span class="fc" id="L331">			findLeaves(exp2, Kind.REGEXP_CONCATENATION, list, automata, automaton_provider, minimize);</span>
+<span class="fc" id="L332">			a = BasicOperations.concatenate(list);</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">			if (minimize)</span>
+<span class="pc" id="L334">				a.minimize();</span>
+<span class="fc" id="L335">			break;</span>
+		case REGEXP_INTERSECTION:
+<span class="nc" id="L337">			a = exp1.toAutomaton(automata, automaton_provider, minimize).intersection(exp2.toAutomaton(automata, automaton_provider, minimize));</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">			if (minimize)</span>
+<span class="nc" id="L339">				a.minimize();</span>
+<span class="nc" id="L340">			break;</span>
+		case REGEXP_OPTIONAL:
+<span class="nc" id="L342">			a = exp1.toAutomaton(automata, automaton_provider, minimize).optional();</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">			if (minimize)</span>
+<span class="nc" id="L344">				a.minimize();</span>
+<span class="nc" id="L345">			break;</span>
+		case REGEXP_REPEAT:
+<span class="nc" id="L347">			a = exp1.toAutomaton(automata, automaton_provider, minimize).repeat();</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">			if (minimize)</span>
+<span class="nc" id="L349">				a.minimize();</span>
+<span class="nc" id="L350">			break;</span>
+		case REGEXP_REPEAT_MIN:
+<span class="fc" id="L352">			a = exp1.toAutomaton(automata, automaton_provider, minimize).repeat(min);</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">			if (minimize)</span>
+<span class="pc" id="L354">				a.minimize();</span>
+<span class="fc" id="L355">			break;</span>
+		case REGEXP_REPEAT_MINMAX:
+<span class="nc" id="L357">			a = exp1.toAutomaton(automata, automaton_provider, minimize).repeat(min, max);</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">			if (minimize)</span>
+<span class="nc" id="L359">				a.minimize();</span>
+<span class="nc" id="L360">			break;</span>
+		case REGEXP_COMPLEMENT:
+<span class="nc" id="L362">			a = exp1.toAutomaton(automata, automaton_provider, minimize).complement();</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">			if (minimize)</span>
+<span class="nc" id="L364">				a.minimize();</span>
+<span class="nc" id="L365">			break;</span>
+		case REGEXP_CHAR:
+<span class="fc" id="L367">			a = BasicAutomata.makeChar(c);</span>
+<span class="fc" id="L368">			break;</span>
+		case REGEXP_CHAR_RANGE:
+<span class="fc" id="L370">			a = BasicAutomata.makeCharRange(from, to);</span>
+<span class="fc" id="L371">			break;</span>
+		case REGEXP_ANYCHAR:
+<span class="nc" id="L373">			a = BasicAutomata.makeAnyChar();</span>
+<span class="nc" id="L374">			break;</span>
+		case REGEXP_EMPTY:
+<span class="nc" id="L376">			a = BasicAutomata.makeEmpty();</span>
+<span class="nc" id="L377">			break;</span>
+		case REGEXP_STRING:
+<span class="nc" id="L379">			a = BasicAutomata.makeString(s);</span>
+<span class="nc" id="L380">			break;</span>
+		case REGEXP_ANYSTRING:
+<span class="fc" id="L382">			a = BasicAutomata.makeAnyString();</span>
+<span class="fc" id="L383">			break;</span>
+		case REGEXP_AUTOMATON:
+<span class="nc" id="L385">			Automaton aa = null;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">			if (automata != null)</span>
+<span class="nc" id="L387">				aa = automata.get(s);</span>
+<span class="nc bnc" id="L388" title="All 4 branches missed.">			if (aa == null &amp;&amp; automaton_provider != null)</span>
+				try {
+<span class="nc" id="L390">					aa = automaton_provider.getAutomaton(s);</span>
+<span class="nc" id="L391">				} catch (IOException e) {</span>
+<span class="nc" id="L392">					throw new IllegalArgumentException(e);</span>
+				}
+<span class="nc bnc" id="L394" title="All 2 branches missed.">			if (aa == null)</span>
+<span class="nc" id="L395">				throw new IllegalArgumentException(&quot;'&quot; + s + &quot;' not found&quot;);</span>
+<span class="nc" id="L396">			a = aa.clone(); // always clone here (ignore allow_mutate)</span>
+<span class="nc" id="L397">			break;</span>
+		case REGEXP_INTERVAL:
+<span class="nc" id="L399">			a = BasicAutomata.makeInterval(min, max, digits);</span>
+			break;
+		}
+<span class="fc" id="L402">		return a;</span>
+	}
+
+	private void findLeaves(RegExp exp, Kind kind, List&lt;Automaton&gt; list, Map&lt;String, Automaton&gt; automata, 
+			AutomatonProvider automaton_provider,
+			boolean minimize) {
+<span class="fc bfc" id="L408" title="All 2 branches covered.">		if (exp.kind == kind) {</span>
+<span class="fc" id="L409">			findLeaves(exp.exp1, kind, list, automata, automaton_provider, minimize);</span>
+<span class="fc" id="L410">			findLeaves(exp.exp2, kind, list, automata, automaton_provider, minimize);</span>
+<span class="fc" id="L411">		} else</span>
+<span class="fc" id="L412">			list.add(exp.toAutomaton(automata, automaton_provider, minimize));</span>
+<span class="fc" id="L413">	}</span>
+
+	/** 
+	 * Constructs string from parsed regular expression. 
+	 */
+	@Override
+	public String toString() {
+<span class="nc" id="L420">		return toStringBuilder(new StringBuilder()).toString();</span>
+	}
+
+	StringBuilder toStringBuilder(StringBuilder b) {
+<span class="nc bnc" id="L424" title="All 17 branches missed.">		switch (kind) {</span>
+		case REGEXP_UNION:
+<span class="nc" id="L426">			b.append(&quot;(&quot;);</span>
+<span class="nc" id="L427">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L428">			b.append(&quot;|&quot;);</span>
+<span class="nc" id="L429">			exp2.toStringBuilder(b);</span>
+<span class="nc" id="L430">			b.append(&quot;)&quot;);</span>
+<span class="nc" id="L431">			break;</span>
+		case REGEXP_CONCATENATION:
+<span class="nc" id="L433">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L434">			exp2.toStringBuilder(b);</span>
+<span class="nc" id="L435">			break;</span>
+		case REGEXP_INTERSECTION:
+<span class="nc" id="L437">			b.append(&quot;(&quot;);</span>
+<span class="nc" id="L438">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L439">			b.append(&quot;&amp;&quot;);</span>
+<span class="nc" id="L440">			exp2.toStringBuilder(b);</span>
+<span class="nc" id="L441">			b.append(&quot;)&quot;);</span>
+<span class="nc" id="L442">			break;</span>
+		case REGEXP_OPTIONAL:
+<span class="nc" id="L444">			b.append(&quot;(&quot;);</span>
+<span class="nc" id="L445">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L446">			b.append(&quot;)?&quot;);</span>
+<span class="nc" id="L447">			break;</span>
+		case REGEXP_REPEAT:
+<span class="nc" id="L449">			b.append(&quot;(&quot;);</span>
+<span class="nc" id="L450">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L451">			b.append(&quot;)*&quot;);</span>
+<span class="nc" id="L452">			break;</span>
+		case REGEXP_REPEAT_MIN:
+<span class="nc" id="L454">			b.append(&quot;(&quot;);</span>
+<span class="nc" id="L455">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L456">			b.append(&quot;){&quot;).append(min).append(&quot;,}&quot;);</span>
+<span class="nc" id="L457">			break;</span>
+		case REGEXP_REPEAT_MINMAX:
+<span class="nc" id="L459">			b.append(&quot;(&quot;);</span>
+<span class="nc" id="L460">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L461">			b.append(&quot;){&quot;).append(min).append(&quot;,&quot;).append(max).append(&quot;}&quot;);</span>
+<span class="nc" id="L462">			break;</span>
+		case REGEXP_COMPLEMENT:
+<span class="nc" id="L464">			b.append(&quot;~(&quot;);</span>
+<span class="nc" id="L465">			exp1.toStringBuilder(b);</span>
+<span class="nc" id="L466">			b.append(&quot;)&quot;);</span>
+<span class="nc" id="L467">			break;</span>
+		case REGEXP_CHAR:
+<span class="nc" id="L469">			appendChar(c, b);</span>
+<span class="nc" id="L470">			break;</span>
+		case REGEXP_CHAR_RANGE:
+<span class="nc" id="L472">			b.append(&quot;[\\&quot;).append(from).append(&quot;-\\&quot;).append(to).append(&quot;]&quot;);</span>
+<span class="nc" id="L473">			break;</span>
+		case REGEXP_ANYCHAR:
+<span class="nc" id="L475">			b.append(&quot;.&quot;);</span>
+<span class="nc" id="L476">			break;</span>
+		case REGEXP_EMPTY:
+<span class="nc" id="L478">			b.append(&quot;#&quot;);</span>
+<span class="nc" id="L479">			break;</span>
+		case REGEXP_STRING:
+<span class="nc bnc" id="L481" title="All 2 branches missed.">			if (s.indexOf('&quot;') == -1) {</span>
+<span class="nc" id="L482">				b.append(&quot;\&quot;&quot;).append(s).append(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L483">			} else {</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">				for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="nc" id="L485">					appendChar(s.charAt(i), b);</span>
+				}
+			}
+<span class="nc" id="L488">			break;</span>
+		case REGEXP_ANYSTRING:
+<span class="nc" id="L490">			b.append(&quot;@&quot;);</span>
+<span class="nc" id="L491">			break;</span>
+		case REGEXP_AUTOMATON:
+<span class="nc" id="L493">			b.append(&quot;&lt;&quot;).append(s).append(&quot;&gt;&quot;);</span>
+<span class="nc" id="L494">			break;</span>
+		case REGEXP_INTERVAL:
+<span class="nc" id="L496">			String s1 = Integer.toString(min);</span>
+<span class="nc" id="L497">			String s2 = Integer.toString(max);</span>
+<span class="nc" id="L498">			b.append(&quot;&lt;&quot;);</span>
+<span class="nc bnc" id="L499" title="All 2 branches missed.">			if (digits &gt; 0)</span>
+<span class="nc bnc" id="L500" title="All 2 branches missed.">				for (int i = s1.length(); i &lt; digits; i++)</span>
+<span class="nc" id="L501">					b.append('0');</span>
+<span class="nc" id="L502">			b.append(s1).append(&quot;-&quot;);</span>
+<span class="nc bnc" id="L503" title="All 2 branches missed.">			if (digits &gt; 0)</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">				for (int i = s2.length(); i &lt; digits; i++)</span>
+<span class="nc" id="L505">					b.append('0');</span>
+<span class="nc" id="L506">			b.append(s2).append(&quot;&gt;&quot;);</span>
+			break;
+		}
+<span class="nc" id="L509">		return b;</span>
+	}
+
+	private void appendChar(char c, StringBuilder b) {
+<span class="nc bnc" id="L513" title="All 2 branches missed.">		if (&quot;|&amp;?*+{},![]^-.#@\&quot;()&lt;&gt;\\&quot;.indexOf(c) != -1) {</span>
+<span class="nc" id="L514">			b.append(&quot;\\&quot;);</span>
+		}
+<span class="nc" id="L516">		b.append(c);</span>
+<span class="nc" id="L517">	}</span>
+
+	/** 
+	 * Returns set of automaton identifiers that occur in this regular expression. 
+	 */
+	public Set&lt;String&gt; getIdentifiers() {
+<span class="nc" id="L523">		HashSet&lt;String&gt; set = new HashSet&lt;String&gt;();</span>
+<span class="nc" id="L524">		getIdentifiers(set);</span>
+<span class="nc" id="L525">		return set;</span>
+	}
+
+	void getIdentifiers(Set&lt;String&gt; set) {
+<span class="nc bnc" id="L529" title="All 4 branches missed.">		switch (kind) {</span>
+		case REGEXP_UNION:
+		case REGEXP_CONCATENATION:
+		case REGEXP_INTERSECTION:
+<span class="nc" id="L533">			exp1.getIdentifiers(set);</span>
+<span class="nc" id="L534">			exp2.getIdentifiers(set);</span>
+<span class="nc" id="L535">			break;</span>
+		case REGEXP_OPTIONAL:
+		case REGEXP_REPEAT:
+		case REGEXP_REPEAT_MIN:
+		case REGEXP_REPEAT_MINMAX:
+		case REGEXP_COMPLEMENT:
+<span class="nc" id="L541">			exp1.getIdentifiers(set);</span>
+<span class="nc" id="L542">			break;</span>
+		case REGEXP_AUTOMATON:
+<span class="nc" id="L544">			set.add(s);</span>
+			break;
+		default:
+		}
+<span class="nc" id="L548">	}</span>
+
+	static RegExp makeUnion(RegExp exp1, RegExp exp2) {
+<span class="fc" id="L551">		RegExp r = new RegExp();</span>
+<span class="fc" id="L552">		r.kind = Kind.REGEXP_UNION;</span>
+<span class="fc" id="L553">		r.exp1 = exp1;</span>
+<span class="fc" id="L554">		r.exp2 = exp2;</span>
+<span class="fc" id="L555">		return r;</span>
+	}
+
+	static RegExp makeConcatenation(RegExp exp1, RegExp exp2) {
+<span class="pc bpc" id="L559" title="1 of 4 branches missed.">		if ((exp1.kind == Kind.REGEXP_CHAR || exp1.kind == Kind.REGEXP_STRING) &amp;&amp; </span>
+<span class="pc bpc" id="L560" title="2 of 4 branches missed.">			(exp2.kind == Kind.REGEXP_CHAR || exp2.kind == Kind.REGEXP_STRING))</span>
+<span class="nc" id="L561">			return makeString(exp1, exp2);</span>
+<span class="fc" id="L562">		RegExp r = new RegExp();</span>
+<span class="fc" id="L563">		r.kind = Kind.REGEXP_CONCATENATION;</span>
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">		if (exp1.kind == Kind.REGEXP_CONCATENATION &amp;&amp; </span>
+<span class="nc bnc" id="L565" title="All 4 branches missed.">			(exp1.exp2.kind == Kind.REGEXP_CHAR || exp1.exp2.kind == Kind.REGEXP_STRING) &amp;&amp; </span>
+<span class="nc bnc" id="L566" title="All 4 branches missed.">			(exp2.kind == Kind.REGEXP_CHAR || exp2.kind == Kind.REGEXP_STRING)) {</span>
+<span class="nc" id="L567">			r.exp1 = exp1.exp1;</span>
+<span class="nc" id="L568">			r.exp2 = makeString(exp1.exp2, exp2);</span>
+<span class="pc bpc" id="L569" title="1 of 4 branches missed.">		} else if ((exp1.kind == Kind.REGEXP_CHAR || exp1.kind == Kind.REGEXP_STRING) &amp;&amp; </span>
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">				   exp2.kind == Kind.REGEXP_CONCATENATION &amp;&amp; </span>
+<span class="nc bnc" id="L571" title="All 4 branches missed.">				   (exp2.exp1.kind == Kind.REGEXP_CHAR || exp2.exp1.kind == Kind.REGEXP_STRING)) {</span>
+<span class="nc" id="L572">			r.exp1 = makeString(exp1, exp2.exp1);</span>
+<span class="nc" id="L573">			r.exp2 = exp2.exp2;</span>
+<span class="nc" id="L574">		} else {</span>
+<span class="fc" id="L575">			r.exp1 = exp1;</span>
+<span class="fc" id="L576">			r.exp2 = exp2;</span>
+		}
+<span class="fc" id="L578">		return r;</span>
+	}
+
+	static private RegExp makeString(RegExp exp1, RegExp exp2) {
+<span class="nc" id="L582">		StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L583" title="All 2 branches missed.">		if (exp1.kind == Kind.REGEXP_STRING)</span>
+<span class="nc" id="L584">			b.append(exp1.s);</span>
+		else
+<span class="nc" id="L586">			b.append(exp1.c);</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">		if (exp2.kind == Kind.REGEXP_STRING)</span>
+<span class="nc" id="L588">			b.append(exp2.s);</span>
+		else
+<span class="nc" id="L590">			b.append(exp2.c);</span>
+<span class="nc" id="L591">		return makeString(b.toString());</span>
+	}
+
+	static RegExp makeIntersection(RegExp exp1, RegExp exp2) {
+<span class="nc" id="L595">		RegExp r = new RegExp();</span>
+<span class="nc" id="L596">		r.kind = Kind.REGEXP_INTERSECTION;</span>
+<span class="nc" id="L597">		r.exp1 = exp1;</span>
+<span class="nc" id="L598">		r.exp2 = exp2;</span>
+<span class="nc" id="L599">		return r;</span>
+	}
+
+	static RegExp makeOptional(RegExp exp) {
+<span class="nc" id="L603">		RegExp r = new RegExp();</span>
+<span class="nc" id="L604">		r.kind = Kind.REGEXP_OPTIONAL;</span>
+<span class="nc" id="L605">		r.exp1 = exp;</span>
+<span class="nc" id="L606">		return r;</span>
+	}
+
+	static RegExp makeRepeat(RegExp exp) {
+<span class="nc" id="L610">		RegExp r = new RegExp();</span>
+<span class="nc" id="L611">		r.kind = Kind.REGEXP_REPEAT;</span>
+<span class="nc" id="L612">		r.exp1 = exp;</span>
+<span class="nc" id="L613">		return r;</span>
+	}
+
+	static RegExp makeRepeat(RegExp exp, int min) {
+<span class="fc" id="L617">		RegExp r = new RegExp();</span>
+<span class="fc" id="L618">		r.kind = Kind.REGEXP_REPEAT_MIN;</span>
+<span class="fc" id="L619">		r.exp1 = exp;</span>
+<span class="fc" id="L620">		r.min = min;</span>
+<span class="fc" id="L621">		return r;</span>
+	}
+
+	static RegExp makeRepeat(RegExp exp, int min, int max) {
+<span class="nc" id="L625">		RegExp r = new RegExp();</span>
+<span class="nc" id="L626">		r.kind = Kind.REGEXP_REPEAT_MINMAX;</span>
+<span class="nc" id="L627">		r.exp1 = exp;</span>
+<span class="nc" id="L628">		r.min = min;</span>
+<span class="nc" id="L629">		r.max = max;</span>
+<span class="nc" id="L630">		return r;</span>
+	}
+
+	static RegExp makeComplement(RegExp exp) {
+<span class="nc" id="L634">		RegExp r = new RegExp();</span>
+<span class="nc" id="L635">		r.kind = Kind.REGEXP_COMPLEMENT;</span>
+<span class="nc" id="L636">		r.exp1 = exp;</span>
+<span class="nc" id="L637">		return r;</span>
+	}
+
+	static RegExp makeChar(char c) {
+<span class="fc" id="L641">		RegExp r = new RegExp();</span>
+<span class="fc" id="L642">		r.kind = Kind.REGEXP_CHAR;</span>
+<span class="fc" id="L643">		r.c = c;</span>
+<span class="fc" id="L644">		return r;</span>
+	}
+
+	static RegExp makeCharRange(char from, char to) {
+<span class="fc" id="L648">		RegExp r = new RegExp();</span>
+<span class="fc" id="L649">		r.kind = Kind.REGEXP_CHAR_RANGE;</span>
+<span class="fc" id="L650">		r.from = from;</span>
+<span class="fc" id="L651">		r.to = to;</span>
+<span class="fc" id="L652">		return r;</span>
+	}
+
+	static RegExp makeAnyChar() {
+<span class="nc" id="L656">		RegExp r = new RegExp();</span>
+<span class="nc" id="L657">		r.kind = Kind.REGEXP_ANYCHAR;</span>
+<span class="nc" id="L658">		return r;</span>
+	}
+
+	static RegExp makeEmpty() {
+<span class="nc" id="L662">		RegExp r = new RegExp();</span>
+<span class="nc" id="L663">		r.kind = Kind.REGEXP_EMPTY;</span>
+<span class="nc" id="L664">		return r;</span>
+	}
+
+	static RegExp makeString(String s) {
+<span class="nc" id="L668">		RegExp r = new RegExp();</span>
+<span class="nc" id="L669">		r.kind = Kind.REGEXP_STRING;</span>
+<span class="nc" id="L670">		r.s = s;</span>
+<span class="nc" id="L671">		return r;</span>
+	}
+
+	static RegExp makeAnyString() {
+<span class="fc" id="L675">		RegExp r = new RegExp();</span>
+<span class="fc" id="L676">		r.kind = Kind.REGEXP_ANYSTRING;</span>
+<span class="fc" id="L677">		return r;</span>
+	}
+
+	static RegExp makeAutomaton(String s) {
+<span class="nc" id="L681">		RegExp r = new RegExp();</span>
+<span class="nc" id="L682">		r.kind = Kind.REGEXP_AUTOMATON;</span>
+<span class="nc" id="L683">		r.s = s;</span>
+<span class="nc" id="L684">		return r;</span>
+	}
+
+	static RegExp makeInterval(int min, int max, int digits) {
+<span class="nc" id="L688">		RegExp r = new RegExp();</span>
+<span class="nc" id="L689">		r.kind = Kind.REGEXP_INTERVAL;</span>
+<span class="nc" id="L690">		r.min = min;</span>
+<span class="nc" id="L691">		r.max = max;</span>
+<span class="nc" id="L692">		r.digits = digits;</span>
+<span class="nc" id="L693">		return r;</span>
+	}
+
+	private boolean peek(String s) {
+<span class="fc bfc" id="L697" title="All 4 branches covered.">		return more() &amp;&amp; s.indexOf(b.charAt(pos)) != -1;</span>
+	}
+
+	private boolean match(char c) {
+<span class="fc bfc" id="L701" title="All 2 branches covered.">		if (pos &gt;= b.length())</span>
+<span class="fc" id="L702">			return false;</span>
+<span class="fc bfc" id="L703" title="All 2 branches covered.">		if (b.charAt(pos) == c) {</span>
+<span class="fc" id="L704">			pos++;</span>
+<span class="fc" id="L705">			return true;</span>
+		}
+<span class="fc" id="L707">		return false;</span>
+	}
+
+	private boolean more() {
+<span class="fc bfc" id="L711" title="All 2 branches covered.">		return pos &lt; b.length();</span>
+	}
+
+	private char next() throws IllegalArgumentException {
+<span class="pc bpc" id="L715" title="1 of 2 branches missed.">		if (!more())</span>
+<span class="nc" id="L716">			throw new IllegalArgumentException(&quot;unexpected end-of-string&quot;);</span>
+<span class="fc" id="L717">		return b.charAt(pos++);</span>
+	}
+
+	private boolean check(int flag) {
+<span class="pc bpc" id="L721" title="1 of 2 branches missed.">		return (flags &amp; flag) != 0;</span>
+	}
+
+	final RegExp parseUnionExp() throws IllegalArgumentException {
+<span class="fc" id="L725">		RegExp e = parseInterExp();</span>
+<span class="pc bpc" id="L726" title="1 of 2 branches missed.">		if (match('|'))</span>
+<span class="nc" id="L727">			e = makeUnion(e, parseUnionExp());</span>
+<span class="fc" id="L728">		return e;</span>
+	}
+
+	final RegExp parseInterExp() throws IllegalArgumentException {
+<span class="fc" id="L732">		RegExp e = parseConcatExp();</span>
+<span class="pc bpc" id="L733" title="2 of 4 branches missed.">		if (check(INTERSECTION) &amp;&amp; match('&amp;'))</span>
+<span class="nc" id="L734">			e = makeIntersection(e, parseInterExp());</span>
+<span class="fc" id="L735">		return e;</span>
+	}
+
+	final RegExp parseConcatExp() throws IllegalArgumentException {
+<span class="fc" id="L739">		RegExp e = parseRepeatExp();</span>
+<span class="pc bpc" id="L740" title="3 of 8 branches missed.">		if (more() &amp;&amp; !peek(&quot;)|&quot;) &amp;&amp; (!check(INTERSECTION) || !peek(&quot;&amp;&quot;)))</span>
+<span class="fc" id="L741">			e = makeConcatenation(e, parseConcatExp());</span>
+<span class="fc" id="L742">		return e;</span>
+	}
+
+	final RegExp parseRepeatExp() throws IllegalArgumentException {
+<span class="fc" id="L746">		RegExp e = parseComplExp();</span>
+<span class="fc bfc" id="L747" title="All 2 branches covered.">		while (peek(&quot;?*+{&quot;)) {</span>
+<span class="pc bpc" id="L748" title="1 of 2 branches missed.">			if (match('?'))</span>
+<span class="nc" id="L749">				e = makeOptional(e);</span>
+<span class="pc bpc" id="L750" title="1 of 2 branches missed.">			else if (match('*'))</span>
+<span class="nc" id="L751">				e = makeRepeat(e);</span>
+<span class="pc bpc" id="L752" title="1 of 2 branches missed.">			else if (match('+'))</span>
+<span class="fc" id="L753">				e = makeRepeat(e, 1);</span>
+<span class="nc bnc" id="L754" title="All 2 branches missed.">			else if (match('{')) {</span>
+<span class="nc" id="L755">				int start = pos;</span>
+<span class="nc bnc" id="L756" title="All 2 branches missed.">				while (peek(&quot;0123456789&quot;))</span>
+<span class="nc" id="L757">					next();</span>
+<span class="nc bnc" id="L758" title="All 2 branches missed.">				if (start == pos)</span>
+<span class="nc" id="L759">					throw new IllegalArgumentException(&quot;integer expected at position &quot; + pos);</span>
+<span class="nc" id="L760">				int n = Integer.parseInt(b.substring(start, pos));</span>
+<span class="nc" id="L761">				int m = -1;</span>
+<span class="nc bnc" id="L762" title="All 2 branches missed.">				if (match(',')) {</span>
+<span class="nc" id="L763">					start = pos;</span>
+<span class="nc bnc" id="L764" title="All 2 branches missed.">					while (peek(&quot;0123456789&quot;))</span>
+<span class="nc" id="L765">						next();</span>
+<span class="nc bnc" id="L766" title="All 2 branches missed.">					if (start != pos)</span>
+<span class="nc" id="L767">						m = Integer.parseInt(b.substring(start, pos));</span>
+<span class="nc" id="L768">				} else</span>
+<span class="nc" id="L769">					m = n;</span>
+<span class="nc bnc" id="L770" title="All 2 branches missed.">				if (!match('}'))</span>
+<span class="nc" id="L771">					throw new IllegalArgumentException(&quot;expected '}' at position &quot; + pos);</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">				if (m == -1)</span>
+<span class="nc" id="L773">					e = makeRepeat(e, n);</span>
+				else
+<span class="nc" id="L775">					e = makeRepeat(e, n, m);</span>
+			}
+		}
+<span class="fc" id="L778">		return e;</span>
+	}
+
+	final RegExp parseComplExp() throws IllegalArgumentException {
+<span class="pc bpc" id="L782" title="2 of 4 branches missed.">		if (check(COMPLEMENT) &amp;&amp; match('~'))</span>
+<span class="nc" id="L783">			return makeComplement(parseComplExp());</span>
+		else
+<span class="fc" id="L785">			return parseCharClassExp();</span>
+	}
+
+	final RegExp parseCharClassExp() throws IllegalArgumentException {
+<span class="fc bfc" id="L789" title="All 2 branches covered.">		if (match('[')) {</span>
+<span class="fc" id="L790">			boolean negate = false;</span>
+<span class="pc bpc" id="L791" title="1 of 2 branches missed.">			if (match('^'))</span>
+<span class="nc" id="L792">				negate = true;</span>
+<span class="fc" id="L793">			RegExp e = parseCharClasses();</span>
+<span class="pc bpc" id="L794" title="1 of 2 branches missed.">			if (negate)</span>
+<span class="nc" id="L795">				e = makeIntersection(makeAnyChar(), makeComplement(e));</span>
+<span class="pc bpc" id="L796" title="1 of 2 branches missed.">			if (!match(']'))</span>
+<span class="nc" id="L797">				throw new IllegalArgumentException(&quot;expected ']' at position &quot; + pos);</span>
+<span class="fc" id="L798">			return e;</span>
+		} else
+<span class="fc" id="L800">			return parseSimpleExp();</span>
+	}
+
+	final RegExp parseCharClasses() throws IllegalArgumentException {
+<span class="fc" id="L804">		RegExp e = parseCharClass();</span>
+<span class="pc bpc" id="L805" title="1 of 4 branches missed.">		while (more() &amp;&amp; !peek(&quot;]&quot;))</span>
+<span class="fc" id="L806">			e = makeUnion(e, parseCharClass());</span>
+<span class="fc" id="L807">		return e;</span>
+	}
+
+	final RegExp parseCharClass() throws IllegalArgumentException {
+<span class="fc" id="L811">		char c = parseCharExp();</span>
+<span class="pc bpc" id="L812" title="1 of 2 branches missed.">		if (match('-'))</span>
+<span class="pc bpc" id="L813" title="1 of 2 branches missed.">			if (peek(&quot;]&quot;))</span>
+<span class="nc" id="L814">                return makeUnion(makeChar(c), makeChar('-'));</span>
+            else
+<span class="fc" id="L816">                return makeCharRange(c, parseCharExp());</span>
+		else
+<span class="nc" id="L818">			return makeChar(c);</span>
+	}
+
+	final RegExp parseSimpleExp() throws IllegalArgumentException {
+<span class="pc bpc" id="L822" title="1 of 2 branches missed.">		if (match('.'))</span>
+<span class="nc" id="L823">			return makeAnyChar();</span>
+<span class="pc bpc" id="L824" title="2 of 4 branches missed.">		else if (check(EMPTY) &amp;&amp; match('#'))</span>
+<span class="nc" id="L825">			return makeEmpty();</span>
+<span class="pc bpc" id="L826" title="1 of 4 branches missed.">		else if (check(ANYSTRING) &amp;&amp; match('@'))</span>
+<span class="fc" id="L827">			return makeAnyString();</span>
+<span class="pc bpc" id="L828" title="1 of 2 branches missed.">		else if (match('&quot;')) {</span>
+<span class="nc" id="L829">			int start = pos;</span>
+<span class="nc bnc" id="L830" title="All 4 branches missed.">			while (more() &amp;&amp; !peek(&quot;\&quot;&quot;))</span>
+<span class="nc" id="L831">				next();</span>
+<span class="nc bnc" id="L832" title="All 2 branches missed.">			if (!match('&quot;'))</span>
+<span class="nc" id="L833">				throw new IllegalArgumentException(&quot;expected '\&quot;' at position &quot; + pos);</span>
+<span class="nc" id="L834">			return makeString(b.substring(start, pos - 1));</span>
+<span class="pc bpc" id="L835" title="1 of 2 branches missed.">		} else if (match('(')) {</span>
+<span class="nc bnc" id="L836" title="All 2 branches missed.">			if (match(')'))</span>
+<span class="nc" id="L837">				return makeString(&quot;&quot;);</span>
+<span class="nc" id="L838">			RegExp e = parseUnionExp();</span>
+<span class="nc bnc" id="L839" title="All 2 branches missed.">			if (!match(')'))</span>
+<span class="nc" id="L840">				throw new IllegalArgumentException(&quot;expected ')' at position &quot; + pos);</span>
+<span class="nc" id="L841">			return e;</span>
+<span class="pc bpc" id="L842" title="4 of 6 branches missed.">		} else if ((check(AUTOMATON) || check(INTERVAL)) &amp;&amp; match('&lt;')) {</span>
+<span class="nc" id="L843">			int start = pos;</span>
+<span class="nc bnc" id="L844" title="All 4 branches missed.">			while (more() &amp;&amp; !peek(&quot;&gt;&quot;))</span>
+<span class="nc" id="L845">				next();</span>
+<span class="nc bnc" id="L846" title="All 2 branches missed.">			if (!match('&gt;'))</span>
+<span class="nc" id="L847">				throw new IllegalArgumentException(&quot;expected '&gt;' at position &quot; + pos);</span>
+<span class="nc" id="L848">			String s = b.substring(start, pos - 1);</span>
+<span class="nc" id="L849">			int i = s.indexOf('-');</span>
+<span class="nc bnc" id="L850" title="All 2 branches missed.">			if (i == -1) {</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">				if (!check(AUTOMATON))</span>
+<span class="nc" id="L852">					throw new IllegalArgumentException(&quot;interval syntax error at position &quot; + (pos - 1));</span>
+<span class="nc" id="L853">				return makeAutomaton(s);</span>
+			} else {
+<span class="nc bnc" id="L855" title="All 2 branches missed.">				if (!check(INTERVAL))</span>
+<span class="nc" id="L856">					throw new IllegalArgumentException(&quot;illegal identifier at position &quot; + (pos - 1));</span>
+				try {
+<span class="nc bnc" id="L858" title="All 6 branches missed.">					if (i == 0 || i == s.length() - 1 || i != s.lastIndexOf('-'))</span>
+<span class="nc" id="L859">						throw new NumberFormatException();</span>
+<span class="nc" id="L860">					String smin = s.substring(0, i);</span>
+<span class="nc" id="L861">					String smax = s.substring(i + 1, s.length());</span>
+<span class="nc" id="L862">					int imin = Integer.parseInt(smin);</span>
+<span class="nc" id="L863">					int imax = Integer.parseInt(smax);</span>
+					int digits;
+<span class="nc bnc" id="L865" title="All 2 branches missed.">					if (smin.length() == smax.length())</span>
+<span class="nc" id="L866">						digits = smin.length();</span>
+					else
+<span class="nc" id="L868">						digits = 0;</span>
+<span class="nc bnc" id="L869" title="All 2 branches missed.">					if (imin &gt; imax) {</span>
+<span class="nc" id="L870">						int t = imin;</span>
+<span class="nc" id="L871">						imin = imax;</span>
+<span class="nc" id="L872">						imax = t;</span>
+					}
+<span class="nc" id="L874">					return makeInterval(imin, imax, digits);</span>
+<span class="nc" id="L875">				} catch (NumberFormatException e) {</span>
+<span class="nc" id="L876">					throw new IllegalArgumentException(&quot;interval syntax error at position &quot; + (pos - 1));</span>
+				}
+			}
+		} else
+<span class="fc" id="L880">			return makeChar(parseCharExp());</span>
+	}
+
+	final char parseCharExp() throws IllegalArgumentException {
+<span class="fc" id="L884">		match('\\');</span>
+<span class="fc" id="L885">		return next();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

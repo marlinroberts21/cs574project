@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BinaryProduction.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar</a> &gt; <span class="el_source">BinaryProduction.java</span></div><h1>BinaryProduction.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar;
+
+import dk.brics.string.stringoperations.BinaryOperation;
+
+/**
+ * Binary production [&lt;tt&gt;a -&gt; op2(b,c)&lt;/tt&gt;].
+ */
+public class BinaryProduction extends Production {
+
+    BinaryOperation op;
+    Nonterminal b, c;
+
+<span class="nc" id="L13">    BinaryProduction(BinaryOperation op, Nonterminal b, Nonterminal c) {</span>
+<span class="nc" id="L14">        this.op = op;</span>
+<span class="nc" id="L15">        this.b = b;</span>
+<span class="nc" id="L16">        this.c = c;</span>
+<span class="nc" id="L17">    }</span>
+
+    /**
+     * Returns the operation.
+     */
+    public BinaryOperation getOperation() {
+<span class="nc" id="L23">        return op;</span>
+    }
+
+    /**
+     * Returns the first nonterminal.
+     */
+    public Nonterminal getNonterminal1() {
+<span class="nc" id="L30">        return b;</span>
+    }
+
+    /**
+     * Returns the second nonterminal.
+     */
+    public Nonterminal getNonterminal2() {
+<span class="nc" id="L37">        return c;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L42">        return op + &quot;(&quot; + b + &quot;,&quot; + c + &quot;)&quot;;</span>
+    }
+
+    @Override
+    public void visitBy(Nonterminal a, ProductionVisitor v) {
+<span class="nc" id="L47">        v.visitBinaryProduction(a, this);</span>
+<span class="nc" id="L48">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FlowGraphNodeCreator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">FlowGraphNodeCreator.java</span></div><h1>FlowGraphNodeCreator.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.flow.AssignmentNode;
+import dk.brics.string.flow.FlowGraph;
+import dk.brics.string.flow.Node;
+import dk.brics.string.flow.operations.FlowGraph2Grammar;
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.ArrayAddAll;
+import dk.brics.string.intermediate.ArrayAssignment;
+import dk.brics.string.intermediate.ArrayCorrupt;
+import dk.brics.string.intermediate.ArrayFromArray;
+import dk.brics.string.intermediate.ArrayNew;
+import dk.brics.string.intermediate.ArrayWriteArray;
+import dk.brics.string.intermediate.ArrayWriteElement;
+import dk.brics.string.intermediate.AssertAliases;
+import dk.brics.string.intermediate.AssertBinaryOp;
+import dk.brics.string.intermediate.AssertUnaryOp;
+import dk.brics.string.intermediate.BasicBinaryOp;
+import dk.brics.string.intermediate.BasicUnaryOp;
+import dk.brics.string.intermediate.Call;
+import dk.brics.string.intermediate.Catch;
+import dk.brics.string.intermediate.ExceptionalReturn;
+import dk.brics.string.intermediate.Field;
+import dk.brics.string.intermediate.FieldAssignment;
+import dk.brics.string.intermediate.FieldReference;
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.MethodHead;
+import dk.brics.string.intermediate.Nop;
+import dk.brics.string.intermediate.ObjectAssignment;
+import dk.brics.string.intermediate.ObjectCorrupt;
+import dk.brics.string.intermediate.PrimitiveAssignment;
+import dk.brics.string.intermediate.PrimitiveFromArray;
+import dk.brics.string.intermediate.PrimitiveInit;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.StatementVisitor;
+import dk.brics.string.intermediate.StringAssignment;
+import dk.brics.string.intermediate.StringBufferAppend;
+import dk.brics.string.intermediate.StringBufferAppendChar;
+import dk.brics.string.intermediate.StringBufferAssignment;
+import dk.brics.string.intermediate.StringBufferBinaryOp;
+import dk.brics.string.intermediate.StringBufferCorrupt;
+import dk.brics.string.intermediate.StringBufferInit;
+import dk.brics.string.intermediate.StringBufferPrepend;
+import dk.brics.string.intermediate.StringBufferUnaryOp;
+import dk.brics.string.intermediate.StringConcat;
+import dk.brics.string.intermediate.StringFromArray;
+import dk.brics.string.intermediate.StringFromStringBuffer;
+import dk.brics.string.intermediate.StringInit;
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.stringoperations.Basic;
+
+/**
+ * Translates a set of methods into a flow graph with no edges.
+ * For every statement, a node is created for each potentially defined variable.
+ * Edges are added by a {@link dk.brics.string.intermediate.operations.FlowGraphEdgeCreator}.
+ *
+ * @see FlowGraph2Grammar
+ */
+public class FlowGraphNodeCreator implements StatementVisitor {
+
+    private FlowGraph g;
+
+    /**
+     * All nodes for each statement.
+     */
+    private Map&lt;Statement, Map&lt;Variable, Node&gt;&gt; map;
+    
+    private Map&lt;Field, AssignmentNode&gt; fieldNodes;
+
+    /**
+     * Main node for each statement.
+     */
+    private Map&lt;Statement, Node&gt; trans_map;
+
+    private AliasAnalysis aa;
+
+    private DefinesVisitor dv;
+
+    private DefinesVisitor dva;
+
+<span class="nc" id="L87">    private Automaton empty = Basic.makeNoString();</span>
+
+    /**
+     * Language for variables that are considered corrupt. By default this
+     * will be the language containing all strings.
+     */
+<span class="nc" id="L93">    private Automaton corruptAutomaton = Basic.makeAnyString();</span>
+
+    /**
+     * Current statement.
+     */
+    private Statement s;
+
+    /**
+     * Current defined variable.
+     */
+    private Variable v;
+    
+    private OperationAssertionAnalysis ass;
+    
+    /**
+     * Creates nodes in the flow graph, using the set of all strings as the value for
+     * all corrupt values.
+     * @param app the intermediate representation
+     * @param aa alias analysis of the intermediate representation
+     */
+    public FlowGraphNodeCreator(Application app, AliasAnalysis aa, OperationAssertionAnalysis ass) {
+<span class="nc" id="L114">    	this(app, aa, Basic.makeAnyString(), ass);</span>
+<span class="nc" id="L115">    }</span>
+    
+    /**
+     * Creates nodes in the flow graph, using a specified language as the value for
+     * all corrupt values.
+     * @param app the intermediate representation
+     * @param aa alias analysis of the intermediate representation
+     * @param corruptAutomaton language to use for all corrupt variables
+     */
+<span class="nc" id="L124">    public FlowGraphNodeCreator(Application app, AliasAnalysis aa, Automaton corruptAutomaton, OperationAssertionAnalysis ass) {</span>
+<span class="nc" id="L125">        this.aa = aa;</span>
+<span class="nc" id="L126">        this.ass = ass;</span>
+<span class="nc" id="L127">        this.corruptAutomaton = corruptAutomaton;</span>
+<span class="nc" id="L128">        dv = new DefinesVisitor();</span>
+<span class="nc" id="L129">        dva = new DefinesVisitor(aa);</span>
+<span class="nc" id="L130">        g = new FlowGraph();</span>
+<span class="nc" id="L131">        map = new HashMap&lt;Statement, Map&lt;Variable, Node&gt;&gt;();</span>
+<span class="nc" id="L132">        fieldNodes = new HashMap&lt;Field, AssignmentNode&gt;();</span>
+<span class="nc" id="L133">        trans_map = new HashMap&lt;Statement, Node&gt;();</span>
+
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (Method m : app.getMethods()) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            for (Statement st : m.getStatements()) {</span>
+<span class="nc" id="L137">                s = st;</span>
+<span class="nc" id="L138">                map.put(s, new HashMap&lt;Variable, Node&gt;());</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                for (Variable vi : dva.definedVars(s)) {</span>
+<span class="nc" id="L140">                    v = vi;</span>
+<span class="nc" id="L141">                    s.visitBy(this); // visit each defined variable (including aliases) for each statement</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">                    if (dv.defines(s, v)) {</span>
+<span class="nc" id="L143">                        trans_map.put(s, map.get(s).get(v));</span>
+                    }
+<span class="nc bnc" id="L145" title="All 2 branches missed.">                    if (vi.isTaint()) {</span>
+<span class="nc" id="L146">                        Node n = map.get(s).get(v);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">                        if (n != null) {</span>
+<span class="nc" id="L148">                            n.setTaint(true);</span>
+                        }
+                    }
+                }
+            }
+        }
+
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        for (Map&lt;Variable, Node&gt; vmap : map.values()) {</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            for (Variable v : vmap.keySet()) { // TODO: inefficient, use entrySet iterator instead</span>
+<span class="nc" id="L157">                Node n = vmap.get(v);</span>
+<span class="nc" id="L158">                n.setTaint(v.isTaint());</span>
+            }
+        }
+        
+        // create field nodes
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for (Field field : app.getFields()) {</span>
+<span class="nc" id="L164">            fieldNodes.put(field, g.addAssignmentNode());</span>
+        }
+<span class="nc" id="L166">    }</span>
+
+    public Map&lt;Field, AssignmentNode&gt; getFieldNodes() {
+<span class="nc" id="L169">        return fieldNodes;</span>
+    }
+
+    /**
+     * Returns the graph being constructed.
+     */
+    public FlowGraph getGraph() {
+<span class="nc" id="L176">        return g;</span>
+    }
+
+    /**
+     * Returns map containing all nodes for each statement.
+     */
+    public Map&lt;Statement, Map&lt;Variable, Node&gt;&gt; getMap() {
+<span class="nc" id="L183">        return map;</span>
+    }
+
+    /**
+     * Returns map containing main node for each statement.
+     */
+    public Map&lt;Statement, Node&gt; getTranslationMap() {
+<span class="nc" id="L190">        return trans_map;</span>
+    }
+
+    private void addNode(Node n) {
+<span class="nc" id="L194">        map.get(s).put(v, n);</span>
+<span class="nc" id="L195">    }</span>
+    
+    public void visitPrimitiveAssignment(PrimitiveAssignment s) {
+<span class="nc" id="L198">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L199">    }</span>
+    public void visitPrimitiveInit(PrimitiveInit s) {
+<span class="nc" id="L201">        addNode(g.addInitializationNode(s.regexp));</span>
+<span class="nc" id="L202">    }</span>
+    public void visitStringBufferAppendChar(StringBufferAppendChar s) {
+<span class="nc" id="L204">        addNode(g.addConcatenationNode());</span>
+<span class="nc" id="L205">    }</span>
+    public void visitBasicUnaryOp(BasicUnaryOp s) {
+<span class="nc" id="L207">        addNode(g.addUnaryNode(s.op));</span>
+<span class="nc" id="L208">    }</span>
+    public void visitBasicBinaryOp(BasicBinaryOp s) {
+<span class="nc" id="L210">        addNode(g.addBinaryNode(s.op));</span>
+<span class="nc" id="L211">    }</span>
+    public void visitAssertBinaryOp(AssertBinaryOp s) {
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (ass.isAssertionValid(s)) {</span>
+<span class="nc" id="L214">            addNode(g.addBinaryNode(s.op));</span>
+<span class="nc" id="L215">        } else {</span>
+<span class="nc" id="L216">            addNode(g.addAssignmentNode());</span>
+        }
+<span class="nc" id="L218">    }</span>
+    public void visitAssertUnaryOp(AssertUnaryOp s) {
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (ass.isAssertionValid(s)) {</span>
+<span class="nc" id="L221">            addNode(g.addUnaryNode(s.op));</span>
+<span class="nc" id="L222">        } else {</span>
+<span class="nc" id="L223">            addNode(g.addAssignmentNode());</span>
+        }
+<span class="nc" id="L225">    }</span>
+    public void visitAssertAliases(AssertAliases s) {
+<span class="nc" id="L227">    }</span>
+    
+    public void visitArrayAssignment(ArrayAssignment s) {
+<span class="nc" id="L230">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L231">    }</span>
+
+    public void visitArrayCorrupt(ArrayCorrupt s) {
+<span class="nc" id="L234">        addNode(g.addInitializationNode(corruptAutomaton));</span>
+<span class="nc" id="L235">    }</span>
+    
+    public void visitArrayAddAll(ArrayAddAll s) {
+<span class="nc" id="L238">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L239">    }</span>
+
+    public void visitArrayFromArray(ArrayFromArray s) {
+<span class="nc" id="L242">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L243">    }</span>
+
+    public void visitArrayNew(ArrayNew s) {
+<span class="nc" id="L246">        addNode(g.addInitializationNode(empty));</span>
+<span class="nc" id="L247">    }</span>
+
+    public void visitArrayWriteArray(ArrayWriteArray s) {
+<span class="nc" id="L250">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L251">    }</span>
+
+    public void visitArrayWriteElement(ArrayWriteElement s) {
+<span class="nc" id="L254">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L255">    }</span>
+
+    public void visitCall(Call s) {
+<span class="nc" id="L258">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L259">    }</span>
+
+    public void visitMethodHead(MethodHead s) {
+<span class="nc" id="L262">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L263">    }</span>
+
+    public void visitNop(Nop s) {
+<span class="nc" id="L266">    }</span>
+
+    public void visitReturn(Return s) {
+<span class="nc" id="L269">    }</span>
+
+    public void visitStringAssignment(StringAssignment s) {
+<span class="nc" id="L272">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L273">    }</span>
+
+    public void visitStringBufferAppend(StringBufferAppend s) {
+<span class="nc" id="L276">        addNode(g.addConcatenationNode());</span>
+<span class="nc" id="L277">    }</span>
+
+    public void visitStringBufferAssignment(StringBufferAssignment s) {
+<span class="nc" id="L280">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L281">    }</span>
+
+    public void visitStringBufferBinaryOp(StringBufferBinaryOp s) {
+<span class="nc" id="L284">        addNode(g.addBinaryNode(s.op));</span>
+<span class="nc" id="L285">    }</span>
+
+    public void visitStringBufferCorrupt(StringBufferCorrupt s) {
+<span class="nc" id="L288">        addNode(g.addInitializationNode(corruptAutomaton));</span>
+<span class="nc" id="L289">    }</span>
+
+    public void visitStringBufferInit(StringBufferInit s) {
+<span class="nc" id="L292">        addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L293">    }</span>
+
+    public void visitStringBufferPrepend(StringBufferPrepend s) {
+<span class="nc" id="L296">        addNode(g.addConcatenationNode());</span>
+<span class="nc" id="L297">    }</span>
+
+    public void visitStringBufferUnaryOp(StringBufferUnaryOp s) {
+<span class="nc" id="L300">        addNode(g.addUnaryNode(s.op));</span>
+<span class="nc" id="L301">    }</span>
+
+    public void visitStringConcat(StringConcat s) {
+<span class="nc" id="L304">        addNode(g.addConcatenationNode());</span>
+<span class="nc" id="L305">    }</span>
+
+    public void visitStringFromArray(StringFromArray s) {
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (aa.getInfoBefore(s).isCorrupt(s.from)) {</span>
+<span class="nc" id="L309">            addNode(g.addInitializationNode(corruptAutomaton));</span>
+<span class="nc" id="L310">        } else {</span>
+<span class="nc" id="L311">            addNode(g.addAssignmentNode());</span>
+        }
+<span class="nc" id="L313">    }</span>
+    public void visitPrimitiveFromArray(PrimitiveFromArray s) {
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (aa.getInfoBefore(s).isCorrupt(s.from)) {</span>
+<span class="nc" id="L316">            addNode(g.addInitializationNode(Automaton.makeAnyChar()));</span>
+<span class="nc" id="L317">        } else {</span>
+<span class="nc" id="L318">            addNode(g.addAssignmentNode());</span>
+        }
+<span class="nc" id="L320">    }</span>
+
+    public void visitStringFromStringBuffer(StringFromStringBuffer s) {
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        if (aa.getInfoBefore(s).isCorrupt(s.from)) {</span>
+<span class="nc" id="L324">            addNode(g.addInitializationNode(corruptAutomaton));</span>
+<span class="nc" id="L325">        } else {</span>
+<span class="nc" id="L326">            addNode(g.addAssignmentNode());</span>
+        }
+<span class="nc" id="L328">    }</span>
+
+    public void visitStringInit(StringInit s) {
+<span class="nc" id="L331">        addNode(g.addInitializationNode(s.regexp));</span>
+<span class="nc" id="L332">    }</span>
+    
+	public void visitObjectAssignment(ObjectAssignment s) {
+<span class="nc" id="L335">		addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L336">	}</span>
+	
+	public void visitObjectCorrupt(ObjectCorrupt s) {
+<span class="nc" id="L339">		addNode(g.addInitializationNode(corruptAutomaton));</span>
+<span class="nc" id="L340">	}</span>
+	
+	public void visitHotspot(Hotspot s) {
+<span class="nc" id="L343">		addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L344">	}</span>
+	
+	public void visitFieldAssignment(FieldAssignment s) {
+<span class="nc" id="L347">		addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L348">	}</span>
+	
+	public void visitFieldReference(FieldReference s) {
+<span class="nc" id="L351">		addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L352">	}</span>
+	
+	public void visitCatch(Catch s) {
+<span class="nc" id="L355">		addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L356">	}</span>
+	public void visitExceptionalReturn(ExceptionalReturn s) {
+<span class="nc" id="L358">		addNode(g.addAssignmentNode());</span>
+<span class="nc" id="L359">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

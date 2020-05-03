@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SpecialOperations.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">SpecialOperations.java</span></div><h1>SpecialOperations.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+/**
+ * Special automata operations.
+ */
+final public class SpecialOperations {
+	
+	private SpecialOperations() {}
+
+	/**
+	 * Reverses the language of the given (non-singleton) automaton while returning
+	 * the set of new initial states.
+	 */
+	public static Set&lt;State&gt; reverse(Automaton a) {
+		// reverse all edges
+<span class="fc" id="L52">		HashMap&lt;State, HashSet&lt;Transition&gt;&gt; m = new HashMap&lt;State, HashSet&lt;Transition&gt;&gt;();</span>
+<span class="fc" id="L53">		Set&lt;State&gt; states = a.getStates();</span>
+<span class="fc" id="L54">		Set&lt;State&gt; accept = a.getAcceptStates();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		for (State r : states) {</span>
+<span class="fc" id="L56">			m.put(r, new HashSet&lt;Transition&gt;());</span>
+<span class="fc" id="L57">			r.accept = false;</span>
+		}
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		for (State r : states)</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			for (Transition t : r.getTransitions())</span>
+<span class="fc" id="L61">				m.get(t.to).add(new Transition(t.min, t.max, r));</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		for (State r : states)</span>
+<span class="fc" id="L63">			r.transitions = m.get(r);</span>
+		// make new initial+final states
+<span class="fc" id="L65">		a.initial.accept = true;</span>
+<span class="fc" id="L66">		a.initial = new State();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (State r : accept)</span>
+<span class="fc" id="L68">			a.initial.addEpsilon(r); // ensures that all initial states are reachable</span>
+<span class="fc" id="L69">		a.deterministic = false;</span>
+<span class="fc" id="L70">		return accept;</span>
+	}
+
+	/**
+	 * Returns an automaton that accepts the overlap of strings that in more than one way can be split into
+	 * a left part being accepted by &lt;code&gt;a1&lt;/code&gt; and a right part being accepted by
+	 * &lt;code&gt;a2&lt;/code&gt;.
+	 */
+	public static Automaton overlap(Automaton a1, Automaton a2) {
+<span class="nc" id="L79">		Automaton b1 = a1.cloneExpanded();</span>
+<span class="nc" id="L80">		b1.determinize();</span>
+<span class="nc" id="L81">		acceptToAccept(b1);</span>
+<span class="nc" id="L82">		Automaton b2 = a2.cloneExpanded();</span>
+<span class="nc" id="L83">		reverse(b2);</span>
+<span class="nc" id="L84">		b2.determinize();</span>
+<span class="nc" id="L85">		acceptToAccept(b2);</span>
+<span class="nc" id="L86">		reverse(b2);</span>
+<span class="nc" id="L87">		b2.determinize();</span>
+<span class="nc" id="L88">		return b1.intersection(b2).minus(BasicAutomata.makeEmptyString());</span>
+	}
+	
+	private static void acceptToAccept(Automaton a) {
+<span class="nc" id="L92">		State s = new State();</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">		for (State r : a.getAcceptStates())</span>
+<span class="nc" id="L94">			s.addEpsilon(r);</span>
+<span class="nc" id="L95">		a.initial = s;</span>
+<span class="nc" id="L96">		a.deterministic = false;</span>
+<span class="nc" id="L97">	}</span>
+	
+	/** 
+	 * Returns an automaton that accepts the single chars that occur 
+	 * in strings that are accepted by the given automaton. 
+	 * Never modifies the input automaton.
+	 */
+	public static Automaton singleChars(Automaton a) {
+<span class="fc" id="L105">		Automaton b = new Automaton();</span>
+<span class="fc" id="L106">		State s = new State();</span>
+<span class="fc" id="L107">		b.initial = s;</span>
+<span class="fc" id="L108">		State q = new State();</span>
+<span class="fc" id="L109">		q.accept = true;</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (a.isSingleton()) </span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			for (int i = 0; i &lt; a.singleton.length(); i++)</span>
+<span class="nc" id="L112">				s.transitions.add(new Transition(a.singleton.charAt(i), q));</span>
+		else
+<span class="fc bfc" id="L114" title="All 2 branches covered.">			for (State p : a.getStates())</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">				for (Transition t : p.transitions)</span>
+<span class="fc" id="L116">					s.transitions.add(new Transition(t.min, t.max, q));</span>
+<span class="fc" id="L117">		b.deterministic = true;</span>
+<span class="fc" id="L118">		b.removeDeadTransitions();</span>
+<span class="fc" id="L119">		return b;</span>
+	}
+	
+	/**
+	 * Returns an automaton that accepts the trimmed language of the given
+	 * automaton. The resulting automaton is constructed as follows: 1) Whenever
+	 * a &lt;code&gt;c&lt;/code&gt; character is allowed in the original automaton, one or
+	 * more &lt;code&gt;set&lt;/code&gt; characters are allowed in the new automaton. 2)
+	 * The automaton is prefixed and postfixed with any number of
+	 * &lt;code&gt;set&lt;/code&gt; characters.
+	 * @param set set of characters to be trimmed
+	 * @param c canonical trim character (assumed to be in &lt;code&gt;set&lt;/code&gt;)
+	 */
+	public static Automaton trim(Automaton a, String set, char c) {
+<span class="nc" id="L133">		a = a.cloneExpandedIfRequired();</span>
+<span class="nc" id="L134">		State f = new State();</span>
+<span class="nc" id="L135">		addSetTransitions(f, set, f);</span>
+<span class="nc" id="L136">		f.accept = true;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		for (State s : a.getStates()) {</span>
+<span class="nc" id="L138">			State r = s.step(c);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">			if (r != null) {</span>
+				// add inner
+<span class="nc" id="L141">				State q = new State();</span>
+<span class="nc" id="L142">				addSetTransitions(q, set, q);</span>
+<span class="nc" id="L143">				addSetTransitions(s, set, q);</span>
+<span class="nc" id="L144">				q.addEpsilon(r);</span>
+			}
+			// add postfix
+<span class="nc bnc" id="L147" title="All 2 branches missed.">			if (s.accept)</span>
+<span class="nc" id="L148">				s.addEpsilon(f);</span>
+		}
+		// add prefix
+<span class="nc" id="L151">		State p = new State();</span>
+<span class="nc" id="L152">		addSetTransitions(p, set, p);</span>
+<span class="nc" id="L153">		p.addEpsilon(a.initial);</span>
+<span class="nc" id="L154">		a.initial = p;</span>
+<span class="nc" id="L155">		a.deterministic = false;</span>
+<span class="nc" id="L156">		a.removeDeadTransitions();</span>
+<span class="nc" id="L157">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L158">		return a;</span>
+	}
+	
+	private static void addSetTransitions(State s, String set, State p) {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">		for (int n = 0; n &lt; set.length(); n++)</span>
+<span class="nc" id="L163">			s.transitions.add(new Transition(set.charAt(n), p));</span>
+<span class="nc" id="L164">	}</span>
+	
+	/**
+	 * Returns an automaton that accepts the compressed language of the given
+	 * automaton. Whenever a &lt;code&gt;c&lt;/code&gt; character is allowed in the
+	 * original automaton, one or more &lt;code&gt;set&lt;/code&gt; characters are allowed
+	 * in the new automaton.
+	 * @param set set of characters to be compressed
+	 * @param c canonical compress character (assumed to be in &lt;code&gt;set&lt;/code&gt;)
+	 */
+	public static Automaton compress(Automaton a, String set, char c) {
+<span class="nc" id="L175">		a = a.cloneExpandedIfRequired();</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">		for (State s : a.getStates()) {</span>
+<span class="nc" id="L177">			State r = s.step(c);</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">			if (r != null) {</span>
+				// add inner
+<span class="nc" id="L180">				State q = new State();</span>
+<span class="nc" id="L181">				addSetTransitions(q, set, q);</span>
+<span class="nc" id="L182">				addSetTransitions(s, set, q);</span>
+<span class="nc" id="L183">				q.addEpsilon(r);</span>
+			}
+		}
+		// add prefix
+<span class="nc" id="L187">		a.deterministic = false;</span>
+<span class="nc" id="L188">		a.removeDeadTransitions();</span>
+<span class="nc" id="L189">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L190">		return a;</span>
+	}
+	
+	/**
+	 * Returns an automaton where all transition labels have been substituted.
+	 * &lt;p&gt;
+	 * Each transition labeled &lt;code&gt;c&lt;/code&gt; is changed to a set of
+	 * transitions, one for each character in &lt;code&gt;map(c)&lt;/code&gt;. If
+	 * &lt;code&gt;map(c)&lt;/code&gt; is null, then the transition is unchanged.
+	 * @param map map from characters to sets of characters (where characters 
+	 *            are &lt;code&gt;Character&lt;/code&gt; objects)
+	 */
+	public static Automaton subst(Automaton a, Map&lt;Character, Set&lt;Character&gt;&gt; map) {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">		if (map.isEmpty())</span>
+<span class="nc" id="L204">			return a.cloneIfRequired();</span>
+<span class="nc" id="L205">		Set&lt;Character&gt; ckeys = new TreeSet&lt;Character&gt;(map.keySet());</span>
+<span class="nc" id="L206">		char[] keys = new char[ckeys.size()];</span>
+<span class="nc" id="L207">		int j = 0;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">		for (Character c : ckeys)</span>
+<span class="nc" id="L209">			keys[j++] = c;</span>
+<span class="nc" id="L210">		a = a.cloneExpandedIfRequired();</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">		for (State s : a.getStates()) {</span>
+<span class="nc" id="L212">			Set&lt;Transition&gt; st = s.transitions;</span>
+<span class="nc" id="L213">			s.resetTransitions();</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">			for (Transition t : st) {</span>
+<span class="nc" id="L215">				int index = findIndex(t.min, keys);</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">				while (t.min &lt;= t.max) {</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">					if (keys[index] &gt; t.min) {</span>
+<span class="nc" id="L218">						char m = (char)(keys[index] - 1);</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">						if (t.max &lt; m)</span>
+<span class="nc" id="L220">							m = t.max;</span>
+<span class="nc" id="L221">						s.transitions.add(new Transition(t.min, m, t.to));</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">						if (m + 1 &gt; Character.MAX_VALUE)</span>
+<span class="nc" id="L223">							break;</span>
+<span class="nc" id="L224">						t.min = (char)(m + 1);</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">					} else if (keys[index] &lt; t.min) {</span>
+						char m;
+<span class="nc bnc" id="L227" title="All 2 branches missed.">						if (index + 1 &lt; keys.length)</span>
+<span class="nc" id="L228">							m = (char)(keys[++index] - 1);</span>
+						else
+<span class="nc" id="L230">							m = Character.MAX_VALUE;</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">						if (t.max &lt; m)</span>
+<span class="nc" id="L232">							m = t.max;</span>
+<span class="nc" id="L233">						s.transitions.add(new Transition(t.min, m, t.to));</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">						if (m + 1 &gt; Character.MAX_VALUE)</span>
+<span class="nc" id="L235">							break;</span>
+<span class="nc" id="L236">						t.min = (char)(m + 1);</span>
+<span class="nc" id="L237">					} else { // found t.min in substitution map</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">						for (Character c : map.get(t.min))</span>
+<span class="nc" id="L239">							s.transitions.add(new Transition(c, t.to));</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">						if (t.min + 1 &gt; Character.MAX_VALUE)</span>
+<span class="nc" id="L241">							break;</span>
+<span class="nc" id="L242">						t.min++;</span>
+<span class="nc bnc" id="L243" title="All 4 branches missed.">						if (index + 1 &lt; keys.length &amp;&amp; keys[index + 1] == t.min)</span>
+<span class="nc" id="L244">							index++;</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L249">		a.deterministic = false;</span>
+<span class="nc" id="L250">		a.removeDeadTransitions();</span>
+<span class="nc" id="L251">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L252">		return a;</span>
+	}
+
+	/** 
+	 * Finds the largest entry whose value is less than or equal to c, 
+	 * or 0 if there is no such entry. 
+	 */
+	static int findIndex(char c, char[] points) {
+<span class="nc" id="L260">		int a = 0;</span>
+<span class="nc" id="L261">		int b = points.length;</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">		while (b - a &gt; 1) {</span>
+<span class="nc" id="L263">			int d = (a + b) &gt;&gt;&gt; 1;</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">			if (points[d] &gt; c)</span>
+<span class="nc" id="L265">				b = d;</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">			else if (points[d] &lt; c)</span>
+<span class="nc" id="L267">				a = d;</span>
+			else
+<span class="nc" id="L269">				return d;</span>
+		}
+<span class="nc" id="L271">		return a;</span>
+	}
+	
+	/**
+	 * Returns an automaton where all transitions of the given char are replaced by a string.
+	 * @param c char
+	 * @param s string
+	 * @return new automaton
+	 */
+	public static Automaton subst(Automaton a, char c, String s) {
+<span class="nc" id="L281">		a = a.cloneExpandedIfRequired();</span>
+<span class="nc" id="L282">		Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">		for (State p : a.getStates()) {</span>
+<span class="nc" id="L284">			Set&lt;Transition&gt; st = p.transitions;</span>
+<span class="nc" id="L285">			p.resetTransitions();</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">			for (Transition t : st)</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">				if (t.max &lt; c || t.min &gt; c)</span>
+<span class="nc" id="L288">					p.transitions.add(t);</span>
+				else {
+<span class="nc bnc" id="L290" title="All 2 branches missed.">					if (t.min &lt; c)</span>
+<span class="nc" id="L291">						p.transitions.add(new Transition(t.min, (char)(c - 1), t.to));</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">					if (t.max &gt; c)</span>
+<span class="nc" id="L293">						p.transitions.add(new Transition((char)(c + 1), t.max, t.to));</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">					if (s.length() == 0)</span>
+<span class="nc" id="L295">						epsilons.add(new StatePair(p, t.to));</span>
+					else {
+<span class="nc" id="L297">						State q = p;</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">						for (int i = 0; i &lt; s.length(); i++) {</span>
+							State r;
+<span class="nc bnc" id="L300" title="All 2 branches missed.">							if (i + 1 == s.length())</span>
+<span class="nc" id="L301">								r = t.to;</span>
+							else
+<span class="nc" id="L303">								r = new State();</span>
+<span class="nc" id="L304">							q.transitions.add(new Transition(s.charAt(i), r));</span>
+<span class="nc" id="L305">							q = r;</span>
+						}
+					}
+				}
+		}
+<span class="nc" id="L310">		a.addEpsilons(epsilons);</span>
+<span class="nc" id="L311">		a.deterministic = false;</span>
+<span class="nc" id="L312">		a.removeDeadTransitions();</span>
+<span class="nc" id="L313">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L314">		return a;</span>
+	}
+	
+	/**
+	 * Returns an automaton accepting the homomorphic image of the given automaton
+	 * using the given function.
+	 * &lt;p&gt;
+	 * This method maps each transition label to a new value.
+	 * &lt;code&gt;source&lt;/code&gt; and &lt;code&gt;dest&lt;/code&gt; are assumed to be arrays of
+	 * same length, and &lt;code&gt;source&lt;/code&gt; must be sorted in increasing order
+	 * and contain no duplicates. &lt;code&gt;source&lt;/code&gt; defines the starting
+	 * points of char intervals, and the corresponding entries in
+	 * &lt;code&gt;dest&lt;/code&gt; define the starting points of corresponding new
+	 * intervals.
+	 */
+	public static Automaton homomorph(Automaton a, char[] source, char[] dest) {
+<span class="nc" id="L330">		a = a.cloneExpandedIfRequired();</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">		for (State s : a.getStates()) {</span>
+<span class="nc" id="L332">			Set&lt;Transition&gt; st = s.transitions;</span>
+<span class="nc" id="L333">			s.resetTransitions();</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">			for (Transition t : st) {</span>
+<span class="nc" id="L335">				int min = t.min;</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">				while (min &lt;= t.max) {</span>
+<span class="nc" id="L337">					int n = findIndex((char)min, source);</span>
+<span class="nc" id="L338">					char nmin = (char)(dest[n] + min - source[n]);</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">					int end = (n + 1 == source.length) ? Character.MAX_VALUE : source[n + 1] - 1;</span>
+					int length;
+<span class="nc bnc" id="L341" title="All 2 branches missed.">					if (end &lt; t.max)</span>
+<span class="nc" id="L342">						length = end + 1 - min;</span>
+					else
+<span class="nc" id="L344">						length = t.max + 1 - min;</span>
+<span class="nc" id="L345">					s.transitions.add(new Transition(nmin, (char)(nmin + length - 1), t.to));</span>
+<span class="nc" id="L346">					min += length;</span>
+				}
+			}
+		}
+<span class="nc" id="L350">		a.deterministic = false;</span>
+<span class="nc" id="L351">		a.removeDeadTransitions();</span>
+<span class="nc" id="L352">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L353">		return a;</span>
+	}
+	
+	/**
+	 * Returns an automaton with projected alphabet. The new automaton accepts
+	 * all strings that are projections of strings accepted by the given automaton
+	 * onto the given characters (represented by &lt;code&gt;Character&lt;/code&gt;). If
+	 * &lt;code&gt;null&lt;/code&gt; is in the set, it abbreviates the intervals
+	 * u0000-uDFFF and uF900-uFFFF (i.e., the non-private code points). It is
+	 * assumed that all other characters from &lt;code&gt;chars&lt;/code&gt; are in the
+	 * interval uE000-uF8FF.
+	 */
+	public static Automaton projectChars(Automaton a, Set&lt;Character&gt; chars) {
+<span class="nc" id="L366">		Character[] c = chars.toArray(new Character[chars.size()]);</span>
+<span class="nc" id="L367">		char[] cc = new char[c.length];</span>
+<span class="nc" id="L368">		boolean normalchars = false;</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">		for (int i = 0; i &lt; c.length; i++)</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">			if (c[i] == null)</span>
+<span class="nc" id="L371">				normalchars = true;</span>
+			else
+<span class="nc" id="L373">				cc[i] = c[i];</span>
+<span class="nc" id="L374">		Arrays.sort(cc);</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">		if (a.isSingleton()) {</span>
+<span class="nc bnc" id="L376" title="All 2 branches missed.">			for (int i = 0; i &lt; a.singleton.length(); i++) {</span>
+<span class="nc" id="L377">				char sc = a.singleton.charAt(i);</span>
+<span class="nc bnc" id="L378" title="All 8 branches missed.">				if (!(normalchars &amp;&amp; (sc &lt;= '\udfff' || sc &gt;= '\uf900') || Arrays.binarySearch(cc, sc) &gt;= 0))</span>
+<span class="nc" id="L379">					return BasicAutomata.makeEmpty();</span>
+			}
+<span class="nc" id="L381">			return a.cloneIfRequired();</span>
+		} else {
+<span class="nc" id="L383">			HashSet&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="nc" id="L384">			a = a.cloneExpandedIfRequired();</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">			for (State s : a.getStates()) {</span>
+<span class="nc" id="L386">				HashSet&lt;Transition&gt; new_transitions = new HashSet&lt;Transition&gt;();</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">				for (Transition t : s.transitions) {</span>
+<span class="nc" id="L388">					boolean addepsilon = false;</span>
+<span class="nc bnc" id="L389" title="All 4 branches missed.">					if (t.min &lt; '\uf900' &amp;&amp; t.max &gt; '\udfff') {</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">						int w1 = Arrays.binarySearch(cc, t.min &gt; '\ue000' ? t.min : '\ue000');</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">						if (w1 &lt; 0) {</span>
+<span class="nc" id="L392">							w1 = -w1 - 1;</span>
+<span class="nc" id="L393">							addepsilon = true;</span>
+						}
+<span class="nc bnc" id="L395" title="All 2 branches missed.">						int w2 = Arrays.binarySearch(cc, t.max &lt; '\uf8ff' ? t.max : '\uf8ff');</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">						if (w2 &lt; 0) {</span>
+<span class="nc" id="L397">							w2 = -w2 - 2;</span>
+<span class="nc" id="L398">							addepsilon = true;</span>
+						}
+<span class="nc bnc" id="L400" title="All 2 branches missed.">						for (int w = w1; w &lt;= w2; w++) {</span>
+<span class="nc" id="L401">							new_transitions.add(new Transition(cc[w], t.to));</span>
+<span class="nc bnc" id="L402" title="All 4 branches missed.">							if (w &gt; w1 &amp;&amp; cc[w - 1] + 1 != cc[w])</span>
+<span class="nc" id="L403">								addepsilon = true;</span>
+						}
+					}
+<span class="nc bnc" id="L406" title="All 2 branches missed.">					if (normalchars) {</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">						if (t.min &lt;= '\udfff')</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">							new_transitions.add(new Transition(t.min, t.max &lt; '\udfff' ? t.max : '\udfff', t.to));</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">						if (t.max &gt;= '\uf900')</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">							new_transitions.add(new Transition(t.min &gt; '\uf900' ? t.min : '\uf900', t.max, t.to));</span>
+<span class="nc bnc" id="L411" title="All 4 branches missed.">					} else if (t.min &lt;= '\udfff' || t.max &gt;= '\uf900')</span>
+<span class="nc" id="L412">						addepsilon = true;</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">					if (addepsilon)</span>
+<span class="nc" id="L414">						epsilons.add(new StatePair(s, t.to));</span>
+				}
+<span class="nc" id="L416">				s.transitions = new_transitions;</span>
+			}
+<span class="nc" id="L418">			a.reduce();</span>
+<span class="nc" id="L419">			a.addEpsilons(epsilons);</span>
+<span class="nc" id="L420">			a.removeDeadTransitions();</span>
+<span class="nc" id="L421">			a.checkMinimizeAlways();</span>
+<span class="nc" id="L422">			return a;</span>
+		}
+	}
+	
+	/**
+	 * Returns true if the language of this automaton is finite.
+	 */
+	public static boolean isFinite(Automaton a) {
+<span class="fc bfc" id="L430" title="All 2 branches covered.">		if (a.isSingleton())</span>
+<span class="fc" id="L431">			return true;</span>
+<span class="fc" id="L432">		return isFinite(a.initial, new HashSet&lt;State&gt;(), new HashSet&lt;State&gt;());</span>
+	}
+	
+	/** 
+	 * Checks whether there is a loop containing s. (This is sufficient since 
+	 * there are never transitions to dead states.) 
+	 */
+	private static boolean isFinite(State s, HashSet&lt;State&gt; path, HashSet&lt;State&gt; visited) {
+<span class="fc" id="L440">		path.add(s);</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">		for (Transition t : s.transitions)</span>
+<span class="pc bpc" id="L442" title="3 of 6 branches missed.">			if (path.contains(t.to) || (!visited.contains(t.to) &amp;&amp; !isFinite(t.to, path, visited)))</span>
+<span class="nc" id="L443">				return false;</span>
+<span class="fc" id="L444">		path.remove(s);</span>
+<span class="fc" id="L445">		visited.add(s);</span>
+<span class="fc" id="L446">		return true;</span>
+	}
+	
+	/**
+	 * Returns the set of accepted strings of the given length.
+	 */
+	public static Set&lt;String&gt; getStrings(Automaton a, int length) {
+<span class="nc" id="L453">		HashSet&lt;String&gt; strings = new HashSet&lt;String&gt;();</span>
+<span class="nc bnc" id="L454" title="All 4 branches missed.">		if (a.isSingleton() &amp;&amp; a.singleton.length() == length)</span>
+<span class="nc" id="L455">			strings.add(a.singleton);</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">		else if (length &gt;= 0)</span>
+<span class="nc" id="L457">			getStrings(a.initial, strings, new StringBuilder(), length);</span>
+<span class="nc" id="L458">		return strings;</span>
+	}
+	
+	private static void getStrings(State s, Set&lt;String&gt; strings, StringBuilder path, int length) {
+<span class="nc bnc" id="L462" title="All 2 branches missed.">		if (length == 0) {</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">			if (s.accept)</span>
+<span class="nc" id="L464">				strings.add(path.toString());</span>
+<span class="nc" id="L465">		} else </span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">			for (Transition t : s.transitions)</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">				for (int n = t.min; n &lt;= t.max; n++) {</span>
+<span class="nc" id="L468">					path.append((char)n);</span>
+<span class="nc" id="L469">					getStrings(t.to, strings, path, length - 1);</span>
+<span class="nc" id="L470">					path.deleteCharAt(path.length() - 1);</span>
+				}
+<span class="nc" id="L472">	}</span>
+	
+	/**
+	 * Returns the set of accepted strings, assuming this automaton has a finite
+	 * language. If the language is not finite, null is returned.
+	 */
+	public static Set&lt;String&gt; getFiniteStrings(Automaton a) {
+<span class="nc" id="L479">		HashSet&lt;String&gt; strings = new HashSet&lt;String&gt;();</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">		if (a.isSingleton())</span>
+<span class="nc" id="L481">			strings.add(a.singleton);</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">		else if (!getFiniteStrings(a.initial, new HashSet&lt;State&gt;(), strings, new StringBuilder(), -1))</span>
+<span class="nc" id="L483">			return null;</span>
+<span class="nc" id="L484">		return strings;</span>
+	}
+	
+	/**
+	 * Returns the set of accepted strings, assuming that at most &lt;code&gt;limit&lt;/code&gt;
+	 * strings are accepted. If more than &lt;code&gt;limit&lt;/code&gt; strings are
+	 * accepted, null is returned. If &lt;code&gt;limit&lt;/code&gt;&amp;lt;0, then this
+	 * methods works like {@link #getFiniteStrings(Automaton)}.
+	 */
+	public static Set&lt;String&gt; getFiniteStrings(Automaton a, int limit) {
+<span class="fc" id="L494">		HashSet&lt;String&gt; strings = new HashSet&lt;String&gt;();</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">		if (a.isSingleton()) {</span>
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">			if (limit &gt; 0)</span>
+<span class="fc" id="L497">				strings.add(a.singleton);</span>
+			else
+<span class="nc" id="L499">				return null;</span>
+<span class="pc bpc" id="L500" title="1 of 2 branches missed.">		} else if (!getFiniteStrings(a.initial, new HashSet&lt;State&gt;(), strings, new StringBuilder(), limit))</span>
+<span class="fc" id="L501">			return null;</span>
+<span class="fc" id="L502">		return strings;</span>
+	}
+
+	/** 
+	 * Returns the strings that can be produced from the given state, or false if more than 
+	 * &lt;code&gt;limit&lt;/code&gt; strings are found. &lt;code&gt;limit&lt;/code&gt;&amp;lt;0 means &quot;infinite&quot;. 
+	 * */
+	private static boolean getFiniteStrings(State s, HashSet&lt;State&gt; pathstates, HashSet&lt;String&gt; strings, StringBuilder path, int limit) {
+<span class="fc" id="L510">		pathstates.add(s);</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">		for (Transition t : s.transitions) {</span>
+<span class="pc bpc" id="L512" title="1 of 2 branches missed.">			if (pathstates.contains(t.to))</span>
+<span class="nc" id="L513">				return false;</span>
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">			for (int n = t.min; n &lt;= t.max; n++) {</span>
+<span class="fc" id="L515">				path.append((char)n);</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">				if (t.to.accept) {</span>
+<span class="fc" id="L517">					strings.add(path.toString());</span>
+<span class="pc bpc" id="L518" title="1 of 4 branches missed.">					if (limit &gt;= 0 &amp;&amp; strings.size() &gt; limit)</span>
+<span class="fc" id="L519">						return false;</span>
+				}
+<span class="fc bfc" id="L521" title="All 2 branches covered.">				if (!getFiniteStrings(t.to, pathstates, strings, path, limit))</span>
+<span class="fc" id="L522">					return false;</span>
+<span class="fc" id="L523">				path.deleteCharAt(path.length() - 1);</span>
+			}
+		}
+<span class="fc" id="L526">		pathstates.remove(s);</span>
+<span class="fc" id="L527">		return true;</span>
+	}
+	
+	/**
+	 * Returns the longest string that is a prefix of all accepted strings and
+	 * visits each state at most once.
+	 * @return common prefix
+	 */
+	public static String getCommonPrefix(Automaton a) {
+<span class="nc bnc" id="L536" title="All 2 branches missed.">		if (a.isSingleton())</span>
+<span class="nc" id="L537">			return a.singleton;</span>
+<span class="nc" id="L538">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L539">		HashSet&lt;State&gt; visited = new HashSet&lt;State&gt;();</span>
+<span class="nc" id="L540">		State s = a.initial;</span>
+		boolean done;
+		do {
+<span class="nc" id="L543">			done = true;</span>
+<span class="nc" id="L544">			visited.add(s);</span>
+<span class="nc bnc" id="L545" title="All 4 branches missed.">			if (!s.accept &amp;&amp; s.transitions.size() == 1) {</span>
+<span class="nc" id="L546">				Transition t = s.transitions.iterator().next();</span>
+<span class="nc bnc" id="L547" title="All 4 branches missed.">				if (t.min == t.max &amp;&amp; !visited.contains(t.to)) {</span>
+<span class="nc" id="L548">					b.append(t.min);</span>
+<span class="nc" id="L549">					s = t.to;</span>
+<span class="nc" id="L550">					done = false;</span>
+				}
+			}
+<span class="nc bnc" id="L553" title="All 2 branches missed.">		} while (!done);</span>
+<span class="nc" id="L554">		return b.toString();</span>
+	}
+	
+	/**
+	 * Prefix closes the given automaton.
+	 */
+	public static void prefixClose(Automaton a) {
+<span class="nc bnc" id="L561" title="All 2 branches missed.">		for (State s : a.getStates())</span>
+<span class="nc" id="L562">			s.setAccept(true);</span>
+<span class="nc" id="L563">		a.clearHashCode();</span>
+<span class="nc" id="L564">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L565">	}</span>
+	
+	/**
+	 * Constructs automaton that accepts the same strings as the given automaton
+	 * but ignores upper/lower case of A-F.
+	 * @param a automaton
+	 * @return automaton
+	 */
+	public static Automaton hexCases(Automaton a) {
+<span class="nc" id="L574">		Map&lt;Character,Set&lt;Character&gt;&gt; map = new HashMap&lt;Character,Set&lt;Character&gt;&gt;();</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">		for (char c1 = 'a', c2 = 'A'; c1 &lt;= 'f'; c1++, c2++) {</span>
+<span class="nc" id="L576">			Set&lt;Character&gt; ws = new HashSet&lt;Character&gt;();</span>
+<span class="nc" id="L577">			ws.add(c1);</span>
+<span class="nc" id="L578">			ws.add(c2);</span>
+<span class="nc" id="L579">			map.put(c1, ws);</span>
+<span class="nc" id="L580">			map.put(c2, ws);</span>
+		}
+<span class="nc" id="L582">		Automaton ws = Datatypes.getWhitespaceAutomaton();</span>
+<span class="nc" id="L583">		return ws.concatenate(a.subst(map)).concatenate(ws);		</span>
+	}
+	
+	/**
+	 * Constructs automaton that accepts 0x20, 0x9, 0xa, and 0xd in place of each 0x20 transition
+	 * in the given automaton.
+	 * @param a automaton
+	 * @return automaton
+	 */
+	public static Automaton replaceWhitespace(Automaton a) {
+<span class="nc" id="L593">		Map&lt;Character,Set&lt;Character&gt;&gt; map = new HashMap&lt;Character,Set&lt;Character&gt;&gt;();</span>
+<span class="nc" id="L594">		Set&lt;Character&gt; ws = new HashSet&lt;Character&gt;();</span>
+<span class="nc" id="L595">		ws.add(' ');</span>
+<span class="nc" id="L596">		ws.add('\t');</span>
+<span class="nc" id="L597">		ws.add('\n');</span>
+<span class="nc" id="L598">		ws.add('\r');</span>
+<span class="nc" id="L599">		map.put(' ', ws);</span>
+<span class="nc" id="L600">		return a.subst(map);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

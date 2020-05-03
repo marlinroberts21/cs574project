@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DatatypesAutomatonProvider.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">DatatypesAutomatonProvider.java</span></div><h1>DatatypesAutomatonProvider.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+/**
+ * Automaton provider based on {@link Datatypes}.
+ */
+public class DatatypesAutomatonProvider implements AutomatonProvider {
+	
+	private boolean enable_unicodeblocks, enable_unicodecategories, enable_xml;
+	
+	/**
+	 * Constructs a new automaton provider that recognizes all names
+	 * from {@link Datatypes#get(String)}.
+	 */
+<span class="nc" id="L43">	public DatatypesAutomatonProvider() {</span>
+<span class="nc" id="L44">		enable_unicodeblocks = enable_unicodecategories = enable_xml = true;</span>
+<span class="nc" id="L45">	}</span>
+	
+	/**
+	 * Constructs a new automaton provider that recognizes some of the names
+	 * from {@link Datatypes#get(String)}
+	 * @param enable_unicodeblocks if true, enable Unicode block names
+	 * @param enable_unicodecategories if true, enable Unicode category names
+	 * @param enable_xml if true, enable XML related names
+	 */
+<span class="nc" id="L54">	public DatatypesAutomatonProvider(boolean enable_unicodeblocks, boolean enable_unicodecategories, boolean enable_xml) {</span>
+<span class="nc" id="L55">		this.enable_unicodeblocks = enable_unicodeblocks; </span>
+<span class="nc" id="L56">		this.enable_unicodecategories = enable_unicodecategories;</span>
+<span class="nc" id="L57">		this.enable_xml = enable_xml;</span>
+<span class="nc" id="L58">	}</span>
+	
+	public Automaton getAutomaton(String name) {
+<span class="nc bnc" id="L61" title="All 4 branches missed.">		if ((enable_unicodeblocks &amp;&amp; Datatypes.isUnicodeBlockName(name))</span>
+<span class="nc bnc" id="L62" title="All 4 branches missed.">				|| (enable_unicodecategories &amp;&amp; Datatypes.isUnicodeCategoryName(name))</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">				|| (enable_xml &amp;&amp; Datatypes.isXMLName(name)))</span>
+<span class="nc" id="L64">				return Datatypes.get(name);</span>
+<span class="nc" id="L65">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

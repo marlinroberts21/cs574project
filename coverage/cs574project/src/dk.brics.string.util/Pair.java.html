@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Pair.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.util</a> &gt; <span class="el_source">Pair.java</span></div><h1>Pair.java</h1><pre class="source lang-java linenums">package dk.brics.string.util;
+
+/**
+ * A generic, immutable pair of two objects. Implements &lt;tt&gt;equals&lt;/tt&gt; and &lt;tt&gt;hashCode&lt;/tt&gt;.
+ */
+public final class Pair&lt;A,B&gt; {
+	private final A first;
+	private final B second;
+	
+<span class="nc" id="L10">	public Pair(A first, B second) {</span>
+<span class="nc" id="L11">		this.first = first;</span>
+<span class="nc" id="L12">		this.second = second;</span>
+<span class="nc" id="L13">	}</span>
+
+	public A getFirst() {
+<span class="nc" id="L16">		return first;</span>
+	}
+
+	public B getSecond() {
+<span class="nc" id="L20">		return second;</span>
+	}
+	
+	@Override
+	public int hashCode() {
+<span class="nc" id="L25">		final int prime = 31;</span>
+<span class="nc" id="L26">		int result = 1;</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">		result = prime * result + ((first == null) ? 0 : first.hashCode());</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">		result = prime * result + ((second == null) ? 0 : second.hashCode());</span>
+<span class="nc" id="L29">		return result;</span>
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		if (this == obj)</span>
+<span class="nc" id="L35">			return true;</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">		if (obj == null)</span>
+<span class="nc" id="L37">			return false;</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">		if (getClass() != obj.getClass())</span>
+<span class="nc" id="L39">			return false;</span>
+<span class="nc" id="L40">		Pair&lt;?,?&gt; other = (Pair&lt;?,?&gt;) obj;</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">		if (first == null) {</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">			if (other.first != null)</span>
+<span class="nc" id="L43">				return false;</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">		} else if (!first.equals(other.first))</span>
+<span class="nc" id="L45">			return false;</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">		if (second == null) {</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">			if (other.second != null)</span>
+<span class="nc" id="L48">				return false;</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">		} else if (!second.equals(other.second))</span>
+<span class="nc" id="L50">			return false;</span>
+<span class="nc" id="L51">		return true;</span>
+	}
+	
+	/**
+	 * Convenience method for creating a new pair, since generic arguments may be inferred
+	 * by a static method call but not by a constructor call.
+	 */
+	public static &lt;A,B&gt; Pair&lt;A,B&gt; make(A a, B b) {
+<span class="nc" id="L59">	    return new Pair&lt;A,B&gt;(a,b);</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

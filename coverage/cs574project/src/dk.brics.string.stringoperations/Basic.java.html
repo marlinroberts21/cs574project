@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Basic.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Basic.java</span></div><h1>Basic.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.RegExp;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+
+/**
+ * Basic automata.
+ */
+public class Basic {
+
+    private static Automaton emptyString, noString, anyString,
+            objectString, booleanString, characterString, doubleString,
+            floatString, integerString, longString;
+    private static CharSet emptyCharset;
+    private static CharSet binaryBooleanCharset;
+    private static Automaton binaryBooleanAutomaton;
+    
+    private static Automaton characterIsDigit;
+    private static Automaton characterIsLetter;
+    private static Automaton characterIsLetterOrDigit;
+    private static Automaton characterIsLowerCase;
+    private static Automaton characterIsSpaceChar;
+    private static Automaton characterIsTitleCase;
+    private static Automaton characterIsUpperCase;
+    private static Automaton characterIsWhitespace;
+
+    public static final char BINARY_TRUE = (char)1;
+    public static final char BINARY_FALSE = (char)0;
+
+    static {
+<span class="fc" id="L41">        objectString = new RegExp(&quot;@\\@[0-9a-f]+&quot;).toAutomaton();</span>
+<span class="fc" id="L42">        emptyString = Automaton.makeEmptyString();</span>
+<span class="fc" id="L43">        emptyString.setInfo(&quot;\&quot;\&quot;&quot;);</span>
+<span class="fc" id="L44">        noString = Automaton.makeEmpty();</span>
+<span class="fc" id="L45">        noString.setInfo(&quot;&lt;no string&gt;&quot;);</span>
+<span class="fc" id="L46">        anyString = Automaton.makeAnyString();</span>
+<span class="fc" id="L47">        anyString.setInfo(&quot;&lt;any string&gt;&quot;);</span>
+<span class="fc" id="L48">        booleanString = Automaton.makeString(&quot;true&quot;).union(Automaton.makeString(&quot;false&quot;));</span>
+<span class="fc" id="L49">        booleanString.setInfo(&quot;\&quot;true\&quot;|\&quot;false\&quot;&quot;);</span>
+<span class="fc" id="L50">        characterString = Automaton.makeAnyChar();</span>
+<span class="fc" id="L51">        characterString.setInfo(&quot;&lt;char&gt;&quot;);</span>
+<span class="fc" id="L52">        Automaton t0 = Automaton.makeCharRange('1', '9').concatenate(Automaton.makeCharRange('0', '9').repeat(0));</span>
+<span class="fc" id="L53">        Automaton t1 = Automaton.makeChar('0').union(Automaton.makeChar('-').optional().concatenate(t0));</span>
+<span class="pc bnc" id="L54" title="All 2 branches missed.">        t1.minimize();</span>
+<span class="fc" id="L55">        t1.setInfo(&quot;&lt;int&gt;&quot;);</span>
+<span class="fc" id="L56">        integerString = t1;</span>
+<span class="fc" id="L57">        longString = t1;</span>
+<span class="fc" id="L58">        Automaton t2 = t0.concatenate(Automaton.makeChar('.')).concatenate(Automaton.makeCharRange('0', '9').repeat(0).concatenate(Automaton.makeCharRange('1', '9')).union(Automaton.makeChar('0')));</span>
+<span class="fc" id="L59">        Automaton t3 = Automaton.makeChar('E').concatenate(integerString).optional();</span>
+<span class="fc" id="L60">        Automaton t4 = t2.concatenate(t3).union(Automaton.makeString(&quot;Infinity&quot;));</span>
+<span class="fc" id="L61">        Automaton t5 = Automaton.makeChar('-').optional().concatenate(t4);</span>
+<span class="fc" id="L62">        Automaton t6 = t5.union(Automaton.makeString(&quot;NaN&quot;));</span>
+<span class="pc bnc" id="L63" title="All 2 branches missed.">        t6.minimize();</span>
+<span class="fc" id="L64">        t6.setInfo(&quot;&lt;float&gt;&quot;);</span>
+<span class="fc" id="L65">        floatString = t6;</span>
+<span class="fc" id="L66">        doubleString = t6;</span>
+        
+        // charsets
+<span class="fc" id="L69">        emptyCharset = new CharSet();</span>
+<span class="fc" id="L70">        binaryBooleanCharset = new CharSet();</span>
+<span class="fc" id="L71">        binaryBooleanCharset.add(BINARY_TRUE);</span>
+<span class="fc" id="L72">        binaryBooleanCharset.add(BINARY_FALSE);</span>
+        
+<span class="fc" id="L74">        binaryBooleanAutomaton = Automaton.makeChar(BINARY_TRUE).union(Automaton.makeChar(BINARY_FALSE));</span>
+        
+        
+        // create some automatons for Character.isDigit, Character.isLetter, etc.
+        // these are defined by some unicode table and are not trivial, so we find all the characters by brute force
+<span class="fc" id="L79">        characterIsDigit = new Automaton();</span>
+<span class="fc" id="L80">        characterIsLetter = new Automaton();</span>
+<span class="fc" id="L81">        characterIsLowerCase = new Automaton();</span>
+<span class="fc" id="L82">        characterIsSpaceChar = new Automaton();</span>
+<span class="fc" id="L83">        characterIsTitleCase = new Automaton();</span>
+<span class="fc" id="L84">        characterIsUpperCase = new Automaton();</span>
+<span class="fc" id="L85">        characterIsWhitespace = new Automaton();</span>
+<span class="fc" id="L86">        State digitState = new State();		digitState.setAccept(true);</span>
+<span class="fc" id="L87">        State letterState = new State();	letterState.setAccept(true);</span>
+<span class="fc" id="L88">        State lowercaseState = new State();	letterState.setAccept(true);</span>
+<span class="fc" id="L89">        State spacecharState = new State();	spacecharState.setAccept(true);</span>
+<span class="fc" id="L90">        State titlecaseState = new State();	titlecaseState.setAccept(true);</span>
+<span class="fc" id="L91">        State uppercaseState = new State();	uppercaseState.setAccept(true);</span>
+<span class="fc" id="L92">        State whitespaceState = new State();whitespaceState.setAccept(true);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (char ch=Character.MIN_VALUE; ch&lt;Character.MAX_VALUE; ch++) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        	if (Character.isDigit(ch)) {</span>
+<span class="fc" id="L95">        		characterIsDigit.getInitialState().addTransition(new Transition(ch, ch, digitState));</span>
+        	}
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        	if (Character.isLetter(ch)) {</span>
+<span class="fc" id="L98">        		characterIsLetter.getInitialState().addTransition(new Transition(ch, ch, letterState));</span>
+        	}
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        	if (Character.isLowerCase(ch)) {</span>
+<span class="fc" id="L101">        		characterIsLowerCase.getInitialState().addTransition(new Transition(ch, ch, lowercaseState));</span>
+        	}
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        	if (Character.isSpaceChar(ch)) {</span>
+<span class="fc" id="L104">        		characterIsSpaceChar.getInitialState().addTransition(new Transition(ch, ch, spacecharState));</span>
+        	}
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        	if (Character.isTitleCase(ch)) {</span>
+<span class="fc" id="L107">        		characterIsTitleCase.getInitialState().addTransition(new Transition(ch, ch, titlecaseState));</span>
+        	}
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        	if (Character.isUpperCase(ch)) {</span>
+<span class="fc" id="L110">        		characterIsUpperCase.getInitialState().addTransition(new Transition(ch, ch, uppercaseState));</span>
+        	}
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        	if (Character.isWhitespace(ch)) {</span>
+<span class="fc" id="L113">        		characterIsWhitespace.getInitialState().addTransition(new Transition(ch, ch, whitespaceState));</span>
+        	}
+        }
+<span class="fc" id="L116">        characterIsDigit.restoreInvariant();</span>
+<span class="fc" id="L117">        characterIsLetter.restoreInvariant();</span>
+<span class="fc" id="L118">        characterIsLowerCase.restoreInvariant();</span>
+<span class="fc" id="L119">        characterIsSpaceChar.restoreInvariant();</span>
+<span class="fc" id="L120">        characterIsTitleCase.restoreInvariant();</span>
+<span class="fc" id="L121">        characterIsUpperCase.restoreInvariant();</span>
+<span class="fc" id="L122">        characterIsWhitespace.restoreInvariant();</span>
+<span class="fc" id="L123">        characterIsDigit.reduce();</span>
+<span class="fc" id="L124">        characterIsLetter.reduce();</span>
+<span class="fc" id="L125">        characterIsLowerCase.reduce();</span>
+<span class="fc" id="L126">        characterIsSpaceChar.reduce();</span>
+<span class="fc" id="L127">        characterIsTitleCase.reduce();</span>
+<span class="fc" id="L128">        characterIsUpperCase.reduce();</span>
+<span class="fc" id="L129">        characterIsWhitespace.reduce();</span>
+        
+<span class="fc" id="L131">        characterIsLetterOrDigit = characterIsDigit.union(characterIsLetter);</span>
+<span class="fc" id="L132">    }</span>
+    
+    private Basic() {
+    }
+    
+    public static CharSet getEmptyCharSet() {
+<span class="nc" id="L138">        return emptyCharset;</span>
+    }
+    public static CharSet getBinaryBooleanCharSet() {
+<span class="nc" id="L141">        return binaryBooleanCharset;</span>
+    }
+    
+    public static CharSet makeBinaryBooleanCharSet(boolean b) {
+<span class="nc" id="L145">        CharSet ch = new CharSet();</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        ch.add(b ? BINARY_TRUE : BINARY_FALSE);</span>
+<span class="nc" id="L147">        return ch;</span>
+    }
+    public static Automaton makeBinaryBoolean(boolean b) {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        return Automaton.makeString(&quot;&quot; + (b ? BINARY_TRUE : BINARY_FALSE));</span>
+    }
+    public static Automaton getBinaryBooleans() {
+<span class="fc" id="L153">        return binaryBooleanAutomaton;</span>
+    }
+    
+    /**
+     * Returns automaton for the empty string.
+     */
+    public static Automaton makeEmptyString() {
+<span class="nc" id="L160">        return emptyString;</span>
+    }
+
+    /**
+     * Returns automaton for any string.
+     */
+    public static Automaton makeAnyString() {
+<span class="nc" id="L167">        return anyString;</span>
+    }
+
+    /**
+     * Returns automaton for no string.
+     */
+    public static Automaton makeNoString() {
+<span class="nc" id="L174">        return noString;</span>
+    }
+
+    /**
+     * Returns automaton for values of &lt;tt&gt;Object.toString()&lt;/tt&gt;.
+     */
+    public static Automaton makeObjectString() {
+<span class="nc" id="L181">        return objectString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Boolean&lt;/tt&gt;.
+     */
+    public static Automaton makeBooleanString() {
+<span class="nc" id="L188">        return booleanString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Character&lt;/tt&gt;.
+     */
+    public static Automaton makeCharacterString() {
+<span class="nc" id="L195">        return characterString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Double&lt;/tt&gt;.
+     */
+    public static Automaton makeDoubleString() {
+<span class="nc" id="L202">        return doubleString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Float&lt;/tt&gt;.
+     */
+    public static Automaton makeFloatString() {
+<span class="nc" id="L209">        return floatString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Byte&lt;/tt&gt;.
+     */
+    public static Automaton makeByteString() {
+<span class="nc" id="L216">        return integerString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Short&lt;/tt&gt;.
+     */
+    public static Automaton makeShortString() {
+<span class="nc" id="L223">        return integerString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Integer&lt;/tt&gt;.
+     */
+    public static Automaton makeIntegerString() {
+<span class="nc" id="L230">        return integerString;</span>
+    }
+
+    /**
+     * Returns automaton for string values of &lt;tt&gt;Long&lt;/tt&gt;.
+     */
+    public static Automaton makeLongString() {
+<span class="nc" id="L237">        return longString;</span>
+    }
+
+    static void escapeChar(char c, StringBuilder b) {
+<span class="nc bnc" id="L241" title="All 4 branches missed.">        if (c &gt;= 0x20 &amp;&amp; c &lt;= 0x7e) {</span>
+<span class="nc" id="L242">            b.append(c);</span>
+<span class="nc" id="L243">        } else {</span>
+<span class="nc" id="L244">            b.append(&quot;\\u&quot;);</span>
+<span class="nc" id="L245">            String t = Integer.toHexString(c &amp; 0xffff);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">            for (int j = 0; j + t.length() &lt; 4; j++) {</span>
+<span class="nc" id="L247">                b.append('0');</span>
+            }
+<span class="nc" id="L249">            b.append(t);</span>
+        }
+<span class="nc" id="L251">    }</span>
+
+    static String escapeChar(char c) {
+<span class="nc" id="L254">        StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L255">        escapeChar(c, b);</span>
+<span class="nc" id="L256">        return b.toString();</span>
+    }
+
+    static String escapeString(String s) {
+<span class="nc" id="L260">        StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L261">        b.append('&quot;');</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="nc" id="L263">            escapeChar(s.charAt(i), b);</span>
+        }
+<span class="nc" id="L265">        b.append('&quot;');</span>
+<span class="nc" id="L266">        return b.toString();</span>
+    }
+
+    /**
+     * Returns automaton for the given constant string.
+     */
+    public static Automaton makeConstString(String s) {
+<span class="nc" id="L273">        Automaton a = Automaton.makeString(s);</span>
+<span class="nc" id="L274">        a.setInfo(escapeString(s));</span>
+<span class="nc" id="L275">        return a;</span>
+    }
+
+    /**
+     * Constructs name for the given automaton.
+     */
+    public static String getName(Automaton a) {
+<span class="nc" id="L282">        Object info = a.getInfo();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (info != null) {</span>
+<span class="nc" id="L284">            return (String) info;</span>
+        }
+<span class="nc" id="L286">        String s = a.getSingleton();</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">        if (s != null) {</span>
+<span class="nc" id="L288">            return escapeString(s);</span>
+        }
+<span class="nc" id="L290">        return &quot;&lt;???&gt;&quot;;</span>
+    }
+
+    static Set&lt;State&gt; findReachableStates(State s) {
+<span class="fc" id="L294">        Set&lt;State&gt; reachable = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L295">        TreeSet&lt;State&gt; pending = new TreeSet&lt;State&gt;();</span>
+<span class="fc" id="L296">        pending.add(s);</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">        while (!pending.isEmpty()) {</span>
+<span class="fc" id="L298">            State p = pending.first();</span>
+<span class="fc" id="L299">            pending.remove(p);</span>
+<span class="fc" id="L300">            reachable.add(p);</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">            for (Transition t : p.getTransitions()) {</span>
+<span class="fc" id="L302">                State q = t.getDest();</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">                if (!reachable.contains(q)) {</span>
+<span class="fc" id="L304">                    pending.add(q);</span>
+                }
+            }
+        }
+<span class="fc" id="L308">        return reachable;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting every prefix of every string accepted by the
+     * specified automaton. Prefixes of S include both the empty string and S itself.
+     * &lt;p/&gt;
+     * The resulting automaton will be deterministic if and only if the input automaton
+     * was deterministic.
+     */
+    public static Automaton getPrefixesOf(Automaton automaton) {
+<span class="nc" id="L319">        Automaton result = automaton.clone();</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">        for (State state : result.getLiveStates()) {</span>
+<span class="nc" id="L321">            state.setAccept(true);</span>
+        }
+<span class="nc" id="L323">        result.restoreInvariant();</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        if (result.isDeterministic()) {</span>
+<span class="nc" id="L325">            result.minimize();</span>
+        }
+<span class="nc" id="L327">        return result;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting every suffix of every string accepted by the
+     * specified automaton. Suffixes of S include both the empty string and S itself.
+     * &lt;p/&gt;
+     * The resulting automaton will be deterministic if and only if the input automaton
+     * was deterministic.
+     */
+    public static Automaton getSuffixesOf(Automaton automaton) {
+<span class="nc" id="L338">        Automaton result = automaton.clone();</span>
+<span class="nc" id="L339">        Collection&lt;StatePair&gt; epsilons = new ArrayList&lt;StatePair&gt;();</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">        for (State state : result.getLiveStates()) {</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">            if (state != result.getInitialState()) {</span>
+<span class="nc" id="L342">                epsilons.add(new StatePair(result.getInitialState(), state));</span>
+            }
+        }
+<span class="nc" id="L345">        result.addEpsilons(epsilons);</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        if (automaton.isDeterministic()) {</span>
+<span class="nc" id="L347">            result.determinize();</span>
+<span class="nc" id="L348">            result.minimize();</span>
+        }
+<span class="nc" id="L350">        return result;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting every substring of every string accepted by the
+     * specified automaton.
+     */
+    public static Automaton getSubstringsOf(Automaton automaton) {
+<span class="fc" id="L358">        Automaton result = automaton.clone();</span>
+<span class="fc" id="L359">        result.removeDeadTransitions();</span>
+<span class="fc" id="L360">        Collection&lt;StatePair&gt; epsilons = new ArrayList&lt;StatePair&gt;();</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">        for (State state : result.getStates()) {</span>
+<span class="fc" id="L362">            state.setAccept(true);</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">            if (state != result.getInitialState()) {</span>
+<span class="fc" id="L364">                epsilons.add(new StatePair(result.getInitialState(), state));</span>
+            }
+        }
+<span class="fc" id="L367">        result.restoreInvariant(); // accept states have been modified</span>
+<span class="fc" id="L368">        result.addEpsilons(epsilons);</span>
+<span class="fc" id="L369">        result.determinize();</span>
+<span class="pc" id="L370">        result.minimize();</span>
+<span class="fc" id="L371">        return result;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting all characters considered digits by {@link Character#isDigit(char)}.
+     * &lt;p/&gt;
+     * Note that unicode defines more digit characters than the traditional 0...9 digits.
+     */
+    public static Automaton getUnicodeDigits() {
+<span class="nc" id="L380">    	return characterIsDigit;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting all characters considered letters by {@link Character#isLetter(char)}.
+     */
+    public static Automaton getUnicodeLetters() {
+<span class="nc" id="L387">    	return characterIsLetter;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting all characters considered digits or letters by {@link Character#isLetterOrDigit(char)}.
+     */
+    public static Automaton getUnicodeLettersAndDigits() {
+<span class="nc" id="L394">    	return characterIsLetterOrDigit;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting all characters considered lower case by {@link Character#isLowerCase(char)}.
+     */
+    public static Automaton getUnicodeLowerCase() {
+<span class="nc" id="L401">    	return characterIsLowerCase;</span>
+    }
+
+    /**
+     * Returns an automaton accepting all characters considered space characters by {@link Character#isSpaceChar(char)}.
+     */
+    public static Automaton getUnicodeSpaceChars() {
+<span class="nc" id="L408">    	return characterIsSpaceChar;</span>
+    }
+
+    /**
+     * Returns an automaton accepting all characters considered title case by {@link Character#isTitleCase(char)}.
+     */
+    public static Automaton getUnicodeTitleCase() {
+<span class="nc" id="L415">    	return characterIsTitleCase;</span>
+    }
+
+    /**
+     * Returns an automaton accepting all characters considered upper case by {@link Character#isUpperCase(char)}.
+     */
+    public static Automaton getUnicodeUpperCase() {
+<span class="nc" id="L422">    	return characterIsUpperCase;</span>
+    }
+    
+    /**
+     * Returns an automaton accepting all characters considered whitespace by {@link Character#isWhitespace(char)}.
+     */
+    public static Automaton getUnicodeWhitespace() {
+<span class="nc" id="L429">    	return characterIsWhitespace;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

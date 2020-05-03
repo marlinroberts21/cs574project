@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ShuffleOperations.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">ShuffleOperations.java</span></div><h1>ShuffleOperations.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Automata operations involving shuffling.
+ */
+final public class ShuffleOperations {
+	
+	private ShuffleOperations() {}
+
+	/** 
+	 * Returns an automaton that accepts the shuffle (interleaving) of 
+	 * the languages of the given automata.
+	 * As a side-effect, both automata are determinized, if not already deterministic.     
+	 * Never modifies the input automata languages.
+	 * &lt;p&gt;
+	 * Complexity: quadratic in number of states (if already deterministic). 
+	 * &lt;p&gt;
+	 * &lt;dl&gt;&lt;dt&gt;&lt;b&gt;Author:&lt;/b&gt;&lt;/dt&gt;&lt;dd&gt;Torben Ruby 
+	 * &amp;lt;&lt;a href=&quot;mailto:ruby@daimi.au.dk&quot;&gt;ruby@daimi.au.dk&lt;/a&gt;&amp;gt;&lt;/dd&gt;&lt;/dl&gt;
+	 */
+	public static Automaton shuffle(Automaton a1, Automaton a2) {
+<span class="nc" id="L60">		a1.determinize();</span>
+<span class="nc" id="L61">		a2.determinize();</span>
+<span class="nc" id="L62">		Transition[][] transitions1 = Automaton.getSortedTransitions(a1.getStates());</span>
+<span class="nc" id="L63">		Transition[][] transitions2 = Automaton.getSortedTransitions(a2.getStates());</span>
+<span class="nc" id="L64">		Automaton c = new Automaton();</span>
+<span class="nc" id="L65">		LinkedList&lt;StatePair&gt; worklist = new LinkedList&lt;StatePair&gt;();</span>
+<span class="nc" id="L66">		HashMap&lt;StatePair, StatePair&gt; newstates = new HashMap&lt;StatePair, StatePair&gt;();</span>
+<span class="nc" id="L67">		State s = new State();</span>
+<span class="nc" id="L68">		c.initial = s;</span>
+<span class="nc" id="L69">		StatePair p = new StatePair(s, a1.initial, a2.initial);</span>
+<span class="nc" id="L70">		worklist.add(p);</span>
+<span class="nc" id="L71">		newstates.put(p, p);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		while (worklist.size() &gt; 0) {</span>
+<span class="nc" id="L73">			p = worklist.removeFirst();</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">			p.s.accept = p.s1.accept &amp;&amp; p.s2.accept;</span>
+<span class="nc" id="L75">			Transition[] t1 = transitions1[p.s1.number];</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">			for (int n1 = 0; n1 &lt; t1.length; n1++) {</span>
+<span class="nc" id="L77">				StatePair q = new StatePair(t1[n1].to, p.s2);</span>
+<span class="nc" id="L78">				StatePair r = newstates.get(q);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">				if (r == null) {</span>
+<span class="nc" id="L80">					q.s = new State();</span>
+<span class="nc" id="L81">					worklist.add(q);</span>
+<span class="nc" id="L82">					newstates.put(q, q);</span>
+<span class="nc" id="L83">					r = q;</span>
+				}
+<span class="nc" id="L85">				p.s.transitions.add(new Transition(t1[n1].min, t1[n1].max, r.s));</span>
+			}
+<span class="nc" id="L87">			Transition[] t2 = transitions2[p.s2.number];</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">			for (int n2 = 0; n2 &lt; t2.length; n2++) {</span>
+<span class="nc" id="L89">				StatePair q = new StatePair(p.s1, t2[n2].to);</span>
+<span class="nc" id="L90">				StatePair r = newstates.get(q);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">				if (r == null) {</span>
+<span class="nc" id="L92">					q.s = new State();</span>
+<span class="nc" id="L93">					worklist.add(q);</span>
+<span class="nc" id="L94">					newstates.put(q, q);</span>
+<span class="nc" id="L95">					r = q;</span>
+				}
+<span class="nc" id="L97">				p.s.transitions.add(new Transition(t2[n2].min, t2[n2].max, r.s));</span>
+			}
+		}
+<span class="nc" id="L100">		c.deterministic = false;</span>
+<span class="nc" id="L101">		c.removeDeadTransitions();</span>
+<span class="nc" id="L102">		c.checkMinimizeAlways();</span>
+<span class="nc" id="L103">		return c;</span>
+	}
+	
+	/**
+	 * Returns a string that is an interleaving of strings that are accepted by
+	 * &lt;code&gt;ca&lt;/code&gt; but not by &lt;code&gt;a&lt;/code&gt;. If no such string
+	 * exists, null is returned. As a side-effect, &lt;code&gt;a&lt;/code&gt; is determinized, 
+	 * if not already deterministic. Only interleavings that respect
+	 * the suspend/resume markers (two BMP private code points) are considered if the markers are non-null. 
+	 * Also, interleavings never split surrogate pairs.
+	 * &lt;p&gt;
+	 * Complexity: proportional to the product of the numbers of states (if &lt;code&gt;a&lt;/code&gt;
+	 * is already deterministic).
+	 */ 
+	public static String shuffleSubsetOf(Collection&lt;Automaton&gt; ca, Automaton a, Character suspend_shuffle, Character resume_shuffle) {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">		if (ca.size() == 0)</span>
+<span class="nc" id="L119">			return null;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">		if (ca.size() == 1) {</span>
+<span class="nc" id="L121">			Automaton a1 = ca.iterator().next();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">			if (a1.isSingleton()) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">				if (a.run(a1.singleton))</span>
+<span class="nc" id="L124">					return null;</span>
+				else
+<span class="nc" id="L126">					return a1.singleton;</span>
+			}
+<span class="nc bnc" id="L128" title="All 2 branches missed.">			if (a1 == a)</span>
+<span class="nc" id="L129">				return null;</span>
+		}
+<span class="nc" id="L131">		a.determinize();</span>
+<span class="nc" id="L132">		Transition[][][] ca_transitions = new Transition[ca.size()][][];</span>
+<span class="nc" id="L133">		int i = 0;</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		for (Automaton a1 : ca)</span>
+<span class="nc" id="L135">			ca_transitions[i++] = Automaton.getSortedTransitions(a1.getStates());</span>
+<span class="nc" id="L136">		Transition[][] a_transitions = Automaton.getSortedTransitions(a.getStates());</span>
+<span class="nc" id="L137">		TransitionComparator tc = new TransitionComparator(false);</span>
+<span class="nc" id="L138">		ShuffleConfiguration init = new ShuffleConfiguration(ca, a);</span>
+<span class="nc" id="L139">		LinkedList&lt;ShuffleConfiguration&gt; pending = new LinkedList&lt;ShuffleConfiguration&gt;();</span>
+<span class="nc" id="L140">		Set&lt;ShuffleConfiguration&gt; visited = new HashSet&lt;ShuffleConfiguration&gt;();</span>
+<span class="nc" id="L141">		pending.add(init);</span>
+<span class="nc" id="L142">		visited.add(init);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">		while (!pending.isEmpty()) {</span>
+<span class="nc" id="L144">			ShuffleConfiguration c = pending.removeFirst();</span>
+<span class="nc" id="L145">			boolean good = true;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">			for (int i1 = 0; i1 &lt; ca.size(); i1++)</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">				if (!c.ca_states[i1].accept) {</span>
+<span class="nc" id="L148">					good = false;</span>
+<span class="nc" id="L149">					break;</span>
+				}
+<span class="nc bnc" id="L151" title="All 2 branches missed.">			if (c.a_state.accept)</span>
+<span class="nc" id="L152">				good = false;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">			if (good) {</span>
+<span class="nc" id="L154">				StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">				while (c.prev != null) {</span>
+<span class="nc" id="L156">					sb.append(c.min);</span>
+<span class="nc" id="L157">					c = c.prev;</span>
+				}
+<span class="nc" id="L159">				StringBuilder sb2 = new StringBuilder();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">				for (int j = sb.length() - 1; j &gt;= 0; j--)</span>
+<span class="nc" id="L161">					sb2.append(sb.charAt(j));</span>
+<span class="nc" id="L162">				return sb2.toString();</span>
+			}
+<span class="nc" id="L164">			Transition[] ta2 = a_transitions[c.a_state.number];</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">			for (int i1 = 0; i1 &lt; ca.size(); i1++) {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">				if (c.shuffle_suspended)</span>
+<span class="nc" id="L167">					i1 = c.suspended1;</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">				loop: for (Transition t1 : ca_transitions[i1][c.ca_states[i1].number]) {</span>
+<span class="nc" id="L169">					List&lt;Transition&gt; lt = new ArrayList&lt;Transition&gt;();</span>
+<span class="nc" id="L170">					int j = Arrays.binarySearch(ta2, t1, tc);</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">					if (j &lt; 0)</span>
+<span class="nc" id="L172">						j = -j - 1;</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">					if (j &gt; 0 &amp;&amp; ta2[j - 1].max &gt;= t1.min)</span>
+<span class="nc" id="L174">						j--;</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">					while (j &lt; ta2.length) {</span>
+<span class="nc" id="L176">						Transition t2 = ta2[j++];</span>
+<span class="nc" id="L177">						char min = t1.min;</span>
+<span class="nc" id="L178">						char max = t1.max;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">						if (t2.min &gt; min)</span>
+<span class="nc" id="L180">							min = t2.min;</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">						if (t2.max &lt; max)</span>
+<span class="nc" id="L182">							max = t2.max;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">						if (min &lt;= max) {</span>
+<span class="nc" id="L184">							add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, min, max);</span>
+<span class="nc" id="L185">							lt.add(new Transition(min, max, null));</span>
+						} else
+							break;
+					}
+<span class="nc" id="L189">					Transition[] at = lt.toArray(new Transition[lt.size()]);</span>
+<span class="nc" id="L190">					Arrays.sort(at, tc);</span>
+<span class="nc" id="L191">					char min = t1.min;</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">					for (int k = 0; k &lt; at.length; k++) {</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">						if (at[k].min &gt; min)</span>
+<span class="nc" id="L194">							break;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">						if (at[k].max &gt;= t1.max)</span>
+<span class="nc" id="L196">							continue loop;</span>
+<span class="nc" id="L197">						min = (char)(at[k].max + 1);</span>
+					}
+<span class="nc" id="L199">					ShuffleConfiguration nc = new ShuffleConfiguration(c, i1, t1.to, min);</span>
+<span class="nc" id="L200">					StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L201">					ShuffleConfiguration b = nc;</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">					while (b.prev != null) {</span>
+<span class="nc" id="L203">						sb.append(b.min);</span>
+<span class="nc" id="L204">						b = b.prev;</span>
+					}
+<span class="nc" id="L206">					StringBuilder sb2 = new StringBuilder();</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">					for (int m = sb.length() - 1; m &gt;= 0; m--)</span>
+<span class="nc" id="L208">						sb2.append(sb.charAt(m));</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">					if (c.shuffle_suspended)</span>
+<span class="nc" id="L210">						sb2.append(BasicOperations.getShortestExample(nc.ca_states[c.suspended1], true));</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">					for (i1 = 0; i1 &lt; ca.size(); i1++)</span>
+<span class="nc bnc" id="L212" title="All 4 branches missed.">						if (!c.shuffle_suspended || i1 != c.suspended1)</span>
+<span class="nc" id="L213">							sb2.append(BasicOperations.getShortestExample(nc.ca_states[i1], true));</span>
+<span class="nc" id="L214">					return sb2.toString();</span>
+				}
+<span class="nc bnc" id="L216" title="All 2 branches missed.">				if (c.shuffle_suspended)</span>
+<span class="nc" id="L217">					break;</span>
+			}
+		}
+<span class="nc" id="L220">		return null;</span>
+	}
+
+	private static void add(Character suspend_shuffle, Character resume_shuffle, 
+			                LinkedList&lt;ShuffleConfiguration&gt; pending, Set&lt;ShuffleConfiguration&gt; visited, 
+			                ShuffleConfiguration c, int i1, Transition t1, Transition t2, char min, char max) {
+<span class="nc" id="L226">		final char HIGH_SURROGATE_BEGIN = '\uD800'; </span>
+<span class="nc" id="L227">		final char HIGH_SURROGATE_END = '\uDBFF'; </span>
+<span class="nc bnc" id="L228" title="All 8 branches missed.">		if (suspend_shuffle != null &amp;&amp; min &lt;= suspend_shuffle &amp;&amp; suspend_shuffle &lt;= max &amp;&amp; min != max) {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">			if (min &lt; suspend_shuffle)</span>
+<span class="nc" id="L230">				add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, min, (char)(suspend_shuffle - 1));</span>
+<span class="nc" id="L231">			add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, suspend_shuffle, suspend_shuffle);</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">			if (suspend_shuffle &lt; max)</span>
+<span class="nc" id="L233">				add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, (char)(suspend_shuffle + 1), max);</span>
+<span class="nc bnc" id="L234" title="All 8 branches missed.">		} else if (resume_shuffle != null &amp;&amp; min &lt;= resume_shuffle &amp;&amp; resume_shuffle &lt;= max &amp;&amp; min != max) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">			if (min &lt; resume_shuffle)</span>
+<span class="nc" id="L236">				add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, min, (char)(resume_shuffle - 1));</span>
+<span class="nc" id="L237">			add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, resume_shuffle, resume_shuffle);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">			if (resume_shuffle &lt; max)</span>
+<span class="nc" id="L239">				add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, (char)(resume_shuffle + 1), max);</span>
+<span class="nc bnc" id="L240" title="All 4 branches missed.">		} else if (min &lt; HIGH_SURROGATE_BEGIN &amp;&amp; max &gt;= HIGH_SURROGATE_BEGIN) {</span>
+<span class="nc" id="L241">			add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, min, (char)(HIGH_SURROGATE_BEGIN - 1));</span>
+<span class="nc" id="L242">			add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, HIGH_SURROGATE_BEGIN, max);</span>
+<span class="nc bnc" id="L243" title="All 4 branches missed.">		} else if (min &lt;= HIGH_SURROGATE_END &amp;&amp; max &gt; HIGH_SURROGATE_END) {</span>
+<span class="nc" id="L244">			add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, min, HIGH_SURROGATE_END);</span>
+<span class="nc" id="L245">			add(suspend_shuffle, resume_shuffle, pending, visited, c, i1, t1, t2, (char)(HIGH_SURROGATE_END + 1), max);</span>
+<span class="nc" id="L246">		} else {</span>
+<span class="nc" id="L247">			ShuffleConfiguration nc = new ShuffleConfiguration(c, i1, t1.to, t2.to, min);</span>
+<span class="nc bnc" id="L248" title="All 4 branches missed.">			if (suspend_shuffle != null &amp;&amp; min == suspend_shuffle) {</span>
+<span class="nc" id="L249">				nc.shuffle_suspended = true;</span>
+<span class="nc" id="L250">				nc.suspended1 = i1;</span>
+<span class="nc bnc" id="L251" title="All 4 branches missed.">			} else if (resume_shuffle != null &amp;&amp; min == resume_shuffle)</span>
+<span class="nc" id="L252">				nc.shuffle_suspended = false;</span>
+<span class="nc bnc" id="L253" title="All 4 branches missed.">			if (min &gt;= HIGH_SURROGATE_BEGIN &amp;&amp; min &lt;= HIGH_SURROGATE_BEGIN) {</span>
+<span class="nc" id="L254">				nc.shuffle_suspended = true;</span>
+<span class="nc" id="L255">				nc.suspended1 = i1;</span>
+<span class="nc" id="L256">				nc.surrogate = true;</span>
+			}
+<span class="nc bnc" id="L258" title="All 2 branches missed.">			if (!visited.contains(nc)) {</span>
+<span class="nc" id="L259">				pending.add(nc);</span>
+<span class="nc" id="L260">				visited.add(nc);</span>
+			}
+		}
+<span class="nc" id="L263">	}</span>
+
+	static class ShuffleConfiguration {
+		
+		ShuffleConfiguration prev;
+		State[] ca_states;
+		State a_state;
+		char min;
+		int hash;
+		boolean shuffle_suspended;
+		boolean surrogate;
+		int suspended1;
+		
+		@SuppressWarnings(&quot;unused&quot;)
+		private ShuffleConfiguration() {}
+		
+<span class="nc" id="L279">		ShuffleConfiguration(Collection&lt;Automaton&gt; ca, Automaton a) {</span>
+<span class="nc" id="L280">			ca_states = new State[ca.size()];</span>
+<span class="nc" id="L281">			int i = 0;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">			for (Automaton a1 : ca)</span>
+<span class="nc" id="L283">				ca_states[i++] = a1.getInitialState();</span>
+<span class="nc" id="L284">			a_state = a.getInitialState();</span>
+<span class="nc" id="L285">			computeHash();</span>
+<span class="nc" id="L286">		}</span>
+		
+<span class="nc" id="L288">		ShuffleConfiguration(ShuffleConfiguration c, int i1, State s1, char min) {</span>
+<span class="nc" id="L289">			prev = c;</span>
+<span class="nc" id="L290">			ca_states = c.ca_states.clone();</span>
+<span class="nc" id="L291">			a_state = c.a_state;</span>
+<span class="nc" id="L292">			ca_states[i1] = s1;</span>
+<span class="nc" id="L293">			this.min = min;</span>
+<span class="nc" id="L294">			computeHash();</span>
+<span class="nc" id="L295">		}</span>
+
+<span class="nc" id="L297">		ShuffleConfiguration(ShuffleConfiguration c, int i1, State s1, State s2, char min) {</span>
+<span class="nc" id="L298">			prev = c;</span>
+<span class="nc" id="L299">			ca_states = c.ca_states.clone();</span>
+<span class="nc" id="L300">			a_state = c.a_state;</span>
+<span class="nc" id="L301">			ca_states[i1] = s1;</span>
+<span class="nc" id="L302">			a_state = s2;</span>
+<span class="nc" id="L303">			this.min = min;</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">			if (!surrogate) {</span>
+<span class="nc" id="L305">				shuffle_suspended = c.shuffle_suspended;</span>
+<span class="nc" id="L306">				suspended1 = c.suspended1;</span>
+			}
+<span class="nc" id="L308">			computeHash();</span>
+<span class="nc" id="L309">		}</span>
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L313" title="All 2 branches missed.">			if (obj instanceof ShuffleConfiguration) {</span>
+<span class="nc" id="L314">				ShuffleConfiguration c = (ShuffleConfiguration)obj;</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">				return shuffle_suspended == c.shuffle_suspended &amp;&amp;</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">					   surrogate == c.surrogate &amp;&amp;</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">					   suspended1 == c.suspended1 &amp;&amp;</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">					   Arrays.equals(ca_states, c.ca_states) &amp;&amp;</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">					   a_state == c.a_state;</span>
+			}
+<span class="nc" id="L321">			return false;</span>
+		}
+
+		@Override
+		public int hashCode() {
+<span class="nc" id="L326">			return hash;</span>
+		}
+		
+		private void computeHash() {
+<span class="nc" id="L330">			hash = 0;</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">			for (int i = 0; i &lt; ca_states.length; i++)</span>
+<span class="nc" id="L332">				hash ^= ca_states[i].hashCode();</span>
+<span class="nc" id="L333">			hash ^= a_state.hashCode() * 100;</span>
+<span class="nc bnc" id="L334" title="All 4 branches missed.">			if (shuffle_suspended || surrogate)</span>
+<span class="nc" id="L335">				hash += suspended1;</span>
+<span class="nc" id="L336">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

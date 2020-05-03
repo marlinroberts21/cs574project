@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AliasTable.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">AliasTable.java</span></div><h1>AliasTable.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.util.UnorderedPair;
+
+/**
+ * Represents the aliasing status between a set of variables.
+ * &lt;p/&gt;
+ * This class is responsible for an efficient representation. To this end, the following semantic
+ * assumptions are exploited:
+ * &lt;ul&gt;
+ * &lt;li&gt;A variable is always definitely an alias of itself.
+ * &lt;li&gt;Two variables of incompatible types are definitely not aliases.
+ * &lt;/ul&gt;
+ * Those assumptions affect the behaviour of the {@link #setAliasStatus} methods in these ways:
+ * &lt;ul&gt;
+ * &lt;li&gt;If a variable is assigned to definitely not be an alias of itself, an exception is thrown.
+ * &lt;li&gt;If a variable is assigned to maybe be an alias of itself (or assigned to BOTTOM), nothing happens.
+ * &lt;li&gt;If two variables of incompatible types are assigned to definitely be aliases, an exception is thrown.
+ * &lt;li&gt;If two variables of incompatible types are assigned to maybe be aliases (or assigned to BOTTOM), nothing happens.
+ * &lt;/ul&gt;
+ */
+<span class="nc bnc" id="L27" title="All 2 branches missed.">public class AliasTable {</span>
+	/**
+	 * The default element of the map. Can be changed without issues. By setting this
+	 * to the most common alias status, memory can be saved.
+	 */
+<span class="nc" id="L32">	private static final AliasStatus DEFAULT_ELEMENT = AliasStatus.BOTTOM;</span>
+	// TODO: It might be more efficient to set DEFAULT_ELEMENT to NOT, since it will use less memory after the analysis is complete.
+	
+<span class="nc" id="L35">	private Map&lt;UnorderedPair&lt;Variable&gt;, AliasStatus&gt; map = new HashMap&lt;UnorderedPair&lt;Variable&gt;, AliasStatus&gt;();</span>
+	private Set&lt;Variable&gt; variables;
+	
+	private boolean hasVariables(UnorderedPair&lt;Variable&gt; pair) {
+<span class="nc bnc" id="L39" title="All 4 branches missed.">	    return variables.contains(pair.getFirst()) &amp;&amp; variables.contains(pair.getSecond());</span>
+	}
+	
+	/**
+	 * Creates variable aliasings between the specified variables. Only variables in the specified
+	 * set may be used in queries to this object.
+	 * @param variables the variables to track aliasing between.
+	 * @param initial the initial aliasing status between all pairs of variables
+	 */
+<span class="nc" id="L48">	public AliasTable(Set&lt;Variable&gt; variables, AliasStatus initial) {</span>
+<span class="nc" id="L49">	    this.variables = variables;</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (initial == DEFAULT_ELEMENT)</span>
+<span class="nc" id="L51">			return;</span>
+		
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		for (Variable var1 : variables) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">			for (Variable var2 : variables) {</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">				if (var1.getKey() &lt;= var2.getKey())</span>
+<span class="nc" id="L56">					continue;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">				if (var1.getType().cannotBeUsefulAliasOf(var2.getType()))</span>
+<span class="nc" id="L58">					continue;</span>
+<span class="nc" id="L59">				map.put(new UnorderedPair&lt;Variable&gt;(var1, var2), initial);</span>
+			}
+		}
+<span class="nc" id="L62">	}</span>
+	
+	/**
+	 * Returns the current aliasing status between two variables.
+	 * @param a a variable from the set passed to {@link AliasTable}'s constructor.
+	 * @param b a variable from the set passed to {@link AliasTable}'s constructor.
+	 * @return an aliasing status. &lt;tt&gt;null&lt;/tt&gt; is never returned.
+	 */
+	public AliasStatus getAliasStatus(Variable a, Variable b) {
+<span class="nc" id="L71">		return getAliasStatus(new UnorderedPair&lt;Variable&gt;(a, b));</span>
+	}
+	
+	/**
+	 * Returns the current aliasing status between two variables.
+	 * @param pair a pair of variables from the set passed to {@link AliasTable}'s constructor.
+	 * @return an aliasing status. &lt;tt&gt;null&lt;/tt&gt; is never returned.
+	 */
+	public AliasStatus getAliasStatus(UnorderedPair&lt;Variable&gt; pair) {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">		if (pair.getFirst() == pair.getSecond()) {</span>
+<span class="nc" id="L81">			return AliasStatus.DEFINITELY;</span>
+		}
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (pair.getFirst().getType().cannotBeUsefulAliasOf(pair.getSecond().getType()))</span>
+<span class="nc" id="L84">			return AliasStatus.NOT;</span>
+		
+<span class="nc bnc" id="L86" title="All 4 branches missed.">		assert hasVariables(pair);</span>
+		
+<span class="nc" id="L88">		AliasStatus status = map.get(pair);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">		if (status == null) {</span>
+<span class="nc" id="L90">			return DEFAULT_ELEMENT;</span>
+		}
+<span class="nc" id="L92">		return status;</span>
+	}
+	
+	/**
+	 * Sets the current aliasing status between two variables. The order of the arguments is irrelevant.
+	 * &lt;p/&gt;
+	 * The semantic assumption listed in {@link AliasTable} may override the change.
+	 * @return &lt;tt&gt;true&lt;/tt&gt; if something changed
+	 */
+	public boolean setAliasStatus(Variable a, Variable b, AliasStatus status) {
+<span class="nc" id="L102">		return setAliasStatus(new UnorderedPair&lt;Variable&gt;(a, b), status);</span>
+	}
+	
+	/**
+	 * Sets the current aliasing status between two variables. If the two variables
+	 * are the same, only {@link AliasStatus#DEFINITELY DEFINITELY} is accepted.
+	 * @param pair a pair of variables from the set passed to {@link AliasTable}'s constructor.
+	 * @return &lt;tt&gt;true&lt;/tt&gt; if something changed
+	 */
+	public boolean setAliasStatus(UnorderedPair&lt;Variable&gt; pair, AliasStatus status) {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (pair.getFirst() == pair.getSecond()) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">			if (status == AliasStatus.NOT)</span>
+<span class="nc" id="L114">				throw new IllegalArgumentException(&quot;A variable can only be a definite alias of itself&quot;);</span>
+<span class="nc" id="L115">			return false;</span>
+		}
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (pair.getFirst().getType().cannotBeUsefulAliasOf(pair.getSecond().getType())) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			if (status == AliasStatus.DEFINITELY)</span>
+<span class="nc" id="L119">				throw new IllegalArgumentException(&quot;Two variables of incompatible types can only NOT be aliases.&quot;);</span>
+<span class="nc" id="L120">			return false;</span>
+		}
+        
+<span class="nc bnc" id="L123" title="All 4 branches missed.">        assert hasVariables(pair);</span>
+        
+<span class="nc" id="L125">		AliasStatus currentStatus = map.get(pair);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (status == currentStatus)</span>
+<span class="nc" id="L127">			return false;</span>
+		
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (status == DEFAULT_ELEMENT) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">			if (currentStatus == null)</span>
+<span class="nc" id="L131">				return false;</span>
+<span class="nc" id="L132">			map.remove(pair);</span>
+<span class="nc" id="L133">			return true;</span>
+		}
+		
+<span class="nc" id="L136">		map.put(pair, status);</span>
+<span class="nc" id="L137">		return true;</span>
+	}
+	
+	/**
+	 * Returns the result of &lt;tt&gt;toString&lt;/tt&gt; on the underlying map. Mostly
+	 * useful when running the integrated debugger.
+	 */
+	@Override
+	public String toString() {
+<span class="nc" id="L146">		return map.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

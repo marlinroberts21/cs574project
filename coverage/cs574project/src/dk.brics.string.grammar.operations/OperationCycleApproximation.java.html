@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OperationCycleApproximation.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar.operations</a> &gt; <span class="el_source">OperationCycleApproximation.java</span></div><h1>OperationCycleApproximation.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar.operations;
+
+import dk.brics.string.charset.CharSet;
+import dk.brics.string.directedgraph.StronglyConnectedComponents;
+import dk.brics.string.grammar.*;
+import dk.brics.string.stringoperations.Operation;
+
+import java.util.*;
+
+/**
+ * Operation cycle approximation.
+ */
+public class OperationCycleApproximation {
+
+    private Grammar g;
+
+    private StronglyConnectedComponents&lt;Nonterminal, Component&gt; comp;
+
+    private CharSet[] charsets;
+
+    private List&lt;Set&lt;Nonterminal&gt;&gt; nexts, prevs;
+
+    /**
+     * Constructs a new approximator for the given grammar.
+     *
+     * @param g
+     */
+<span class="nc" id="L28">    public OperationCycleApproximation(Grammar g) {</span>
+<span class="nc" id="L29">        this.g = g;</span>
+<span class="nc" id="L30">    }</span>
+
+    /**
+     * Approximates operation cycles in the grammar.
+     * An operation cycle is an occurrence of a production [&lt;tt&gt;a -&gt; op1(b)&lt;/tt&gt;] or [&lt;tt&gt;a -&gt; op2(b,c)&lt;/tt&gt;]
+     * where &lt;tt&gt;b&lt;/tt&gt; or &lt;tt&gt;c&lt;/tt&gt; recursively refers to &lt;tt&gt;a&lt;/tt&gt;.
+     */
+    public void approximate() {
+<span class="nc" id="L38">        comp = g.getComponents(false);</span>
+<span class="nc" id="L39">        findCharsets();</span>
+<span class="nc" id="L40">        boolean done = false;</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        while (!done) {</span>
+<span class="nc" id="L42">            done = true;</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">            for (Component c : comp.getComponents()) {</span>
+<span class="nc" id="L44">                int cycles = 0;</span>
+<span class="nc" id="L45">                Nonterminal max_nt = null;</span>
+<span class="nc" id="L46">                Production max_prod = null;</span>
+<span class="nc" id="L47">                Operation max_op = null;</span>
+                // look for operation cycles in this component
+<span class="nc bnc" id="L49" title="All 2 branches missed.">                for (Nonterminal n : c.getNodes()) {</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">                    for (Production p : n.getProductions()) {</span>
+<span class="nc" id="L51">                        CycleVisitor v = new CycleVisitor(c);</span>
+<span class="nc" id="L52">                        p.visitBy(n, v);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                        if (v.is_cycle) {</span>
+<span class="nc bnc" id="L54" title="All 4 branches missed.">                            if (cycles == 0 || v.op.getPriority() &gt; max_op.getPriority()) { // assume that the operations are different objects</span>
+<span class="nc" id="L55">                                max_nt = n;</span>
+<span class="nc" id="L56">                                max_prod = p;</span>
+<span class="nc" id="L57">                                max_op = v.op;</span>
+                            }
+<span class="nc" id="L59">                            cycles++;</span>
+                        }
+                    }
+                }
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                if (cycles &gt; 0) {</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                    if (cycles &gt; 1) {</span>
+<span class="nc" id="L65">                        done = false;</span>
+                    }
+                    // replace  A-&gt;op  with  A-&gt;automatonproduction(charset(op))
+<span class="nc" id="L68">                    CharSetTransferVisitor ctv = new CharSetTransferVisitor();</span>
+<span class="nc" id="L69">                    max_prod.visitBy(null, ctv);</span>
+<span class="nc" id="L70">                    max_nt.getProductions().remove(max_prod);</span>
+<span class="nc" id="L71">                    g.addAutomatonProduction(max_nt, ctv.c.toAutomaton());</span>
+                }
+            }
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            if (!done) {</span>
+<span class="nc" id="L75">                comp = g.getComponents(false);</span>
+            }
+        }
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * Returns number of operation cycles.
+     */
+    public int countCycles() {
+<span class="nc" id="L84">        int cycles = 0;</span>
+<span class="nc" id="L85">        comp = g.getComponents(false);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        for (Component c : comp.getComponents()) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            for (Nonterminal n : c.getNodes()) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                for (Production p : n.getProductions()) {</span>
+<span class="nc" id="L89">                    CycleVisitor v = new CycleVisitor(c);</span>
+<span class="nc" id="L90">                    p.visitBy(n, v);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                    if (v.is_cycle) {</span>
+<span class="nc" id="L92">                        cycles++;</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L97">        return cycles;</span>
+    }
+
+    private void findPrevsNexts() {
+<span class="nc" id="L101">        nexts = new ArrayList&lt;Set&lt;Nonterminal&gt;&gt;();</span>
+<span class="nc" id="L102">        prevs = new ArrayList&lt;Set&lt;Nonterminal&gt;&gt;();</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (int i = 0; i &lt; g.getNumberOfNonterminals(); i++) {</span>
+<span class="nc" id="L104">            nexts.add(new HashSet&lt;Nonterminal&gt;());</span>
+<span class="nc" id="L105">            prevs.add(new HashSet&lt;Nonterminal&gt;());</span>
+        }
+<span class="nc" id="L107">        g.visitProductions(new ProductionVisitor() {</span>
+
+            public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+<span class="nc" id="L110">            }</span>
+
+            public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+<span class="nc" id="L113">                nexts.get(a.getKey()).add(p.getNonterminal1());</span>
+<span class="nc" id="L114">                nexts.get(a.getKey()).add(p.getNonterminal2());</span>
+<span class="nc" id="L115">                prevs.get(p.getNonterminal1().getKey()).add(a);</span>
+<span class="nc" id="L116">                prevs.get(p.getNonterminal2().getKey()).add(a);</span>
+<span class="nc" id="L117">            }</span>
+
+            public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+<span class="nc" id="L120">            }</span>
+
+            public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc" id="L123">                nexts.get(a.getKey()).add(p.getNonterminal1());</span>
+<span class="nc" id="L124">                nexts.get(a.getKey()).add(p.getNonterminal2());</span>
+<span class="nc" id="L125">                prevs.get(p.getNonterminal1().getKey()).add(a);</span>
+<span class="nc" id="L126">                prevs.get(p.getNonterminal2().getKey()).add(a);</span>
+<span class="nc" id="L127">            }</span>
+
+            public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+<span class="nc" id="L130">                nexts.get(a.getKey()).add(p.getNonterminal());</span>
+<span class="nc" id="L131">                prevs.get(p.getNonterminal().getKey()).add(a);</span>
+<span class="nc" id="L132">            }</span>
+
+            public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc" id="L135">                nexts.get(a.getKey()).add(p.getNonterminal());</span>
+<span class="nc" id="L136">                prevs.get(p.getNonterminal().getKey()).add(a);</span>
+<span class="nc" id="L137">            }</span>
+        });
+<span class="nc" id="L139">    }</span>
+
+    /**
+     * Finds charsets for all nonterminals, assumes that components have been found.
+     */
+    private void findCharsets() {
+<span class="nc" id="L145">        findPrevsNexts();</span>
+<span class="nc" id="L146">        charsets = new CharSet[g.getNumberOfNonterminals()];</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        for (Component c : comp.getComponents()) // traverses SCC tree bottom-up</span>
+        {
+<span class="nc" id="L149">            findCharsets(c);</span>
+        }
+<span class="nc" id="L151">    }</span>
+
+    /**
+     * Finds charsets for all nonterminals in the given component,
+     * assuming that its successors have been processed.
+     */
+    private void findCharsets(Component c) {
+        // reset charsets
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        for (Nonterminal n : c.getNodes()) {</span>
+<span class="nc" id="L160">            charsets[n.getKey()] = new CharSet();</span>
+        }
+        // fixpoint iteration, within this component
+<span class="nc" id="L163">        TreeSet&lt;Nonterminal&gt; worklist = new TreeSet&lt;Nonterminal&gt;(c.getNodes());</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        while (!worklist.isEmpty()) {</span>
+<span class="nc" id="L165">            Nonterminal n = worklist.first();</span>
+<span class="nc" id="L166">            worklist.remove(n);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (updateCharset(n)) {</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">                for (Nonterminal m : prevs.get(n.getKey())) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                    if (comp.getComponent(m) == c) {</span>
+<span class="nc" id="L170">                        worklist.add(m);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L175">    }</span>
+
+    /**
+     * Updates charset according to productions. Returns true if any changes.
+     */
+    boolean updateCharset(Nonterminal n) {
+<span class="nc" id="L181">        List&lt;CharSet&gt; c = new ArrayList&lt;CharSet&gt;();</span>
+<span class="nc" id="L182">        c.add(charsets[n.getKey()]);</span>
+<span class="nc" id="L183">        CharSetTransferVisitor ctv = new CharSetTransferVisitor();</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        for (Production p : n.getProductions()) {</span>
+<span class="nc" id="L185">            p.visitBy(null, ctv);</span>
+<span class="nc" id="L186">            c.add(ctv.c);</span>
+        }
+<span class="nc" id="L188">        CharSet newset = CharSet.union(c);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        boolean changed = !newset.equals(charsets[n.getKey()]);</span>
+<span class="nc" id="L190">        charsets[n.getKey()] = newset;</span>
+<span class="nc" id="L191">        return changed;</span>
+    }
+
+    /**
+     * Returns string representation of character sets for all nonterminals.
+     */
+    public String getCharsets() {
+<span class="nc" id="L198">        comp = g.getComponents(false);</span>
+<span class="nc" id="L199">        findCharsets();</span>
+<span class="nc" id="L200">        StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        for (Nonterminal n : g.getNonterminals()) {</span>
+<span class="nc" id="L202">            b.append(n).append(&quot;: &quot;).append(charsets[n.getKey()]).append(&quot;\n&quot;);</span>
+        }
+<span class="nc" id="L204">        return b.toString();</span>
+    }
+
+    static class CycleVisitor implements ProductionVisitor {
+
+        Component c;
+
+<span class="nc" id="L211">        boolean is_cycle = false;</span>
+        Operation op;
+
+<span class="nc" id="L214">        CycleVisitor(Component c) {</span>
+<span class="nc" id="L215">            this.c = c;</span>
+<span class="nc" id="L216">        }</span>
+
+        public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+<span class="nc" id="L219">            is_cycle = c.contains(p.getNonterminal());</span>
+<span class="nc" id="L220">            op = p.getOperation();</span>
+<span class="nc" id="L221">        }</span>
+
+        public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+<span class="nc bnc" id="L224" title="All 4 branches missed.">            is_cycle = c.contains(p.getNonterminal1()) || c.contains(p.getNonterminal2());</span>
+<span class="nc" id="L225">            op = p.getOperation();</span>
+<span class="nc" id="L226">        }</span>
+
+        public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+<span class="nc" id="L229">        }</span>
+
+        public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+<span class="nc" id="L232">        }</span>
+
+        public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc" id="L235">        }</span>
+
+        public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc" id="L238">        }</span>
+    }
+
+<span class="nc" id="L241">    class CharSetTransferVisitor implements ProductionVisitor {</span>
+
+        CharSet c;
+
+        public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+<span class="nc" id="L246">            c = new CharSet(p.getAutomaton());</span>
+<span class="nc" id="L247">        }</span>
+
+        public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+<span class="nc" id="L250">            c = p.getOperation().charsetTransfer(</span>
+<span class="nc" id="L251">                    charsets[p.getNonterminal1().getKey()],</span>
+<span class="nc" id="L252">                    charsets[p.getNonterminal2().getKey()]);</span>
+<span class="nc" id="L253">        }</span>
+
+        public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+<span class="nc" id="L256">            c = new CharSet();</span>
+<span class="nc" id="L257">        }</span>
+
+        public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc" id="L260">            c = charsets[p.getNonterminal1().getKey()]</span>
+<span class="nc" id="L261">                    .union(charsets[p.getNonterminal2().getKey()]);</span>
+<span class="nc" id="L262">        }</span>
+
+        public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+<span class="nc" id="L265">            c = p.getOperation().charsetTransfer(charsets[p.getNonterminal().getKey()]);</span>
+<span class="nc" id="L266">        }</span>
+
+        public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc" id="L269">            c = charsets[p.getNonterminal().getKey()];</span>
+<span class="nc" id="L270">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

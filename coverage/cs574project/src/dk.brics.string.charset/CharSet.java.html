@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CharSet.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.charset</a> &gt; <span class="el_source">CharSet.java</span></div><h1>CharSet.java</h1><pre class="source lang-java linenums">package dk.brics.string.charset;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.TreeSet;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.Transition;
+
+/**
+ * Character set.
+ */
+public class CharSet implements Cloneable {
+
+<span class="pc" id="L17">    private HashSet&lt;Interval&gt; intervals = new HashSet&lt;Interval&gt;();</span>
+
+    /**
+     * Constructs new empty character set.
+     */
+<span class="fc" id="L22">    public CharSet() {</span>
+<span class="fc" id="L23">    }</span>
+
+    /**
+     * Returns new character set with all characters in strings in the given language.
+     */
+<span class="nc" id="L28">    public CharSet(Automaton a) {</span>
+<span class="nc" id="L29">        Automaton b = a.singleChars();</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">        for (Transition t : b.getInitialState().getTransitions()) {</span>
+<span class="nc" id="L31">            intervals.add(new Interval(t.getMin(), t.getMax()));</span>
+        }
+<span class="nc" id="L33">    }</span>
+    /**
+     * Returns new character set with all characters in the specified string.
+     */
+<span class="nc" id="L37">    public CharSet(String s) {</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (int i=0; i&lt;s.length(); i++) {</span>
+<span class="nc" id="L39">            intervals.add(new Interval(s.charAt(i), s.charAt(i+1)));</span>
+        }
+<span class="nc" id="L41">    }</span>
+
+    @Override
+    public CharSet clone() {
+        CharSet a;
+        try {
+<span class="fc" id="L47">            a = (CharSet) super.clone();</span>
+<span class="pc" id="L48">        } catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L49">            throw new RuntimeException(e);</span>
+        }
+<span class="fc" id="L51">        a.intervals = new HashSet&lt;Interval&gt;(intervals);</span>
+<span class="fc" id="L52">        return a;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (obj instanceof CharSet) {</span>
+<span class="nc" id="L58">            CharSet a = (CharSet) obj;</span>
+<span class="nc" id="L59">            return intervals.equals(a.intervals);</span>
+        } else {
+<span class="nc" id="L61">            return false;</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L67">        return intervals.hashCode();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L72">        StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L73">        boolean first = true;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        for (Interval v : new TreeSet&lt;Interval&gt;(intervals)) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (first) {</span>
+<span class="nc" id="L76">                first = false;</span>
+<span class="nc" id="L77">            } else {</span>
+<span class="nc" id="L78">                b.append(&quot;,&quot;);</span>
+            }
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (v.getMin() == v.getMax()) {</span>
+<span class="nc" id="L81">                appendChar(b, v.getMin());</span>
+<span class="nc" id="L82">            } else {</span>
+<span class="nc" id="L83">                appendChar(b, v.getMin());</span>
+<span class="nc" id="L84">                b.append(&quot;-&quot;);</span>
+<span class="nc" id="L85">                appendChar(b, v.getMax());</span>
+            }
+        }
+<span class="nc" id="L88">        return b.toString();</span>
+    }
+
+    private void appendChar(StringBuilder b, char c) {
+<span class="nc" id="L92">        b.append('\'');</span>
+<span class="nc bnc" id="L93" title="All 6 branches missed.">        if (c &gt;= 0x21 &amp;&amp; c &lt;= 0x7e &amp;&amp; c != '-') {</span>
+<span class="nc" id="L94">            b.append(c);</span>
+<span class="nc" id="L95">        } else {</span>
+<span class="nc" id="L96">            b.append(&quot;\\u&quot;);</span>
+<span class="nc" id="L97">            String t = Integer.toHexString(c &amp; 0xffff);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            for (int j = 0; j + t.length() &lt; 4; j++) {</span>
+<span class="nc" id="L99">                b.append('0');</span>
+            }
+<span class="nc" id="L101">            b.append(t);</span>
+        }
+<span class="nc" id="L103">        b.append('\'');</span>
+<span class="nc" id="L104">    }</span>
+
+    void reduce() {
+<span class="fc" id="L107">        TreeSet&lt;Interval&gt; s = new TreeSet&lt;Interval&gt;(intervals);</span>
+<span class="fc" id="L108">        intervals.clear();</span>
+<span class="fc" id="L109">        int min = -1, max = -1;</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (Interval v : s) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (v.getMin() &lt;= max + 1) {</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">                if (v.getMax() &gt; max) {</span>
+<span class="fc" id="L113">                    max = v.getMax();</span>
+                }
+<span class="fc" id="L115">            } else {</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">                if (min &gt; 0) {</span>
+<span class="nc" id="L117">                    intervals.add(new Interval((char) min, (char) max));</span>
+                }
+<span class="fc" id="L119">                min = v.getMin();</span>
+<span class="fc" id="L120">                max = v.getMax();</span>
+            }
+        }
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (min &gt; 0) {</span>
+<span class="fc" id="L124">            intervals.add(new Interval((char) min, (char) max));</span>
+        }
+<span class="fc" id="L126">    }</span>
+
+    /**
+     * Returns new character set with every character.
+     */
+    public static CharSet makeAnychars() {
+<span class="nc" id="L132">        CharSet a = new CharSet();</span>
+<span class="nc" id="L133">        a.intervals.add(new Interval(Character.MIN_VALUE, Character.MAX_VALUE));</span>
+<span class="nc" id="L134">        return a;</span>
+    }
+
+    /**
+     * Constructs union of this character set and the given one.
+     */
+    public CharSet union(CharSet a) {
+<span class="nc" id="L141">        CharSet b = clone();</span>
+<span class="nc" id="L142">        b.intervals.addAll(new HashSet&lt;Interval&gt;(a.intervals));</span>
+<span class="nc" id="L143">        b.reduce();</span>
+<span class="nc" id="L144">        return b;</span>
+    }
+
+    /**
+     * Constructs union of the given character sets.
+     */
+    public static CharSet union(List&lt;CharSet&gt; c) {
+<span class="nc" id="L151">        CharSet a = new CharSet();</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        for (CharSet b : c) {</span>
+<span class="nc" id="L153">            a.intervals.addAll(new HashSet&lt;Interval&gt;(b.intervals));</span>
+        }
+<span class="nc" id="L155">        a.reduce();</span>
+<span class="nc" id="L156">        return a;</span>
+    }
+
+    /**
+     * Constructs character set as this one but removes the given character.
+     */
+    public CharSet remove(char c) {
+<span class="nc" id="L163">        CharSet b = clone();</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        for (Interval v : intervals) {</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">            if (v.getMin() &lt;= c &amp;&amp; c &lt;= v.getMax()) {</span>
+<span class="nc" id="L166">                b.intervals.remove(v);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                if (v.getMin() &lt; c) {</span>
+<span class="nc" id="L168">                    b.intervals.add(new Interval(v.getMin(), (char) (c - 1)));</span>
+                }
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                if (c &lt; v.getMax()) {</span>
+<span class="nc" id="L171">                    b.intervals.add(new Interval((char) (c + 1), v.getMax()));</span>
+                }
+            }
+        }
+<span class="nc" id="L175">        return b;</span>
+    }
+
+    /**
+     * Constructs character set as this one but adds the given character.
+     */
+    public CharSet add(char c) {
+<span class="fc" id="L182">        CharSet b = clone();</span>
+<span class="fc" id="L183">        b.intervals.add(new Interval(c));</span>
+<span class="fc" id="L184">        b.reduce();</span>
+<span class="fc" id="L185">        return b;</span>
+    }
+    
+    /**
+     * Constructs a new character set as the intersection of this set and
+     * the specified set. 
+     */
+    public CharSet intersection(CharSet other) {
+<span class="nc" id="L193">        PriorityQueue&lt;Interval&gt; mine = new PriorityQueue&lt;Interval&gt;(intervals);</span>
+<span class="nc" id="L194">        PriorityQueue&lt;Interval&gt; yours = new PriorityQueue&lt;Interval&gt;(other.intervals);</span>
+<span class="nc" id="L195">        CharSet result = new CharSet();</span>
+<span class="nc bnc" id="L196" title="All 4 branches missed.">        while (!mine.isEmpty() &amp;&amp; !yours.isEmpty()) {</span>
+<span class="nc" id="L197">            Interval a = mine.peek();</span>
+<span class="nc" id="L198">            Interval b = yours.peek();</span>
+            
+<span class="nc" id="L200">            Interval inter = a.intersection(b);</span>
+            
+<span class="nc bnc" id="L202" title="All 2 branches missed.">            if (inter != null) {</span>
+<span class="nc" id="L203">                result.intervals.add(inter);</span>
+            }
+            
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (a.getMax() &lt; b.getMax()) {</span>
+<span class="nc" id="L207">                mine.remove();</span>
+<span class="nc" id="L208">            } else {</span>
+<span class="nc" id="L209">                yours.remove();</span>
+            }
+        }
+<span class="nc" id="L212">        return result;</span>
+    }
+    
+    boolean isTotal() {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (intervals.size() == 1) {</span>
+<span class="nc" id="L217">            Interval v = intervals.iterator().next();</span>
+<span class="nc bnc" id="L218" title="All 4 branches missed.">            return v.getMin() == Character.MIN_VALUE &amp;&amp; v.getMax() == Character.MAX_VALUE;</span>
+        } else {
+<span class="nc" id="L220">            return false;</span>
+        }
+    }
+
+    /**
+     * Constructs character set as this one and performs uppercase conversion of all characters.
+     */
+    public CharSet toLowerCase() {
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (isTotal()) {</span>
+<span class="nc" id="L229">            return clone();</span>
+        }
+<span class="nc" id="L231">        CharSet b = new CharSet();</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        for (Interval v : intervals) {</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">            for (int c = v.getMin(); c &lt;= v.getMax(); c++) {</span>
+<span class="nc" id="L234">            	String s = String.valueOf((char)c).toLowerCase();</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            	for (int i=0; i&lt;s.length(); i++) {</span>
+<span class="nc" id="L236">            		b.intervals.add(new Interval(s.charAt(i)));</span>
+            	}
+            }
+        }
+<span class="nc" id="L240">        b.reduce();</span>
+<span class="nc" id="L241">        return b;</span>
+    }
+    
+    /**
+     * Constructs character set as this one and performs lowercase conversion of all characters,
+     * as done by {@link String#toUpperCase()} (which occasionally differs from character-wise application of {@link Character#toUpperCase(char)})
+     */
+    public CharSet toUpperCase() {
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        if (isTotal()) {</span>
+<span class="nc" id="L250">            return clone();</span>
+        }
+<span class="nc" id="L252">        CharSet b = new CharSet();</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        for (Interval v : intervals) {</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            for (int c = v.getMin(); c &lt;= v.getMax(); c++) {</span>
+            	// some characters, like the German &quot;�&quot;, become multiple characters after being turned into upper case
+<span class="nc" id="L256">            	String s = String.valueOf((char)c).toUpperCase();</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">            	for (int i=0; i&lt;s.length(); i++) {</span>
+<span class="nc" id="L258">            		b.intervals.add(new Interval(s.charAt(i)));</span>
+            	}
+            }
+        }
+<span class="nc" id="L262">        b.reduce();</span>
+<span class="nc" id="L263">        return b;</span>
+    }
+
+    /**
+     * Constructs automaton accepting strings with zero or more characters from this set.
+     */
+    public Automaton toAutomaton() {
+<span class="nc" id="L270">        Automaton a = new Automaton();</span>
+<span class="nc" id="L271">        State s = a.getInitialState();</span>
+<span class="nc" id="L272">        s.setAccept(true);</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        for (Interval v : intervals) {</span>
+<span class="nc" id="L274">            s.addTransition(new Transition(v.getMin(), v.getMax(), s));</span>
+        }
+<span class="nc" id="L276">        return a;</span>
+    }
+
+    /**
+     * Checks whether a particular characters is in the set.
+     */
+    public boolean contains(char c) {
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (Interval v : intervals) {</span>
+<span class="nc bnc" id="L284" title="All 4 branches missed.">            if (v.getMin() &lt;= c &amp;&amp; c &lt;= v.getMax()) {</span>
+<span class="nc" id="L285">                return true;</span>
+            }
+        }
+<span class="nc" id="L288">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

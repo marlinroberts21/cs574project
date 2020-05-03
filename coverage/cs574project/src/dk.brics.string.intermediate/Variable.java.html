@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Variable.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate</a> &gt; <span class="el_source">Variable.java</span></div><h1>Variable.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate;
+
+
+/**
+ * A variable or other intermediate value in the Java program.
+ * A variable has a type, which is either {@link java.lang.String},
+ * {@link java.lang.StringBuffer}, {@link java.lang.StringBuilder},
+ * an array (of arbitrary dimension)
+ * of {@link java.lang.String}, or some irrelevant type.
+ */
+<span class="nc bnc" id="L11" title="All 2 branches missed.">public final class Variable implements Comparable&lt;Variable&gt; {</span>
+
+    /**
+     * The type of the variable.
+     */
+    private VariableType type;
+
+    private int key;
+
+    private boolean taint;
+    
+    private Field field;
+    
+<span class="nc" id="L24">    Variable(int key, VariableType type) {</span>
+<span class="nc" id="L25">        this.key = key;</span>
+<span class="nc" id="L26">        this.type = type;</span>
+<span class="nc" id="L27">    }</span>
+    
+    /**
+     * Sets the field associated with this variable. Called by {@link Field}'s constructor.
+     */
+    void setField(Field field) {
+<span class="nc" id="L33">        this.field = field;</span>
+<span class="nc" id="L34">    }</span>
+    
+    /**
+     * Returns the field represented by this variable, or &lt;tt&gt;null&lt;/tt&gt; if this is
+     * not a field variable.
+     * @return &lt;tt&gt;null&lt;/tt&gt;, or a field.
+     */
+	public Field getField() {
+<span class="nc" id="L42">        return field;</span>
+    }
+
+    /**
+     * Returns true if the variable &lt;i&gt;might&lt;/i&gt; be mutable.
+     */
+    public boolean isMutable() {
+<span class="nc" id="L49">        return type.mightBeUsefulMutable();</span>
+    }
+    
+    /**
+     * Returns &lt;tt&gt;true&lt;/tt&gt; if this is a local variable, and &lt;tt&gt;false&lt;/tt&gt;
+     * if it is a field variable.
+     */
+    public boolean isLocal() {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        return field == null;</span>
+    }
+    
+    /**
+     * Returns &lt;tt&gt;false&lt;/tt&gt; if this is a local variable, and &lt;tt&gt;true&lt;/tt&gt;
+     * if it is a field variable.
+     */
+    public boolean isField() {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        return field != null;</span>
+    }
+    
+    /**
+     * Returns a string representation of the variable.
+     *
+     * @return a unique identifier for the variable.
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L75">        String n = &quot;x&quot;;</span>
+<span class="nc bnc" id="L76" title="All 6 branches missed.">        switch (getType()) {</span>
+            case NONE:
+<span class="nc" id="L78">                n = &quot;n&quot;;</span>
+<span class="nc" id="L79">                break;</span>
+            case STRING:
+<span class="nc" id="L81">                n = &quot;s&quot;;</span>
+<span class="nc" id="L82">                break;</span>
+            case STRINGBUFFER:
+<span class="nc" id="L84">                n = &quot;b&quot;;</span>
+<span class="nc" id="L85">                break;</span>
+            case ARRAY:
+<span class="nc" id="L87">                n = &quot;a&quot;;</span>
+<span class="nc" id="L88">                break;</span>
+            case PRIMITIVE:
+<span class="nc" id="L90">                n = &quot;p&quot;;</span>
+                break;
+<span class="nc" id="L92">        }</span>
+<span class="nc" id="L93">        return n + key;</span>
+    }
+
+    public boolean isTaint() {
+<span class="nc" id="L97">        return taint;</span>
+    }
+
+    public void setTaint(boolean taint) {
+<span class="nc" id="L101">        this.taint = taint;</span>
+<span class="nc" id="L102">    }</span>
+    
+    public int getKey() {
+<span class="nc" id="L105">		return key;</span>
+	}
+
+    public int compareTo(Variable v) {
+<span class="nc bnc" id="L109" title="All 6 branches missed.">        assert key == v.key || v != this; // must not compare variables from different applications</span>
+        
+<span class="nc" id="L111">        return key - v.key;</span>
+    }
+
+    @Override
+    public boolean equals(Object other) {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        return other == this;</span>
+    }
+    @Override
+    public int hashCode() {
+<span class="nc" id="L120">        return key;</span>
+    }
+    
+    /**
+     * @return the type
+     */
+    public VariableType getType() {
+<span class="nc" id="L127">        return type;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

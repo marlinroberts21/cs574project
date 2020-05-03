@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IdentityTransition.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.mlfa</a> &gt; <span class="el_source">IdentityTransition.java</span></div><h1>IdentityTransition.java</h1><pre class="source lang-java linenums">package dk.brics.string.mlfa;
+
+/**
+ * Identity transition.
+ */
+public class IdentityTransition extends MLFATransition {
+
+    private MLFAState s, f;
+
+    /**
+     * Constructs a new identity transition.
+     */
+<span class="nc" id="L13">    public IdentityTransition(MLFAState s, MLFAState f) {</span>
+<span class="nc" id="L14">        this.s = s;</span>
+<span class="nc" id="L15">        this.f = f;</span>
+<span class="nc" id="L16">    }</span>
+
+    /**
+     * Returns the start state.
+     */
+    public MLFAState getStartState() {
+<span class="nc" id="L22">        return s;</span>
+    }
+
+    /**
+     * Returns the final state.
+     */
+    public MLFAState getFinalState() {
+<span class="nc" id="L29">        return f;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L34">        return &quot;(&quot; + s + &quot;,&quot; + f + &quot;)&quot;;</span>
+    }
+
+    @Override
+    public &lt;T&gt; T visitBy(TransitionVisitor&lt;T&gt; v) {
+<span class="nc" id="L39">        return v.visitIdentityTransition(this);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

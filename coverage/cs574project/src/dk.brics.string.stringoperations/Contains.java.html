@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Contains.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Contains.java</span></div><h1>Contains.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import java.util.Set;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.charset.CharSet;
+
+/**
+ * Automaton operation for &lt;tt&gt;String.contains(String)&lt;/tt&gt;.
+ * @author Asger
+ *
+ */
+<span class="fc" id="L13">public class Contains extends BinaryOperation {</span>
+    
+    @Override
+    public CharSet charsetTransfer(CharSet a1, CharSet a2) {
+        // even if the charsets are disjoint, the argument could be the empty string
+        // so we cannot deduce anything here
+<span class="nc" id="L19">        return Basic.getBinaryBooleanCharSet();</span>
+    }
+    
+    @Override
+    public Automaton op(Automaton a1, Automaton a2) {
+<span class="pc bpc" id="L24" title="2 of 4 branches missed.">        if (a1.isEmpty() || a2.isEmpty())</span>
+<span class="nc" id="L25">            return Automaton.makeEmpty();</span>
+        
+<span class="fc" id="L27">        Automaton anyStringContainingArgument = </span>
+<span class="fc" id="L28">            Automaton.makeAnyString().concatenate(a2).concatenate(Automaton.makeAnyString());</span>
+
+        // if no string in a1 contains any of the possible arguments, then
+        // the answer is always false
+<span class="fc" id="L32">        Automaton intersection = a1.intersection(anyStringContainingArgument);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (intersection.isEmpty()) {</span>
+<span class="fc" id="L34">            return Basic.makeBinaryBoolean(false);</span>
+        }
+        
+        // if an infinite number of arguments are possible, we can't deduce anything
+        // simple proof: for any callee X there exists an argument Y that is longer than X, and therefore X cannot contain Y
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (!a2.isFinite())</span>
+<span class="nc" id="L40">            return Basic.getBinaryBooleans();</span>
+        
+        // note: 30 is an arbitrary limit to avoid time explosion
+<span class="fc" id="L43">        Set&lt;String&gt; finite = a2.getFiniteStrings(30);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (finite == null)</span>
+<span class="fc" id="L45">            return Basic.getBinaryBooleans();</span>
+        
+        // try every finite string in the language
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (String s : finite) {</span>
+<span class="fc" id="L49">            Automaton a = Automaton.makeAnyString().concatenate(Automaton.makeString(s)).concatenate(Automaton.makeAnyString());</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (!a1.subsetOf(a)) {</span>
+<span class="fc" id="L51">                return Basic.getBinaryBooleans();</span>
+            }
+        }
+        
+        // every possible argument string is contained in every possible callee
+<span class="fc" id="L56">        return Basic.makeBinaryBoolean(true);</span>
+    }
+    
+    @Override
+    public int getPriority() {
+<span class="nc" id="L61">        return 1;</span>
+    }
+    
+    @Override
+    public String toString() {
+<span class="nc" id="L66">        return &quot;contains1&quot;;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

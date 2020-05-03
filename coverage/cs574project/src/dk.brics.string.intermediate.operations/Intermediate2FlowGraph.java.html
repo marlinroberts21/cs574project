@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Intermediate2FlowGraph.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">Intermediate2FlowGraph.java</span></div><h1>Intermediate2FlowGraph.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import dk.brics.string.flow.FlowGraph;
+import dk.brics.string.flow.Node;
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.Statement;
+
+import java.util.Map;
+
+/**
+ * Converter from intermediate representation to flow graphs.
+ *
+ * @see dk.brics.string.StringAnalysis
+ */
+public class Intermediate2FlowGraph {
+
+    private Application app;
+
+    private FlowGraphNodeCreator nc;
+
+    /**
+     * Constructs a new converter for the given application.
+     */
+<span class="nc" id="L24">    public Intermediate2FlowGraph(Application app) {</span>
+<span class="nc" id="L25">        this.app = app;</span>
+<span class="nc" id="L26">    }</span>
+
+    /**
+     * Converts the application.
+     */
+    public FlowGraph convert(AliasAnalysis aa, ReachingDefinitions rd, OperationAssertionAnalysis ass) {
+<span class="nc" id="L32">        nc = new FlowGraphNodeCreator(app, aa, ass);</span>
+<span class="nc" id="L33">        new FlowGraphEdgeCreator(app, aa, rd, nc.getMap(), nc.getFieldNodes(), ass);</span>
+<span class="nc" id="L34">        return nc.getGraph();</span>
+    }
+
+    /**
+     * Returns map containing main node for each statement.
+     * {@link #convert(AliasAnalysis, ReachingDefinitions, OperationAssertionAnalysis)} must be called first.
+     */
+    public Map&lt;Statement, Node&gt; getTranslationMap() {
+<span class="nc" id="L42">        return nc.getTranslationMap();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

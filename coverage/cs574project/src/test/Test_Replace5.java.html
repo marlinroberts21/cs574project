@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Test_Replace5.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">test</a> &gt; <span class="el_source">Test_Replace5.java</span></div><h1>Test_Replace5.java</h1><pre class="source lang-java linenums">package test;
+
+import static org.junit.Assert.*;
+import static test.FileOps.*;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.stringoperations.BinaryOperation;
+import dk.brics.string.stringoperations.Replace5;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+@RunWith(Parameterized.class)
+<span class="fc" id="L24">public class Test_Replace5 {</span>
+
+	private final static int MULT_LENGTH = 4;
+	private final static int MIN_LENGTH = 4;
+	private final static int MED_LENGTH = 100;
+	private final static int MAX_LENGTH = 200;
+
+	// test specific objects
+	static Automaton a1,a2,a3,a4,a5,a6,b1,c1,c2,preMin,empty,emptyString,minAlpha,medAlpha,maxAlpha;
+	
+	static Automaton 	a_min_min_n,
+						a_min_med_y,
+						a_min_max_y,
+						a_med_min_n,
+						a_med_med_y,
+						a_med_max_n,
+						a_max_min_y,
+						a_max_med_n,
+						a_max_max_y;
+
+  // assign parameters to public variables
+  @Parameter(value = 0)
+  public Automaton auto1;
+
+  @Parameter(value = 1)
+  public Automaton auto2;
+
+  @Parameter(value = 2)
+  public String testName;
+
+  // common test settings
+  static final boolean OUTPUT_AUTOMATA = true;
+  static final boolean TEST_STRING_RESULTS = true;
+<span class="fc" id="L57">  static final String testDir = &quot;cmp&quot; + File.separator;</span>
+
+  // parameter data source
+  @Parameters(name = &quot;replace5_{index}&quot;)
+  public static Collection&lt;Object[]&gt; parms() throws Exception {
+<span class="fc" id="L62">    setUpBeforeClass();</span>
+<span class="fc" id="L63">    return Arrays.asList(</span>
+<span class="fc" id="L64">        new Object[][] {</span>
+<span class="fc" id="L65">          {a_min_min_n, a_min_med_y, &quot;replace5_0&quot;},</span>
+<span class="fc" id="L66">          {a_min_max_y, a_med_min_n, &quot;replace5_1&quot;},</span>
+<span class="fc" id="L67">          {a_med_med_y, a_med_max_n, &quot;replace5_2&quot;},</span>
+          
+          // serialization stack overflow *********
+          //{a_max_min_y, a_max_med_n, &quot;replace5_3&quot;},
+          
+<span class="fc" id="L72">          {a6, a5, &quot;replace5_4&quot;},</span>
+<span class="fc" id="L73">          {a5, a6, &quot;replace5_5&quot;}</span>
+        });
+  }
+
+  @BeforeClass
+  public static void setUpBeforeClass() throws Exception {
+<span class="fc" id="L79">		emptyString = Automaton.makeEmptyString();</span>
+<span class="fc" id="L80">		empty = Automaton.makeEmpty();</span>
+		
+<span class="fc" id="L82">		minAlpha = Automaton.makeCharRange('A', 'C');</span>
+<span class="fc" id="L83">		minAlpha = minAlpha.union(Automaton.makeCharRange('a', 'c'));</span>
+		
+<span class="fc" id="L85">		medAlpha = Automaton.makeCharRange('A', 'Z');</span>
+<span class="fc" id="L86">		medAlpha = medAlpha.union(Automaton.makeCharRange('a', 'Z'));</span>
+		
+<span class="fc" id="L88">		maxAlpha = Automaton.makeAnyChar();</span>
+		
+<span class="fc" id="L90">		a_min_min_n = minAlpha.repeat(MIN_LENGTH);</span>
+<span class="fc" id="L91">		a_min_med_y = medAlpha.repeat(MIN_LENGTH).union(emptyString);</span>
+<span class="fc" id="L92">		a_min_max_y = maxAlpha.repeat(MIN_LENGTH).union(emptyString);		</span>
+<span class="fc" id="L93">		a_med_min_n = minAlpha.repeat(MED_LENGTH);</span>
+<span class="fc" id="L94">		a_med_med_y = medAlpha.repeat(MED_LENGTH).union(emptyString);</span>
+<span class="fc" id="L95">		a_med_max_n = maxAlpha.repeat(MED_LENGTH);</span>
+<span class="fc" id="L96">		a_max_min_y = minAlpha.repeat(MAX_LENGTH).union(emptyString);</span>
+<span class="fc" id="L97">		a_max_med_n = medAlpha.repeat(MAX_LENGTH);</span>
+<span class="fc" id="L98">		a_max_max_y = maxAlpha.repeat(MAX_LENGTH).union(emptyString);</span>
+    // short, concrete
+<span class="fc" id="L100">    a1 = Automaton.makeString(&quot;ABCD&quot;);</span>
+<span class="fc" id="L101">    a1.setInfo(&quot;a1&quot;);</span>
+
+    // short, symbolic
+<span class="fc" id="L104">    a2 = Automaton.makeAnyChar();</span>
+<span class="fc" id="L105">    a2.setInfo(&quot;a2&quot;);</span>
+<span class="fc" id="L106">    a2 = a2.repeat(1, MULT_LENGTH);</span>
+
+    // medium, concrete
+<span class="fc" id="L109">    a3 = a1.repeat(MULT_LENGTH, MULT_LENGTH);</span>
+<span class="fc" id="L110">    a3.setInfo(&quot;a3&quot;);</span>
+
+    // medium, symbolic
+<span class="fc" id="L113">    a4 = Automaton.makeAnyChar();</span>
+<span class="fc" id="L114">    a4.setInfo(&quot;a4&quot;);</span>
+<span class="fc" id="L115">    a4 = a4.repeat(1, MULT_LENGTH ^ 2);</span>
+
+    // long, concrete
+<span class="fc" id="L118">    a5 = a3.repeat(MULT_LENGTH, MULT_LENGTH);</span>
+<span class="fc" id="L119">    a5.setInfo(&quot;a5&quot;);</span>
+
+    // long, symbolic
+<span class="fc" id="L122">    a6 = Automaton.makeAnyChar();</span>
+<span class="fc" id="L123">    a6.setInfo(&quot;a6&quot;);</span>
+<span class="fc" id="L124">    a6 = a6.repeat(1, MULT_LENGTH ^ 3);</span>
+<span class="fc" id="L125">  }</span>
+
+  @AfterClass
+<span class="fc" id="L128">  public static void tearDownAfterClass() throws Exception {}</span>
+
+  @Before
+  public void setUp() throws Exception {
+<span class="fc" id="L132">    setUpBeforeClass();</span>
+<span class="fc" id="L133">  }</span>
+
+  @After
+  public void tearDown() throws Exception {
+
+<span class="fc" id="L138">  }</span>
+
+  @Test
+  public final void test_Replace5() throws IOException, ClassCastException, ClassNotFoundException {
+
+<span class="fc" id="L143">    System.out.println(&quot;BEG:  &quot; + testName);</span>
+
+<span class="fc" id="L145">    c1 = auto1.clone();</span>
+<span class="fc" id="L146">    c1.setInfo(&quot;c1&quot;);</span>
+
+<span class="fc" id="L148">    c2 = auto2.clone();</span>
+<span class="fc" id="L149">    c2.setInfo(&quot;c2&quot;);</span>
+
+<span class="fc" id="L151">    BinaryOperation operation = new Replace5();</span>
+<span class="fc" id="L152">    b1 = operation.op(auto1, auto2);</span>
+<span class="fc" id="L153">    b1.setInfo(&quot;b1&quot;);</span>
+
+<span class="fc" id="L155">    assertTrue(&quot;ASSERT FAIL: -argument modified&quot;, auto1.equals(c1));</span>
+<span class="fc" id="L156">    assertTrue(&quot;ASSERT FAIL: -argument modified&quot;, auto2.equals(c2));</span>
+<span class="fc" id="L157">    assertTrue(&quot;ASSERT FAIL: -automaton not deterministic&quot;, b1.isDeterministic());</span>
+
+    if (OUTPUT_AUTOMATA) {
+<span class="fc" id="L160">      storeAutomaton(b1, testDir + testName);</span>
+    }
+
+    if (TEST_STRING_RESULTS) {
+<span class="fc" id="L164">      assertTrue(</span>
+<span class="fc" id="L165">          &quot;ASSERT FAIL: -string operation results incorrect&quot;,</span>
+<span class="fc" id="L166">          (b1.equals(loadAutomaton(testDir + testName))));</span>
+    }
+
+<span class="fc" id="L169">    preMin = b1.clone();</span>
+<span class="fc" id="L170">    preMin.setInfo(&quot;pm&quot;);</span>
+
+<span class="pc" id="L172">    b1.minimize();</span>
+<span class="fc" id="L173">    assertTrue(&quot;ASSERT FAIL: -automaton not minimal&quot;, b1.equals(preMin));</span>
+
+<span class="fc" id="L175">    System.out.println(&quot;END:  &quot; + testName);</span>
+<span class="fc" id="L176">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

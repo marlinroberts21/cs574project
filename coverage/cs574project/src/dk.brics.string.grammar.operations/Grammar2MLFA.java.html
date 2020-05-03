@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Grammar2MLFA.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar.operations</a> &gt; <span class="el_source">Grammar2MLFA.java</span></div><h1>Grammar2MLFA.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar.operations;
+
+import dk.brics.string.directedgraph.StronglyConnectedComponents;
+import dk.brics.string.grammar.*;
+import dk.brics.string.grammar.operations.Component.Recursion;
+import dk.brics.string.mlfa.MLFA;
+import dk.brics.string.mlfa.MLFAState;
+import dk.brics.string.mlfa.MLFAStatePair;
+
+/**
+ * Converter from strongly regular grammars to MLFAs.
+ *
+ * @see dk.brics.string.StringAnalysis
+ */
+public class Grammar2MLFA {
+
+    private Grammar g;
+
+    private StronglyConnectedComponents&lt;Nonterminal, Component&gt; comp;
+
+    private MLFAState[] nt_states;
+
+    /**
+     * Constructs a new converter for the given grammar.
+     */
+<span class="nc" id="L26">    public Grammar2MLFA(Grammar g) {</span>
+<span class="nc" id="L27">        this.g = g;</span>
+<span class="nc" id="L28">    }</span>
+
+    /**
+     * Constructs {@link MLFA} from the grammar.
+     * The grammar is assumed to be approximated first (see {@link RegularApproximation}).
+     *
+     * @see #getMLFAStatePair(Nonterminal)
+     */
+    public MLFA convert() {
+<span class="nc" id="L37">        comp = g.getComponents(true);</span>
+<span class="nc" id="L38">        nt_states = new MLFAState[g.getNumberOfNonterminals()];</span>
+<span class="nc" id="L39">        MLFA mlfa = new MLFA();</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        for (Component c : comp.getComponents()) {</span>
+<span class="nc" id="L41">            convertComponent(c, mlfa);</span>
+        }
+<span class="nc" id="L43">        return mlfa;</span>
+    }
+
+    /**
+     * Returns MLFA state pair representing initial and final state for the given nonterminal.
+     * {@link #convert()} must be called first.
+     */
+    public MLFAStatePair getMLFAStatePair(Nonterminal n) {
+        MLFAStatePair p;
+<span class="nc" id="L52">        Component c = comp.getComponent(n);</span>
+<span class="nc bnc" id="L53" title="All 4 branches missed.">        if (c.getRecursion() == Recursion.RIGHT || c.getRecursion() == Recursion.NONE) {</span>
+<span class="nc" id="L54">            p = new MLFAStatePair(nt_states[n.getKey()], c.getState());</span>
+<span class="nc" id="L55">        } else {</span>
+<span class="nc" id="L56">            p = new MLFAStatePair(c.getState(), nt_states[n.getKey()]);</span>
+        }
+<span class="nc" id="L58">        p.setTaint(n.isTaint());</span>
+<span class="nc" id="L59">        return p;</span>
+    }
+
+    private void convertComponent(final Component c, final MLFA mlfa) {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (c.getState() == null) {</span>
+
+            // make states
+<span class="nc" id="L66">            c.setState(mlfa.addState());</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">            for (Nonterminal a : c.getNodes()) {</span>
+<span class="nc" id="L68">                nt_states[a.getKey()] = mlfa.addState();</span>
+            }
+
+            // make transitions
+<span class="nc bnc" id="L72" title="All 2 branches missed.">            for (Nonterminal a : c.getNodes()) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                for (Production p : a.getProductions()) {</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                    if (c.getRecursion() == Recursion.BOTH) {</span>
+<span class="nc" id="L75">                        throw new RuntimeException(&quot;grammar is not strongly regular&quot;);</span>
+<span class="nc bnc" id="L76" title="All 4 branches missed.">                    } else if (c.getRecursion() == Recursion.RIGHT || c.getRecursion() == Recursion.NONE) {</span>
+                        // component is right or non recursive
+<span class="nc" id="L78">                        p.visitBy(a, new ProductionVisitor() {</span>
+
+                            public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">                                if (c.contains(p.getNonterminal())) {</span>
+                                    // A -&gt; B  =&gt;  (A)--e--&gt;(B)
+<span class="nc" id="L83">                                    mlfa.addEpsilonTransition(nt_states[a.getKey()], nt_states[p.getNonterminal().getKey()]);</span>
+<span class="nc" id="L84">                                } else {</span>
+                                    // A -&gt; X  =&gt;  (A)--[X]--&gt;(T)
+<span class="nc" id="L86">                                    convertComponent(comp.getComponent(p.getNonterminal()), mlfa);</span>
+<span class="nc" id="L87">                                    mlfa.addIdentityTransition(nt_states[a.getKey()], c.getState(), getMLFAStatePair(p.getNonterminal()));</span>
+                                }
+<span class="nc" id="L89">                            }</span>
+
+                            public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                                if (c.contains(p.getNonterminal2())) {</span>
+                                    // A -&gt; X B  =&gt;  (A)--[X]--&gt;(B)
+<span class="nc" id="L94">                                    convertComponent(comp.getComponent(p.getNonterminal1()), mlfa);</span>
+<span class="nc" id="L95">                                    mlfa.addIdentityTransition(nt_states[a.getKey()], nt_states[p.getNonterminal2().getKey()], getMLFAStatePair(p.getNonterminal1()));</span>
+<span class="nc" id="L96">                                } else {</span>
+                                    // A -&gt; X Y  =&gt;  (A)--[X]--&gt;(R), (R)--[Y]--&gt;(T)
+<span class="nc" id="L98">                                    MLFAState r = mlfa.addState();</span>
+<span class="nc" id="L99">                                    convertComponent(comp.getComponent(p.getNonterminal1()), mlfa);</span>
+<span class="nc" id="L100">                                    convertComponent(comp.getComponent(p.getNonterminal2()), mlfa);</span>
+<span class="nc" id="L101">                                    mlfa.addIdentityTransition(nt_states[a.getKey()], r, getMLFAStatePair(p.getNonterminal1()));</span>
+<span class="nc" id="L102">                                    mlfa.addIdentityTransition(r, c.getState(), getMLFAStatePair(p.getNonterminal2()));</span>
+                                }
+<span class="nc" id="L104">                            }</span>
+
+                            public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+                                // A -&gt; reg  =&gt;  (A)--[reg]--&gt;(T)
+<span class="nc" id="L108">                                mlfa.addAutomatonTransition(nt_states[a.getKey()], c.getState(), p.getAutomaton());</span>
+<span class="nc" id="L109">                            }</span>
+
+                            public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+                                // A -&gt; op1(X)  =&gt;  (A)--[op1(X)]--&gt;(T)
+<span class="nc" id="L113">                                convertComponent(comp.getComponent(p.getNonterminal()), mlfa);</span>
+<span class="nc" id="L114">                                mlfa.addUnaryTransition(nt_states[a.getKey()], c.getState(), p.getOperation(), getMLFAStatePair(p.getNonterminal()));</span>
+<span class="nc" id="L115">                            }</span>
+
+                            public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+                                // A -&gt; op2(X,Y)  =&gt;  (A)--[op2(X,Y)]--&gt;(T)
+<span class="nc" id="L119">                                convertComponent(comp.getComponent(p.getNonterminal1()), mlfa);</span>
+<span class="nc" id="L120">                                convertComponent(comp.getComponent(p.getNonterminal2()), mlfa);</span>
+<span class="nc" id="L121">                                mlfa.addBinaryTransition(nt_states[a.getKey()], c.getState(), p.getOperation(),</span>
+<span class="nc" id="L122">                                        getMLFAStatePair(p.getNonterminal1()), getMLFAStatePair(p.getNonterminal2()));</span>
+<span class="nc" id="L123">                            }</span>
+
+                            public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+                                // A -&gt; &quot;&quot;  =&gt;  (A)--e--&gt;(T)
+<span class="nc" id="L127">                                mlfa.addEpsilonTransition(nt_states[a.getKey()], c.getState());</span>
+<span class="nc" id="L128">                            }</span>
+                        });
+<span class="nc" id="L130">                    } else {</span>
+                        // component is left recursive
+<span class="nc" id="L132">                        p.visitBy(a, new ProductionVisitor() {</span>
+
+                            public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">                                if (c.contains(p.getNonterminal())) {</span>
+                                    // A -&gt; B  =&gt;  (B)---e---&gt;(A)
+<span class="nc" id="L137">                                    mlfa.addEpsilonTransition(nt_states[p.getNonterminal().getKey()], nt_states[a.getKey()]);</span>
+<span class="nc" id="L138">                                } else {</span>
+                                    // A -&gt; X  =&gt;  (S)--[X]--&gt;(A)
+<span class="nc" id="L140">                                    convertComponent(comp.getComponent(p.getNonterminal()), mlfa);</span>
+<span class="nc" id="L141">                                    mlfa.addIdentityTransition(c.getState(), nt_states[a.getKey()], getMLFAStatePair(p.getNonterminal()));</span>
+                                }
+<span class="nc" id="L143">                            }</span>
+
+                            public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                                if (c.contains(p.getNonterminal1())) {</span>
+                                    // A -&gt; B X  =&gt;  (B)--[X]--&gt;(A)
+<span class="nc" id="L148">                                    convertComponent(comp.getComponent(p.getNonterminal2()), mlfa);</span>
+<span class="nc" id="L149">                                    mlfa.addIdentityTransition(nt_states[p.getNonterminal1().getKey()], nt_states[a.getKey()], getMLFAStatePair(p.getNonterminal2()));</span>
+<span class="nc" id="L150">                                } else {</span>
+                                    // A -&gt; X Y  =&gt;  (S)--[X]--&gt;(R), (R)--[Y]--&gt;(A)
+<span class="nc" id="L152">                                    MLFAState r = mlfa.addState();</span>
+<span class="nc" id="L153">                                    convertComponent(comp.getComponent(p.getNonterminal1()), mlfa);</span>
+<span class="nc" id="L154">                                    convertComponent(comp.getComponent(p.getNonterminal2()), mlfa);</span>
+<span class="nc" id="L155">                                    mlfa.addIdentityTransition(c.getState(), r, getMLFAStatePair(p.getNonterminal1()));</span>
+<span class="nc" id="L156">                                    mlfa.addIdentityTransition(r, nt_states[a.getKey()], getMLFAStatePair(p.getNonterminal2()));</span>
+                                }
+<span class="nc" id="L158">                            }</span>
+
+                            public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+                                // A -&gt; reg  =&gt;  (S)--[reg]--&gt;(A)
+<span class="nc" id="L162">                                mlfa.addAutomatonTransition(c.getState(), nt_states[a.getKey()], p.getAutomaton());</span>
+<span class="nc" id="L163">                            }</span>
+
+                            public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+                                // A -&gt; op1(X)  =&gt;  (S)--[op1(X)]--&gt;(A)
+<span class="nc" id="L167">                                convertComponent(comp.getComponent(p.getNonterminal()), mlfa);</span>
+<span class="nc" id="L168">                                mlfa.addUnaryTransition(c.getState(), nt_states[a.getKey()], p.getOperation(), getMLFAStatePair(p.getNonterminal()));</span>
+<span class="nc" id="L169">                            }</span>
+
+                            public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+                                // A -&gt; op2(X,Y)  =&gt;  (S)--[op2(X,Y)]--&gt;(A)
+<span class="nc" id="L173">                                convertComponent(comp.getComponent(p.getNonterminal1()), mlfa);</span>
+<span class="nc" id="L174">                                convertComponent(comp.getComponent(p.getNonterminal2()), mlfa);</span>
+<span class="nc" id="L175">                                mlfa.addBinaryTransition(c.getState(), nt_states[a.getKey()], p.getOperation(),</span>
+<span class="nc" id="L176">                                        getMLFAStatePair(p.getNonterminal1()),</span>
+<span class="nc" id="L177">                                        getMLFAStatePair(p.getNonterminal2()));</span>
+<span class="nc" id="L178">                            }</span>
+
+                            public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+                                // A -&gt; &quot;&quot;  =&gt;  (S)---e---&gt;(A)
+<span class="nc" id="L182">                                mlfa.addEpsilonTransition(c.getState(), nt_states[a.getKey()]);</span>
+<span class="nc" id="L183">                            }</span>
+                        });
+                    }
+                }
+            }
+        }
+<span class="nc" id="L189">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

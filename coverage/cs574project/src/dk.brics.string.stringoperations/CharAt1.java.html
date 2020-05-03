@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CharAt1.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">CharAt1.java</span></div><h1>CharAt1.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+
+/**
+ * Automaton operation for &lt;tt&gt;String.charAt(int)&lt;/tt&gt; with a constant index.
+ * 
+ * @author Asger
+ *
+ */
+public class CharAt1 extends UnaryOperation {
+    
+    private int index;
+    
+<span class="fc" id="L21">    public CharAt1(int index) {</span>
+<span class="fc" id="L22">        this.index = index;</span>
+<span class="fc" id="L23">    }</span>
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L27">        return a;</span>
+    }
+
+    @Override
+    public Automaton op(Automaton a) {
+        // find all states reachable in N steps that may reach an accept state
+        // TODO: insert check for huge integer constant. no reason to stall the analysis because of that.
+<span class="fc" id="L34">        Set&lt;State&gt; queue = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L35">        Set&lt;State&gt; queue2 = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L36">        queue.add(a.getInitialState());</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        for (int i=0; i&lt;index; i++) {</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">            for (State state : queue) {</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                for (Transition t : state.getTransitions()) {</span>
+<span class="fc" id="L40">                    queue2.add(t.getDest());</span>
+                }
+            }
+            
+            // switch buffers
+<span class="fc" id="L45">            queue.clear();</span>
+<span class="fc" id="L46">            Set&lt;State&gt; tmp = queue;</span>
+<span class="fc" id="L47">            queue = queue2;</span>
+<span class="fc" id="L48">            queue2 = tmp;</span>
+        }
+        
+<span class="fc" id="L51">        Automaton result = new Automaton();</span>
+<span class="fc" id="L52">        State initial = result.getInitialState();</span>
+<span class="fc" id="L53">        State accept = new State();</span>
+<span class="fc" id="L54">        accept.setAccept(true);</span>
+        
+<span class="fc" id="L56">        Set&lt;State&gt; live = a.getLiveStates();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (State state : queue) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (Transition t : state.getTransitions()) {</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">                if (live.contains(t.getDest())) {</span>
+<span class="fc" id="L60">                    initial.addTransition(new Transition(t.getMin(), t.getMax(), accept));</span>
+                }
+            }
+        }
+        
+        // boilerplate stuff
+<span class="fc" id="L66">        result.restoreInvariant();</span>
+<span class="fc" id="L67">        result.reduce();</span>
+<span class="fc" id="L68">        result.determinize();</span>
+<span class="pc" id="L69">        result.minimize();</span>
+        
+<span class="fc" id="L71">        return result;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L76">        return 1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L81">        return &quot;charAt1&quot;;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

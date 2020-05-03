@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AliasAnalysis.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">AliasAnalysis.java</span></div><h1>AliasAnalysis.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.ArrayAddAll;
+import dk.brics.string.intermediate.ArrayAssignment;
+import dk.brics.string.intermediate.ArrayCorrupt;
+import dk.brics.string.intermediate.ArrayFromArray;
+import dk.brics.string.intermediate.ArrayNew;
+import dk.brics.string.intermediate.ArrayWriteArray;
+import dk.brics.string.intermediate.ArrayWriteElement;
+import dk.brics.string.intermediate.AssertAliases;
+import dk.brics.string.intermediate.AssertBinaryOp;
+import dk.brics.string.intermediate.AssertUnaryOp;
+import dk.brics.string.intermediate.BasicBinaryOp;
+import dk.brics.string.intermediate.BasicUnaryOp;
+import dk.brics.string.intermediate.Call;
+import dk.brics.string.intermediate.Catch;
+import dk.brics.string.intermediate.ExceptionalReturn;
+import dk.brics.string.intermediate.Field;
+import dk.brics.string.intermediate.FieldAssignment;
+import dk.brics.string.intermediate.FieldReference;
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.MethodHead;
+import dk.brics.string.intermediate.Nop;
+import dk.brics.string.intermediate.ObjectAssignment;
+import dk.brics.string.intermediate.ObjectCorrupt;
+import dk.brics.string.intermediate.PrimitiveAssignment;
+import dk.brics.string.intermediate.PrimitiveFromArray;
+import dk.brics.string.intermediate.PrimitiveInit;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.StatementVisitor;
+import dk.brics.string.intermediate.StringAssignment;
+import dk.brics.string.intermediate.StringBufferAppend;
+import dk.brics.string.intermediate.StringBufferAppendChar;
+import dk.brics.string.intermediate.StringBufferAssignment;
+import dk.brics.string.intermediate.StringBufferBinaryOp;
+import dk.brics.string.intermediate.StringBufferCorrupt;
+import dk.brics.string.intermediate.StringBufferInit;
+import dk.brics.string.intermediate.StringBufferPrepend;
+import dk.brics.string.intermediate.StringBufferUnaryOp;
+import dk.brics.string.intermediate.StringConcat;
+import dk.brics.string.intermediate.StringFromArray;
+import dk.brics.string.intermediate.StringFromStringBuffer;
+import dk.brics.string.intermediate.StringInit;
+import dk.brics.string.intermediate.Variable;
+
+/**
+ * Alias analysis performed on a set of methods. This analysis also determines
+ * which variables might have been corrupted.
+ * &lt;p/&gt;
+ * This is a variable-pair-based may/must context-insensitive alias analysis.
+ * Only live variables are considered.
+ */
+public class AliasAnalysis implements FlowAnalysis, StatementVisitor {
+
+	private LivenessAnalysis la;
+	private FieldUsageAnalysis fieldUsage;
+	private AliasAssertionAnalysis assertions;
+
+	/**
+	 * Alias info for program point before each statement.
+	 */
+	private Map&lt;Statement, AliasInfo&gt; flow_info;
+
+	/**
+	 * Alias info for program point before current statement.
+	 */
+	private AliasInfo before;
+
+	/**
+	 * Alias info for program point after current statement.
+	 */
+	private AliasInfo after;
+
+	private boolean changed;
+
+	private WorkList worklist;
+
+	/**
+	 * Performs alias analysis.
+	 *
+	 * @param app the application to analyze
+	 * @param la  result from liveness analysis
+	 * @param fieldUsage result from field usage analysis
+	 */
+<span class="nc" id="L93">	public AliasAnalysis(Application app, LivenessAnalysis la, FieldUsageAnalysis fieldUsage, AliasAssertionAnalysis assertions) {</span>
+<span class="nc" id="L94">		this.la = la;</span>
+<span class="nc" id="L95">		this.fieldUsage = fieldUsage;</span>
+<span class="nc" id="L96">		this.assertions = assertions;</span>
+<span class="nc" id="L97">		flow_info = new HashMap&lt;Statement, AliasInfo&gt;();</span>
+<span class="nc" id="L98">		worklist = new WorkList(this);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">		for (Method m : app.getMethods()) {</span>
+<span class="nc" id="L100">			worklist.addAll(m);</span>
+		}
+<span class="nc" id="L102">		worklist.iterate();</span>
+<span class="nc" id="L103">	}</span>
+
+	public void transfer(Statement s) {
+<span class="nc" id="L106">		before = getInfoBefore(s);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		for (Statement ss : s.getSuccs()) {</span>
+<span class="nc" id="L108">			after = getInfoBefore(ss);</span>
+<span class="nc" id="L109">			changed = false;</span>
+<span class="nc" id="L110">			s.visitBy(this);</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			if (changed) {</span>
+<span class="nc" id="L112">				worklist.add(ss);</span>
+			}
+		}
+
+		// visit interprocedural successors
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (s instanceof Return) {</span>
+<span class="nc" id="L118">			Return returnStm = (Return)s;</span>
+<span class="nc" id="L119">			Method method = s.getMethod();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			for (Call call : method.getCallSites()) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">				for (Statement afterCall : call.getSuccs()) {</span>
+<span class="nc" id="L122">					after = getInfoBefore(afterCall);</span>
+<span class="nc" id="L123">					changed = false;</span>
+<span class="nc" id="L124">					transferReturn(returnStm, call, afterCall);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">					if (changed) {</span>
+<span class="nc" id="L126">						worklist.add(afterCall);</span>
+					}
+				}
+			}
+		}
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (s instanceof Call) {</span>
+<span class="nc" id="L132">			Call call = (Call)s;</span>
+<span class="nc" id="L133">			after = getInfoBefore(call.target.getEntry());</span>
+<span class="nc" id="L134">			changed = false;</span>
+<span class="nc" id="L135">			transferCall(call, call.target.getEntry());</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">			if (changed) {</span>
+<span class="nc" id="L137">				worklist.add(call.target.getEntry());</span>
+			}
+		}
+<span class="nc" id="L140">	}</span>
+
+	/**
+	 * Transfers alias information from a {@link Return} statement to the statements
+	 * following a corresponding {@link Call} statement. Information being transferred:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;If parameter &lt;i&gt;i&lt;/i&gt; is corrupt, then caller's actual argument &lt;i&gt;i&lt;/i&gt; is corrupted.
+	 * &lt;li&gt;If the returned value might be an alias for parameter &lt;i&gt;i&lt;/i&gt;, then caller's actual argument &lt;i&gt;i&lt;/i&gt; becomes a possible alias
+	 * 		for the caller's result variable.
+	 * &lt;li&gt;If the returned value is corrupt, then caller's result variable is corrupted.
+	 * &lt;/ul&gt;
+	 * @param returnStm the return statement.
+	 * @param call a call to the method containing the return statement.
+	 * @param to the statement receiving the alias information. This is a successor of &lt;tt&gt;call&lt;/tt&gt;, and corresponds to the {@link #after} field.
+	 */
+	private void transferReturn(Return returnStm, Call call, Statement to) {
+<span class="nc" id="L156">		Method method = returnStm.getMethod();</span>
+<span class="nc" id="L157">		MethodHead head = method.getEntry();</span>
+<span class="nc" id="L158">		AliasInfo beforeCall = getInfoBefore(call);</span>
+		AliasStatus status;
+		// add aliasing between arguments and return value
+		// and corruption of parameters to corruption of arguments
+<span class="nc bnc" id="L162" title="All 2 branches missed.">		for (int i=0; i&lt;head.params.length; i++) {</span>
+<span class="nc" id="L163">			status = before.getAliasStatus(returnStm.retvar, head.params[i]);</span>
+<span class="nc" id="L164">			changed |= after.mergeStatus(beforeCall, call.retvar, call.args[i], status);</span>
+
+<span class="nc bnc" id="L166" title="All 2 branches missed.">			if (before.isCorrupt(head.params[i])) {</span>
+<span class="nc" id="L167">				changed |= after.mergeCorrupt(beforeCall, call.args[i]);</span>
+			}
+		}
+
+		// add aliasing between fields pairs, and between fields and return value
+<span class="nc bnc" id="L172" title="All 2 branches missed.">		for (Field field1 : fieldUsage.getUsedFields(method)) {</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">			for (Field field2 : fieldUsage.getUsedFields(method)) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">				if (field1 == field2)</span>
+<span class="nc" id="L175">					continue;</span>
+
+<span class="nc" id="L177">				status = before.getAliasStatus(field1.getVariable(), field2.getVariable());</span>
+<span class="nc" id="L178">				changed |= after.mergeStatus(beforeCall, field1.getVariable(), field2.getVariable(), status);</span>
+<span class="nc" id="L179">				changed |= after.mergeStatus(beforeCall, field2.getVariable(), field1.getVariable(), status);</span>
+			}
+			// if a field was assigned to one of the parameters, tell the caller that his arguments are now
+			// aliases for the field
+<span class="nc bnc" id="L183" title="All 2 branches missed.">			for (int i=0; i&lt;head.params.length; i++) {</span>
+<span class="nc" id="L184">				status = before.getAliasStatus(field1.getVariable(), head.params[i]);</span>
+<span class="nc" id="L185">				changed |= after.mergeStatus(beforeCall, call.args[i], field1.getVariable(), status);</span>
+				// no need to merge for field1 as left-hand side. A local that was aliased with field1
+				// can still not become aliased with an argument, just because field1 changed value.
+			}
+
+			// set aliasing with field and return value
+<span class="nc" id="L191">			status = before.getAliasStatus(returnStm.retvar, field1.getVariable());</span>
+<span class="nc" id="L192">			changed |= after.mergeStatus(beforeCall, call.retvar, field1.getVariable(), status);</span>
+
+			// if the field was corrupted, transfer this to the caller
+<span class="nc bnc" id="L195" title="All 2 branches missed.">			if (before.isCorrupt(field1.getVariable())) {</span>
+<span class="nc" id="L196">				changed |= after.mergeCorrupt(beforeCall, field1.getVariable());</span>
+			}
+		}
+
+		// if the return value might be corrupt
+<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (before.isCorrupt(returnStm.retvar)) {</span>
+<span class="nc" id="L202">			changed |= after.setCorrupt(call.retvar);</span>
+		}
+<span class="nc" id="L204">	}</span>
+
+	/**
+	 * Transfers alias information from a {@link Call} statement to the {@link MethodHead} of
+	 * the called method. Information being transferred:
+	 * &lt;ul&gt;
+	 * &lt;li&gt;If actual argument &lt;i&gt;i&lt;/i&gt; might be an alias for actual argument &lt;i&gt;j&lt;/i&gt;, then
+	 * 		parameter &lt;i&gt;i&lt;/i&gt; becomes a possible alias for parameter &lt;i&gt;j&lt;/i&gt;.
+	 * &lt;li&gt;If actual argument &lt;i&gt;i&lt;/i&gt; is corrupt, then parameter &lt;i&gt;i&lt;/i&gt; is corrupted.
+	 * &lt;/ul&gt;
+	 * @param callStm the call statement.
+	 * @param head method head of the call's target method.
+	 */
+	private void transferCall(Call callStm, MethodHead head) {
+		// add aliasing between arguments to aliasing between parameters
+		// and corruption of arguments to corruption of parameters
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		for	(int i=0; i&lt;head.params.length; i++) {</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">			for (int j=i+1; j&lt;head.params.length; j++) {</span>
+<span class="nc" id="L222">				AliasStatus status = before.getAliasStatus(callStm.args[i], callStm.args[j]);</span>
+<span class="nc" id="L223">				changed |= after.mergeStatus(after, head.params[i], head.params[j], status);</span>
+<span class="nc" id="L224">				changed |= after.mergeStatus(after, head.params[j], head.params[i], status);</span>
+			}
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			if (before.isCorrupt(callStm.args[i])) {</span>
+<span class="nc" id="L227">				changed |= after.setCorrupt(head.params[i]);</span>
+			}
+		}
+		// add aliasing status between fields pairs and between fields and arguments
+<span class="nc bnc" id="L231" title="All 2 branches missed.">		for (Field field1 : fieldUsage.getUsedFields(callStm.target)) {</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">			for (Field field2 : fieldUsage.getUsedFields(callStm.target)) {</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">				if (field1 == field2)</span>
+<span class="nc" id="L234">					continue;</span>
+
+<span class="nc" id="L236">				AliasStatus status = before.getAliasStatus(field1.getVariable(), field2.getVariable());</span>
+<span class="nc" id="L237">				changed |= after.mergeStatus(after, field1.getVariable(), field2.getVariable(), status);</span>
+<span class="nc" id="L238">				changed |= after.mergeStatus(after, field2.getVariable(), field1.getVariable(), status);</span>
+			}
+
+<span class="nc bnc" id="L241" title="All 2 branches missed.">			for (int i=0; i&lt;head.params.length; i++) {</span>
+<span class="nc" id="L242">				AliasStatus status = before.getAliasStatus(field1.getVariable(), callStm.args[i]);</span>
+<span class="nc" id="L243">				changed |= after.mergeStatus(after, field1.getVariable(), head.params[i], status);</span>
+<span class="nc" id="L244">				changed |= after.mergeStatus(after, head.params[i], field1.getVariable(), status);</span>
+			}
+
+<span class="nc bnc" id="L247" title="All 2 branches missed.">			if (before.isCorrupt(field1.getVariable())) {</span>
+<span class="nc" id="L248">				changed |= after.setCorrupt(field1.getVariable());</span>
+			}
+		}
+<span class="nc" id="L251">	}</span>
+
+	/**
+	 * Returns the alias information as inferred just before the given statement.
+	 */
+	public AliasInfo getInfoBefore(Statement s) {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		if (!flow_info.containsKey(s)) {</span>
+<span class="nc" id="L258">			Set&lt;Variable&gt; live = new HashSet&lt;Variable&gt;(la.getLiveBefore(s));</span>
+			/* for (Field field : app.getFields()) {
+                live.add(field.getVariable());
+            }*/
+<span class="nc bnc" id="L262" title="All 2 branches missed.">			for (Field field : fieldUsage.getUsedFields(s.getMethod())) {</span>
+<span class="nc" id="L263">				live.add(field.getVariable());</span>
+			}
+<span class="nc" id="L265">			flow_info.put(s, new AliasInfo(live));</span>
+		}
+<span class="nc" id="L267">		return flow_info.get(s);</span>
+	}
+
+	public void visitPrimitiveAssignment(PrimitiveAssignment s) {
+<span class="nc" id="L271">		transferIdentity();</span>
+<span class="nc" id="L272">	}</span>
+	public void visitPrimitiveInit(PrimitiveInit s) {
+<span class="nc" id="L274">		transferIdentity();</span>
+<span class="nc" id="L275">	}</span>
+	public void visitStringBufferAppendChar(StringBufferAppendChar s) {
+<span class="nc" id="L277">		transferIdentity();</span>
+<span class="nc" id="L278">	}</span>
+	public void visitBasicUnaryOp(BasicUnaryOp s) {
+<span class="nc" id="L280">		transferIdentity();</span>
+<span class="nc" id="L281">	}</span>
+	public void visitBasicBinaryOp(BasicBinaryOp s) {
+<span class="nc" id="L283">		transferIdentity();</span>
+<span class="nc" id="L284">	}</span>
+	public void visitAssertBinaryOp(AssertBinaryOp s) {
+<span class="nc" id="L286">		transferIdentity();</span>
+<span class="nc" id="L287">	}</span>
+	public void visitAssertUnaryOp(AssertUnaryOp s) {
+<span class="nc" id="L289">		transferIdentity();</span>
+<span class="nc" id="L290">	}</span>
+	public void visitAssertAliases(AssertAliases s) {
+<span class="nc bnc" id="L292" title="All 2 branches missed.">		if (assertions.isValid(s)) {</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">			if (s.alias) {</span>
+<span class="nc" id="L294">				changed |= after.mergeAssertAliases(before, s.a, s.b);</span>
+<span class="nc" id="L295">			} else {</span>
+<span class="nc" id="L296">				changed |= after.mergeAssertNotAliases(before, s.a, s.b);</span>
+			}
+<span class="nc" id="L298">		} else {</span>
+			// invalid assertion. just pretend it wasn't here
+<span class="nc" id="L300">			transferIdentity();</span>
+		}
+<span class="nc" id="L302">	}</span>
+	
+	public void visitArrayAssignment(ArrayAssignment s) {
+<span class="nc" id="L305">		transferFilter(s.to);</span>
+<span class="nc" id="L306">		transferAssign(s.to, s.from);</span>
+<span class="nc" id="L307">	}</span>
+
+	public void visitArrayCorrupt(ArrayCorrupt s) {
+<span class="nc" id="L310">		transferIdentity();</span>
+<span class="nc" id="L311">		transferCorrupt(s.to);</span>
+<span class="nc" id="L312">	}</span>
+
+	public void visitArrayAddAll(ArrayAddAll s) {
+<span class="nc" id="L315">		transferIdentity();</span>
+<span class="nc" id="L316">	}</span>
+
+	public void visitArrayFromArray(ArrayFromArray s) {
+<span class="nc" id="L319">		transferFilter(s.to);</span>
+<span class="nc" id="L320">		transferAssign(s.to, s.from);</span>
+<span class="nc" id="L321">	}</span>
+
+	public void visitArrayNew(ArrayNew s) {
+<span class="nc" id="L324">		transferFilter(s.to);</span>
+<span class="nc" id="L325">		transferNew(s.to);</span>
+<span class="nc" id="L326">	}</span>
+
+	public void visitArrayWriteArray(ArrayWriteArray s) {
+<span class="nc" id="L329">		transferIdentity();</span>
+<span class="nc" id="L330">		transferAssign(s.to, s.from);</span>
+<span class="nc" id="L331">	}</span>
+
+	public void visitArrayWriteElement(ArrayWriteElement s) {
+<span class="nc" id="L334">		transferIdentity();</span>
+<span class="nc" id="L335">		transferAssign(s.to, s.from);</span>
+<span class="nc" id="L336">	}</span>
+
+	public void visitCall(Call s) {
+<span class="nc" id="L339">		transferFilter(s.retvar);</span>
+		// this only handles flow from call to its successors in the method
+		// see transferCall for the interprocedural flow
+<span class="nc" id="L342">	}</span>
+
+	public void visitMethodHead(MethodHead s) {
+<span class="nc" id="L345">		transferIdentity();</span>
+
+		// parameter aliases are definitely aliases of the formal parameters
+<span class="nc" id="L348">		Variable[] pa = s.getMethod().getParamAlias();</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">		for (int i = 0; i &lt; s.params.length; i++) {</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">			if (pa[i] != null) {</span>
+<span class="nc" id="L351">				changed |= after.mergeStatus(after, pa[i], s.params[i], AliasStatus.DEFINITELY);</span>
+			}
+		}
+<span class="nc" id="L354">	}</span>
+
+	public void visitNop(Nop s) {
+<span class="nc" id="L357">		transferIdentity();</span>
+<span class="nc" id="L358">	}</span>
+
+	public void visitReturn(Return s) {
+		// see transferReturn for the interprocedural flow
+<span class="nc" id="L362">	}</span>
+
+	public void visitStringAssignment(StringAssignment s) {
+<span class="nc" id="L365">		transferIdentity();</span>
+<span class="nc" id="L366">	}</span>
+
+	public void visitStringBufferAppend(StringBufferAppend s) {
+<span class="nc" id="L369">		transferIdentity();</span>
+<span class="nc" id="L370">	}</span>
+
+	public void visitStringBufferAssignment(StringBufferAssignment s) {
+<span class="nc" id="L373">		transferFilter(s.to);</span>
+<span class="nc" id="L374">		transferAssign(s.to, s.from);</span>
+<span class="nc" id="L375">	}</span>
+
+	public void visitStringBufferBinaryOp(StringBufferBinaryOp s) {
+<span class="nc" id="L378">		transferIdentity();</span>
+<span class="nc" id="L379">	}</span>
+
+	public void visitStringBufferCorrupt(StringBufferCorrupt s) {
+<span class="nc" id="L382">		transferIdentity();</span>
+<span class="nc" id="L383">		transferCorrupt(s.to);</span>
+<span class="nc" id="L384">	}</span>
+
+	public void visitStringBufferInit(StringBufferInit s) {
+<span class="nc" id="L387">		transferFilter(s.to);</span>
+<span class="nc" id="L388">		transferNew(s.to);</span>
+<span class="nc" id="L389">	}</span>
+
+	public void visitStringBufferPrepend(StringBufferPrepend s) {
+<span class="nc" id="L392">		transferIdentity();</span>
+<span class="nc" id="L393">	}</span>
+
+	public void visitStringBufferUnaryOp(StringBufferUnaryOp s) {
+<span class="nc" id="L396">		transferIdentity();</span>
+<span class="nc" id="L397">	}</span>
+
+	public void visitStringConcat(StringConcat s) {
+<span class="nc" id="L400">		transferIdentity();</span>
+<span class="nc" id="L401">	}</span>
+
+	public void visitStringFromArray(StringFromArray s) {
+<span class="nc" id="L404">		transferIdentity();</span>
+<span class="nc" id="L405">	}</span>
+	public void visitPrimitiveFromArray(PrimitiveFromArray s) {
+<span class="nc" id="L407">		transferIdentity();</span>
+<span class="nc" id="L408">	}</span>
+
+	public void visitStringFromStringBuffer(StringFromStringBuffer s) {
+<span class="nc" id="L411">		transferIdentity();</span>
+<span class="nc" id="L412">	}</span>
+
+	public void visitStringInit(StringInit s) {
+<span class="nc" id="L415">		transferIdentity();</span>
+<span class="nc" id="L416">	}</span>
+
+	public void visitObjectAssignment(ObjectAssignment s) {
+<span class="nc" id="L419">		transferFilter(s.to);</span>
+<span class="nc" id="L420">		transferAssign(s.to, s.from);</span>
+<span class="nc" id="L421">	}</span>
+
+	public void visitObjectCorrupt(ObjectCorrupt s) {
+<span class="nc" id="L424">		transferIdentity();</span>
+<span class="nc" id="L425">		transferCorrupt(s.to);</span>
+<span class="nc" id="L426">	}</span>
+
+	public void visitHotspot(Hotspot s) {
+<span class="nc" id="L429">		transferIdentity();</span>
+<span class="nc" id="L430">	}</span>
+
+	public void visitFieldAssignment(FieldAssignment s) {
+<span class="nc" id="L433">		transferIdentity(); // we use identity instead of filter to perform weak update</span>
+<span class="nc" id="L434">		transferAssign(s.getTo(), s.getFrom());</span>
+<span class="nc" id="L435">	}</span>
+
+	public void visitFieldReference(FieldReference s) {
+<span class="nc" id="L438">		transferFilter(s.getTo());</span>
+<span class="nc" id="L439">		transferAssign(s.getTo(), s.getFrom());</span>
+<span class="nc" id="L440">	}</span>
+
+	public void visitCatch(Catch s) {
+<span class="nc" id="L443">		transferIdentity();</span>
+		// exceptional flow cannot change aliasing
+<span class="nc" id="L445">	}</span>
+	public void visitExceptionalReturn(ExceptionalReturn s) {
+		// interprocedural flow handled elsewhere
+<span class="nc" id="L448">	}</span>
+
+	private void transferIdentity() {
+<span class="nc" id="L451">		changed |= after.mergeIdentity(before);</span>
+<span class="nc" id="L452">	}</span>
+
+	private void transferFilter(Variable a) {
+<span class="nc" id="L455">		changed |= after.mergeFilter(before, a);</span>
+<span class="nc" id="L456">	}</span>
+
+	private void transferAssign(Variable a, Variable b) {
+<span class="nc" id="L459">		changed |= after.mergeAssign(before, a, b);</span>
+<span class="nc" id="L460">	}</span>
+
+	private void transferCorrupt(Variable a) {
+<span class="nc" id="L463">		changed |= after.mergeCorrupt(before, a);</span>
+<span class="nc" id="L464">	}</span>
+
+	private void transferNew(Variable a) {
+<span class="nc" id="L467">		changed |= after.mergeNew(a);</span>
+<span class="nc" id="L468">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

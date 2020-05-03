@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MultiMap.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.util</a> &gt; <span class="el_source">MultiMap.java</span></div><h1>MultiMap.java</h1><pre class="source lang-java linenums">package dk.brics.string.util;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Maps keys to sets of values. 
+ * 
+ * &lt;p&gt;For practical reasons, this does &lt;i&gt;not&lt;/i&gt; implement &lt;code&gt;Map&amp;lt;K, Set&amp;lt;V&amp;gt;&amp;gt;&lt;/code&gt;, although
+ * it is conceptually that type of map.
+ * 
+ * @param &lt;K&gt; key type
+ * @param &lt;V&gt; value type
+ */
+<span class="fc" id="L19">public class MultiMap&lt;K, V&gt; {</span>
+	
+<span class="fc" id="L21">	private HashMap&lt;K, Set&lt;V&gt;&gt; map = new HashMap&lt;K, Set&lt;V&gt;&gt;();</span>
+<span class="fc" id="L22">	private int size = 0;</span>
+	
+	/**
+	 * Returns the set of keys with at least one associated value, backed by the multimap.
+	 * 
+	 * &lt;p&gt;Keys may be removed from the returned set, but attempting to add a key will throw
+	 * an {@link UnsupportedOperationException}. Removing a key will disconnect all existing
+	 * views of that particular key from the multimap.
+	 * @return a view of the keys in the multimap.
+	 */
+	public Set&lt;K&gt; keySet() {
+<span class="nc" id="L33">		return map.keySet();</span>
+	}
+	
+	/**
+	 * Returns any of the keys in the map, that has at least one associated value.
+	 * @return a key from the map, or &lt;tt&gt;null&lt;/tt&gt; if the map is empty. 
+	 */
+	public K getAnyKey() {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">		if (map.size() == 0)</span>
+<span class="nc" id="L42">			return null;</span>
+<span class="nc" id="L43">		return map.keySet().iterator().next();</span>
+	}
+	
+	/**
+	 * Returns any of the values associated with the specified key, or null if no
+	 * values are associated with the key.
+	 */
+	public V getAnyValue(K key) {
+<span class="nc" id="L51">		Set&lt;V&gt; v = map.get(key);</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		if (v == null)</span>
+<span class="nc" id="L53">			return null;</span>
+<span class="nc" id="L54">		return v.iterator().next();</span>
+	}
+	
+	/**
+	 * Adds a key-value pair to the multimap.
+	 * @return true if the pair was added, and false if it was already there.
+	 */
+	public boolean add(K key, V value) {
+<span class="fc" id="L62">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		if (set == null) {</span>
+<span class="fc" id="L64">			set = new HashSet&lt;V&gt;();</span>
+<span class="fc" id="L65">			set.add(value);</span>
+<span class="fc" id="L66">			map.put(key, set);</span>
+<span class="fc" id="L67">			size++;</span>
+<span class="fc" id="L68">			return true;</span>
+		} else {
+<span class="fc" id="L70">			boolean added = set.add(value);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			if (added)</span>
+<span class="fc" id="L72">				size++;</span>
+<span class="fc" id="L73">			return added;</span>
+		}
+	}
+	
+	/**
+	 * Adds a key-value pair for each value in the specified set.
+	 * @param key the key to associate with each of the specified values.
+	 * @param values the values to associate with the specified key.
+	 * @return &lt;tt&gt;true&lt;/tt&gt; if at least one new mapping was created.
+	 */
+	public boolean addAll(K key, Collection&lt;? extends V&gt; values) {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		if (values.size() == 0)</span>
+<span class="nc" id="L85">			return false;</span>
+<span class="nc" id="L86">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">		if (set == null) {</span>
+<span class="nc" id="L88">			set = new HashSet&lt;V&gt;(values);</span>
+<span class="nc" id="L89">			map.put(key, set);</span>
+<span class="nc" id="L90">			size += values.size();</span>
+<span class="nc" id="L91">			return true;</span>
+		}
+<span class="nc" id="L93">		boolean changed = false;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		for (V v : values) {</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">			if (set.add(v)) {</span>
+<span class="nc" id="L96">				size++;</span>
+<span class="nc" id="L97">				changed = true;</span>
+			}
+		}
+<span class="nc" id="L100">		return changed;</span>
+	}
+	
+	/**
+	 * Adds all key-value pairs from the other map to this map.
+	 * Existing mappings are not removed.
+	 * @param other another multi map.
+	 * @return &lt;tt&gt;true&lt;/tt&gt; if at least one new mapping was created.
+	 */
+	public &lt;K2 extends K, V2 extends V&gt; boolean putAll(MultiMap&lt;K2, V2&gt; other) {
+<span class="nc" id="L110">		boolean changed = false;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		for (Map.Entry&lt;K2, Set&lt;V2&gt;&gt; entry : other.map.entrySet()) {</span>
+<span class="nc" id="L112">			changed |= addAll(entry.getKey(), entry.getValue());</span>
+		}
+<span class="nc" id="L114">		return changed;</span>
+	}
+	
+	/**
+	 * Removes a key-value pair from the multimap.
+	 * @param key
+	 * @param value
+	 * @return true if the pair was removed, and false if it was not there in the first place.
+	 */
+	public boolean remove(K key, V value) {
+<span class="nc" id="L124">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (set == null)</span>
+<span class="nc" id="L126">			return false;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (set.remove(value)) {</span>
+<span class="nc" id="L128">			size--;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">			if (set.size() == 0)</span>
+<span class="nc" id="L130">				map.remove(key);</span>
+<span class="nc" id="L131">			return true;</span>
+		}
+<span class="nc" id="L133">		return false;</span>
+	}
+	
+	/**
+	 * Removes all key-value pairs with the specified key.
+	 * @param key key to remove from the map.
+	 * @return &lt;tt&gt;true&lt;/tt&gt; if the map changed.
+	 */
+	public boolean removeAll(K key) {
+<span class="nc" id="L142">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (set == null)</span>
+<span class="nc" id="L144">			return false;</span>
+<span class="nc" id="L145">		size -= set.size();</span>
+<span class="nc" id="L146">		set.clear();</span>
+<span class="nc" id="L147">		map.remove(key);</span>
+<span class="nc" id="L148">		return true;</span>
+	}
+	
+	/**
+	 * Returns a read-only view of the items associated with the specified key.
+	 * Changes to the multimap &lt;em&gt;may or may not&lt;/em&gt; propagate to the view!
+	 * 
+	 * &lt;p&gt;In the current implementation, changes always propagate until the
+	 * specified key has no associated values, at which point all existing views
+	 * of that key are cleared and disconnected from the multimap.
+	 * 
+	 * @return a read-only set partly backed by the multimap. Null is never returned.
+	 */
+	public Set&lt;V&gt; getView(K key) {
+<span class="fc" id="L162">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		if (set == null)</span>
+<span class="fc" id="L164">			return Collections.&lt;V&gt;emptySet();</span>
+<span class="fc" id="L165">		return Collections.unmodifiableSet(set);</span>
+	}
+	
+	/**
+	 * Returns a copy of the set of items associated with the specified key.
+	 * Changes to the multimap will not affect the returned set, and vice versa.
+	 * @return a set independant of the multimap. Null is never returned.
+	 */
+	public Set&lt;V&gt; getValues(K key) {
+<span class="nc" id="L174">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">		if (set == null)</span>
+<span class="nc" id="L176">			return new HashSet&lt;V&gt;();</span>
+<span class="nc" id="L177">		return new HashSet&lt;V&gt;(set);</span>
+	}
+	
+	/**
+	 * Determines if the multimap contains the specified key-value pair.
+	 */
+	public boolean contains(K key, V value) {
+<span class="nc" id="L184">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (set == null)</span>
+<span class="nc" id="L186">			return false;</span>
+<span class="nc" id="L187">		return set.contains(value);</span>
+	}
+	
+	/**
+	 * @return the number of values associated with the given key.
+	 */
+	public int count(K key) {
+<span class="nc" id="L194">		Set&lt;V&gt; set = map.get(key);</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">		if (set == null)</span>
+<span class="nc" id="L196">			return 0;</span>
+<span class="nc" id="L197">		return set.size();</span>
+	}
+	
+	/**
+	 * @return the number of keys with at least one associated value in the multimap.
+	 */
+	public int numberOfKeys() {
+<span class="nc" id="L204">		return map.size();</span>
+	}
+	
+	/**
+	 * @return the number of key-value pars in the map.
+	 */
+	public int size() {
+<span class="nc" id="L211">		return size;</span>
+	}
+	
+	/**
+	 * Removes all key-value pairs.
+	 */
+	public void clear() {
+<span class="nc" id="L218">		map.clear();</span>
+<span class="nc" id="L219">	}</span>
+	
+	@Override
+	public String toString() {
+<span class="nc" id="L223">		StringBuilder sb = new StringBuilder(&quot;[&quot;);</span>
+<span class="nc" id="L224">		boolean first = true;</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">		for (Map.Entry&lt;K, Set&lt;V&gt;&gt; entry : map.entrySet()) {</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			if (!first) {</span>
+<span class="nc" id="L227">				sb.append(&quot;, &quot;);</span>
+			}
+<span class="nc" id="L229">			sb.append(entry.getKey());</span>
+<span class="nc" id="L230">			sb.append(&quot;=&quot;);</span>
+<span class="nc" id="L231">			sb.append(entry.getValue());</span>
+<span class="nc" id="L232">			first = false;</span>
+		}
+<span class="nc" id="L234">		sb.append(&quot;]&quot;);</span>
+<span class="nc" id="L235">		return sb.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>NullDiagnosticsStrategy.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.diagnostics</a> &gt; <span class="el_source">NullDiagnosticsStrategy.java</span></div><h1>NullDiagnosticsStrategy.java</h1><pre class="source lang-java linenums">package dk.brics.string.diagnostics;
+
+
+import dk.brics.string.StringAnalysis;
+import dk.brics.string.flow.FlowGraph;
+
+/**
+ * Diagnostics strategy that does nothing.
+ * &lt;p/&gt;
+ * This can be used as base class for diagnostics strategies that only want to implement a few event responses.
+ * It is also used by {@link StringAnalysis} as the fallback diagnostics in case no strategy was specified.
+ */
+<span class="nc" id="L13">public class NullDiagnosticsStrategy implements DiagnosticsStrategy {</span>
+	
+	public void intermediateCompleted(IntermediateCompletedEvent event) {
+<span class="nc" id="L16">	}</span>
+	
+	public void analysisStarted() {
+<span class="nc" id="L19">	}</span>
+
+	public void flowGraphCompleted(FlowGraph graph) {
+<span class="nc" id="L22">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

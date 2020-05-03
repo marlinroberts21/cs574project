@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>HotspotTagger.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.annotation</a> &gt; <span class="el_source">HotspotTagger.java</span></div><h1>HotspotTagger.java</h1><pre class="source lang-java linenums">package dk.brics.string.annotation;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+
+import soot.Body;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Unit;
+import soot.ValueBox;
+import soot.jimple.Stmt;
+import soot.tagkit.StringTag;
+
+public class HotspotTagger {
+	
+<span class="nc" id="L18">	private HashMap&lt;ValueBox,Stmt&gt; boxStmtMap = new HashMap&lt;ValueBox,Stmt&gt;();</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L21">	public HotspotTagger() {</span>
+<span class="nc" id="L22">	Collection&lt;SootClass&gt; classes = Scene.v().getApplicationClasses();</span>
+<span class="nc bnc" id="L23" title="All 2 branches missed.">		for (SootClass sootClass : classes) {</span>
+<span class="nc" id="L24">			Collection&lt;SootMethod&gt; methods = sootClass.getMethods();</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">			for (SootMethod method : methods) {</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">				if (method.hasActiveBody()) {</span>
+<span class="nc" id="L27">					Body body = method.getActiveBody();</span>
+<span class="nc" id="L28">					Collection&lt;Unit&gt; uc = body.getUnits();</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">					for (Unit u : uc) {</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">						if (u instanceof Stmt) {</span>
+<span class="nc" id="L31">							Stmt stmt = (Stmt)u;</span>
+<span class="nc" id="L32">							List boxes = stmt.getUseAndDefBoxes();</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">							for (Object o : boxes) {</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">								if (o instanceof ValueBox) {</span>
+<span class="nc" id="L35">									ValueBox box = (ValueBox)o;</span>
+<span class="nc" id="L36">									boxStmtMap.put(box,stmt);</span>
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+<span class="nc" id="L44">	}</span>
+	
+	public void tag(ValueBox box, String message) {
+<span class="nc" id="L47">		Stmt stmt = boxStmtMap.get(box);</span>
+<span class="nc" id="L48">		stmt.addTag(new StringTag(message));</span>
+<span class="nc" id="L49">	}</span>
+	
+	public Stmt getStmt(ValueBox box) {
+<span class="nc" id="L52">		return boxStmtMap.get(box);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

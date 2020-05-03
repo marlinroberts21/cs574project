@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SetLength.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">SetLength.java</span></div><h1>SetLength.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Automaton operation for {@link StringBuffer#setLength(int)}.
+ */
+public class SetLength extends UnaryOperation {
+
+    /**
+     * Constructs new operation object.
+     */
+<span class="fc" id="L20">    public SetLength() {</span>
+<span class="fc" id="L21">    }</span>
+
+    /**
+     * Automaton operation.
+     * Constructs new automaton as copy of &lt;tt&gt;a&lt;/tt&gt; where a fresh state is
+     * the only accept state, it has a 0-transition to itself, all original accept states has
+     * an epsilon edge to it, and every state reachable from the initial state becomes an
+     * accept state.
+     *
+     * @param a input automaton
+     * @return resulting automaton
+     */
+    @Override
+    public Automaton op(Automaton a) {
+<span class="fc" id="L35">        Automaton b = a.clone();</span>
+<span class="fc" id="L36">        State pad = new State();</span>
+<span class="fc" id="L37">        pad.setAccept(true);</span>
+<span class="fc" id="L38">        pad.addTransition(new Transition('\u0000', pad));</span>
+<span class="fc" id="L39">        Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (State s : b.getStates()) {</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (s.isAccept()) {</span>
+<span class="fc" id="L42">                epsilons.add(new StatePair(s, pad));</span>
+<span class="fc" id="L43">            } else {</span>
+<span class="fc" id="L44">                s.setAccept(true);</span>
+            }
+        }
+<span class="fc" id="L47">        b.setDeterministic(false);</span>
+<span class="fc" id="L48">        b.addEpsilons(epsilons);</span>
+<span class="pc" id="L49">        b.minimize();</span>
+<span class="fc" id="L50">        return b;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L55">        return &quot;setLength&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L60">        return 6;</span>
+    }
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L65">        return a;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L70">        return getClass().hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L75">        return obj instanceof SetLength;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

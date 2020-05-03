@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Replace6.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Replace6.java</span></div><h1>Replace6.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+import dk.brics.string.util.MultiMap;
+
+/**
+ * Automaton operation for {@link String#replace(CharSequence,CharSequence)} where both arguments are known.
+ * &lt;p/&gt;
+ * When two occurrences of the search string overlaps, the replace() operation replaces the leftmost occurrence,
+ * though the current implementation approximates it as though either occurrence is chosen at random.
+ * For example, the operation &lt;tt&gt;&quot;babab&quot;.replace(&quot;bab&quot;, &quot;X&quot;)&lt;/tt&gt;
+ * will always produce &lt;tt&gt;&quot;Xab&quot;&lt;/tt&gt;, but will be approximated as &lt;tt&gt;{&quot;Xab&quot;,&quot;baX&quot;}&lt;/tt&gt;.
+ */
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">public class Replace6 extends UnaryOperation {</span>
+	
+	/** The first argument to replace(); the string to search for */
+    private String searchFor;
+    
+    /** The second argument to replace(); the string to insert as replacement. */
+    private String replaceBy;
+
+    /**
+     * Automaton operation for {@link String#replace(CharSequence,CharSequence)} where both arguments are known.
+     * @param searchFor known value of the first argument
+     * @param replaceBy known value of the second argument
+     */
+<span class="fc" id="L42">    public Replace6(String searchFor, String replaceBy) {</span>
+<span class="fc" id="L43">        this.searchFor = searchFor;</span>
+<span class="fc" id="L44">        this.replaceBy = replaceBy;</span>
+<span class="fc" id="L45">    }</span>
+    
+    /**
+     * An epsilon transition with an optional &quot;constrained&quot; character.
+     * See addConstrainedEpsilons.
+     * Does NOT currently have equals() and hashCode()!
+     */
+    private static final class ConstrainedEpsilon {
+    	/** Origin of epsilon transition */
+    	public State from;
+    	
+    	/** Destination of epsilon transition */
+    	public State to;
+    	
+    	/** Illegal input after following epsilon, or null if not constrained */
+    	public Character illegalCharacter;
+    	
+    	/** 
+    	 * Returns the set of illegal characters, which is either empty or
+    	 * a singleton set.
+    	 */
+    	public Set&lt;Character&gt; illegalCharacters() {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">    		if (illegalCharacter == null)</span>
+<span class="fc" id="L68">    			return Collections.&lt;Character&gt;emptySet();</span>
+    		else
+<span class="fc" id="L70">    			return Collections.singleton(illegalCharacter);</span>
+    	}
+
+<span class="fc" id="L73">		public ConstrainedEpsilon(State from, State to, Character illegalCharacter) {</span>
+<span class="fc" id="L74">			this.from = from;</span>
+<span class="fc" id="L75">			this.to = to;</span>
+<span class="fc" id="L76">			this.illegalCharacter = illegalCharacter;</span>
+<span class="fc" id="L77">		}</span>
+<span class="fc" id="L78">		public ConstrainedEpsilon(State from, State to) {</span>
+<span class="fc" id="L79">			this.from = from;</span>
+<span class="fc" id="L80">			this.to = to;</span>
+<span class="fc" id="L81">			this.illegalCharacter = null;</span>
+<span class="fc" id="L82">		}</span>
+		
+    }
+    
+    /**
+     * A state and a transition. The transition will typically be
+     * outgoing from the state, though it is not necessary.
+     * Does NOT currently have equals() and hashCode()!
+     */
+    private static final class StateTransitionPair {
+    	public State state;
+    	public Transition transition;
+<span class="fc" id="L94">		public StateTransitionPair(State state, Transition transition) {</span>
+<span class="fc" id="L95">			this.state = state;</span>
+<span class="fc" id="L96">			this.transition = transition;</span>
+<span class="fc" id="L97">		}</span>
+    }
+    
+    
+    
+    /**
+     * Automaton operation.
+     * Constructs a new automaton as a copy of &lt;tt&gt;a&lt;/tt&gt;, with these modifications.
+     * For every state &lt;tt&gt;s&lt;sub&gt;0&lt;/sub&gt;&lt;/tt&gt;, if there exists a path &lt;tt&gt;s&lt;sub&gt;0&lt;/sub&gt;,...,s&lt;sub&gt;n&lt;/sub&gt;&lt;/tt&gt; reading the
+     * search string &lt;tt&gt;S&lt;/tt&gt;, the following modifications are made:
+     * &lt;ul&gt;
+     * &lt;li&gt;A replacement path &lt;tt&gt;r&lt;sub&gt;0&lt;/sub&gt;,...,r&lt;sub&gt;m&lt;/sub&gt;&lt;/tt&gt; is created, reading the replacement string.
+     * &lt;li&gt;A ghost path &lt;tt&gt;g&lt;sub&gt;0&lt;/sub&gt;,...,g&lt;sub&gt;n-1&lt;/sub&gt;&lt;/tt&gt; is created, reading the search string, except for its last character.
+     * &lt;li&gt;These epsilon transitions are created: 
+     * 			&lt;tt&gt;(s&lt;sub&gt;0&lt;/sub&gt;,r&lt;sub&gt;0&lt;/sub&gt;), 
+     * 				(s&lt;sub&gt;0&lt;/sub&gt;,g&lt;sub&gt;0&lt;/sub&gt;), 
+     * 				(r&lt;sub&gt;m&lt;/sub&gt;,s&lt;sub&gt;n&lt;/sub&gt;)&lt;/tt&gt;
+     * &lt;li&gt;For &lt;tt&gt;i=1,...,n-1&lt;/tt&gt; this &lt;i&gt;constrained&lt;/i&gt; epsilon transition is created:
+     * 			&lt;tt&gt;(g&lt;sub&gt;i&lt;/sub&gt;, s&lt;sub&gt;i&lt;/sub&gt;, [S&lt;sub&gt;i&lt;/sub&gt;])&lt;/tt&gt;, where &lt;tt&gt;S&lt;sub&gt;i&lt;/sub&gt;&lt;/tt&gt; is the &lt;i&gt;i&lt;/i&gt;-th character in the search string (0-based).
+     * &lt;li&gt;For &lt;tt&gt;i=0,...,n-1&lt;/tt&gt;, &lt;tt&gt;g&lt;sub&gt;i&lt;/sub&gt;&lt;/tt&gt; is made an accept state if &lt;tt&gt;s&lt;sub&gt;i&lt;/sub&gt;&lt;/tt&gt; is an accept state.
+     * &lt;li&gt;&lt;tt&gt;r&lt;sub&gt;0&lt;/sub&gt;&lt;/tt&gt; and &lt;tt&gt;r&lt;sub&gt;m&lt;/sub&gt;&lt;/tt&gt; are made accept states if &lt;tt&gt;s&lt;sub&gt;0&lt;/sub&gt;&lt;/tt&gt; and &lt;tt&gt;s&lt;sub&gt;n&lt;/sub&gt;&lt;/tt&gt; are accept states, respectively.
+     * &lt;li&gt;The character &lt;tt&gt;S&lt;sub&gt;0&lt;/sub&gt;&lt;/tt&gt; is removed from the transition &lt;tt&gt;(s&lt;sub&gt;0&lt;/sub&gt;,s&lt;sub&gt;1&lt;/sub&gt;)&lt;/tt&gt;.
+     * &lt;/ul&gt;
+     * The strategy above assumes that the input automaton is deterministic, and that
+     * the search string is not empty. If the search string is empty, a different strategy is used, which
+     * inserts the replacement string once between every state.
+     * &lt;p/&gt;
+     * A constrained epsilon transition is like a normal epsilon transition, except the constrained character cannot be read
+     * immediately after following the transition. If it occurs afterwards, the automaton must move to the dead reject state instead of
+     * following the transitions at the current state. If the automaton follows more than one constrained epsilon transition
+     * consecutively, all their constrained characters become constrained.
+     * &lt;p/&gt;
+     * The intuition behind the strategy is this: If the search string occurs at some position, the replacement string
+     * can now be read from that position instead. If only a prefix of the search string did occur, the automaton can
+     * follow the ghost path a bit, and then jump back into the original path when a character differs from the search
+     * string. Removing the first character from the first transition ensures that the automaton can no longer read the
+     * whole search string at that position.
+     */
+    @Override
+    public Automaton op(Automaton a) {
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">    	if (searchFor.length() == 0)</span>
+<span class="nc" id="L138">    		return emptyStringOp(a);</span>
+    	
+<span class="fc" id="L140">    	Automaton result = a.clone();</span>
+    	
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">    	assert result.isDeterministic();</span>
+    	
+<span class="fc" id="L144">    	List&lt;ConstrainedEpsilon&gt; epsilons = new LinkedList&lt;ConstrainedEpsilon&gt;();</span>
+<span class="fc" id="L145">    	List&lt;StateTransitionPair&gt; killedTransitions = new LinkedList&lt;StateTransitionPair&gt;();</span>
+<span class="fc" id="L146">    	List&lt;StateTransitionPair&gt; newTransitions = new LinkedList&lt;StateTransitionPair&gt;();</span>
+<span class="fc" id="L147">    	String ghostString = searchFor.substring(0, searchFor.length() - 1);</span>
+    	
+<span class="fc bfc" id="L149" title="All 2 branches covered.">    	for (State origin : result.getStates()) {</span>
+<span class="fc" id="L150">    		LinkedList&lt;State&gt; path = getPath(origin, searchFor);</span>
+    		
+<span class="fc bfc" id="L152" title="All 2 branches covered.">    		if (path == null)</span>
+<span class="fc" id="L153">    			continue;</span>
+    		
+    		// create a path to read the replacement string
+<span class="fc" id="L156">    		LinkedList&lt;State&gt; replacement = makeString(replaceBy);</span>
+    		
+    		// create a path to read part of the search string, in case
+    		// only a prefix of the search string occurred
+<span class="fc" id="L160">    		LinkedList&lt;State&gt; ghost = makeString(ghostString);</span>
+    		
+    		// connect to replacement string (head and tail)
+<span class="fc" id="L163">    		epsilons.add(new ConstrainedEpsilon(origin, replacement.getFirst()));</span>
+<span class="fc" id="L164">    		epsilons.add(new ConstrainedEpsilon(replacement.getLast(), path.getLast()));</span>
+    		
+    		// set accept states of first and last
+<span class="fc bfc" id="L167" title="All 2 branches covered.">    		if (origin.isAccept()) {</span>
+<span class="fc" id="L168">    			replacement.getFirst().setAccept(true);</span>
+<span class="fc" id="L169">    			ghost.getFirst().setAccept(true);</span>
+    		}
+<span class="fc bfc" id="L171" title="All 2 branches covered.">    		if (path.getLast().isAccept()) {</span>
+<span class="fc" id="L172">    			replacement.getLast().setAccept(true);</span>
+    		}
+    		
+    		// connect to ghost string (head)
+<span class="fc" id="L176">    		epsilons.add(new ConstrainedEpsilon(origin, ghost.getFirst()));</span>
+    		
+    		// connect to successive states in the ghost state,
+    		// and set accept states in the ghost
+<span class="fc" id="L180">    		Iterator&lt;State&gt; pathIt = path.iterator();</span>
+<span class="fc" id="L181">    		Iterator&lt;State&gt; ghostIt = ghost.iterator();</span>
+<span class="fc" id="L182">    		ghostIt.next(); // skip the initial state in the ghost path</span>
+<span class="fc" id="L183">    		int index = 1;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">    		while (ghostIt.hasNext()) {</span>
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">    			assert pathIt.hasNext();</span>
+<span class="fc" id="L186">    			State pathState = pathIt.next();</span>
+<span class="fc" id="L187">    			State ghostState = ghostIt.next();</span>
+    			
+    			// add an epsilon transition, but disallow reading the next
+    			// character from the search string if it is followed
+<span class="fc" id="L191">    			epsilons.add(new ConstrainedEpsilon(ghostState, pathState, searchFor.charAt(index)));</span>
+    			
+    			// set accept state
+<span class="fc bfc" id="L194" title="All 2 branches covered.">    			if (pathState.isAccept()) {</span>
+<span class="fc" id="L195">    				ghostState.setAccept(true);</span>
+    			}
+    			
+    			// next char in search string
+<span class="fc" id="L199">    			index++;</span>
+    		}
+    		
+    		// remove the transition with the first character of
+    		// the search string from the origin state
+<span class="fc" id="L204">    		char first = searchFor.charAt(0);</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">    		for (Transition tr : origin.getTransitions()) {</span>
+<span class="pc bpc" id="L206" title="2 of 4 branches missed.">    			if (tr.getMin() &lt;= first &amp;&amp; tr.getMax() &gt;= first) {</span>
+<span class="fc" id="L207">    				killedTransitions.add(new StateTransitionPair(origin, tr));</span>
+    				
+    				// add back the remaining characters from the interval
+<span class="fc bfc" id="L210" title="All 2 branches covered.">    				if (tr.getMin() &lt; first) {</span>
+<span class="fc" id="L211">    					newTransitions.add(new StateTransitionPair(origin, new Transition(tr.getMin(), (char)(first-1), tr.getDest())));</span>
+    				}
+<span class="fc bfc" id="L213" title="All 2 branches covered.">    				if (tr.getMax() &gt; first) {</span>
+<span class="fc" id="L214">    					newTransitions.add(new StateTransitionPair(origin, new Transition((char)(first+1), tr.getMax(), tr.getDest())));</span>
+    				}
+    			}
+    		}
+    	}
+    	
+    	// apply the first character removal first
+<span class="fc bfc" id="L221" title="All 2 branches covered.">    	for (StateTransitionPair pair : killedTransitions) {</span>
+<span class="fc" id="L222">    		pair.state.getTransitions().remove(pair.transition);</span>
+    	}
+<span class="fc bfc" id="L224" title="All 2 branches covered.">    	for (StateTransitionPair pair : newTransitions) {</span>
+<span class="fc" id="L225">    		pair.state.addTransition(pair.transition);</span>
+    	}
+    	
+    	// apply epsilons
+<span class="fc" id="L229">    	addConstrainedEpsilons(result, epsilons);</span>
+<span class="fc" id="L230">    	result.reduce();</span>
+<span class="pc" id="L231">    	result.minimize();</span>
+    	
+<span class="fc" id="L233">    	return result;</span>
+    }
+
+    /**
+     * Returns the states reached by feeding the specified input to
+     * the automaton, starting at the specified state. The initial
+     * state is not added to the path. The number of states in the
+     * path equals the length of the string.
+     * &lt;p/&gt;
+     * Returns &lt;tt&gt;null&lt;/tt&gt; if the path ends in the dead state.
+     * @param start state to search path at. 
+     * @param string input to the automaton.
+     * @return a new list of states, or &lt;tt&gt;null&lt;/tt&gt;.
+     */
+    private LinkedList&lt;State&gt; getPath(State start, CharSequence string) {
+<span class="fc" id="L248">    	LinkedList&lt;State&gt; path = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L249">    	State state = start;</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">    	for (int i=0; i&lt;string.length(); i++) {</span>
+<span class="fc" id="L251">    		state = state.step(string.charAt(i));</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">    		if (state == null)</span>
+<span class="fc" id="L253">    			return null;</span>
+<span class="fc" id="L254">    		path.add(state);</span>
+    	}
+<span class="fc" id="L256">    	return path;</span>
+    }
+    
+    /**
+     * Creates states and transitions reading the specified string.
+     * None of the states are made accept states. The states are returned
+     * in a linked list in topological order.
+     * @param s a string
+     * @return a new list with all the states
+     */
+    private LinkedList&lt;State&gt; makeString(CharSequence s) {
+<span class="fc" id="L267">    	LinkedList&lt;State&gt; list = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L268">    	State first = new State();</span>
+<span class="fc" id="L269">    	list.add(first);</span>
+<span class="fc" id="L270">    	State last = first;</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">    	for (int i=0; i&lt;s.length(); i++) {</span>
+<span class="fc" id="L272">    		State state = new State();</span>
+<span class="fc" id="L273">    		last.addTransition(new Transition(s.charAt(i), state));</span>
+<span class="fc" id="L274">    		list.add(state);</span>
+<span class="fc" id="L275">    		last = state;</span>
+    	}
+<span class="fc" id="L277">    	return list;</span>
+    }
+    
+    
+    /**
+     * Like adding normal epsilon transitions, except certain epsilon transition are
+     * constrained, in that one specific character cannot be read after following that
+     * transition (ie. reading that character goes to the dead rejecting state).
+     * @param auto automaton to modify
+     * @param epsilons constrained epsilon transitions to add.
+     */
+    private void addConstrainedEpsilons(Automaton auto, Collection&lt;ConstrainedEpsilon&gt; epsilons) {
+    	// forward and backward contain all the epsilon transitions without illegal characters
+<span class="fc" id="L290">    	MultiMap&lt;State, State&gt; forward = new MultiMap&lt;State, State&gt;();</span>
+<span class="fc" id="L291">    	MultiMap&lt;State, State&gt; backward = new MultiMap&lt;State, State&gt;();</span>
+    	
+    	// 'all' contains key (s1,s2) if there is an epsilon transition from s1 to s2
+    	// (s1,s2) then maps to the set of illegal characters on that transition (can be empty)
+<span class="fc" id="L295">    	Map&lt;StatePair, TreeSet&lt;Character&gt;&gt; all = new HashMap&lt;StatePair, TreeSet&lt;Character&gt;&gt;();</span>
+    	
+<span class="fc" id="L297">    	Set&lt;StatePair&gt; workset = new HashSet&lt;StatePair&gt;();</span>
+    	
+    	// build the initial maps, without any closure 
+<span class="fc bfc" id="L300" title="All 2 branches covered.">    	for (ConstrainedEpsilon epsilon : epsilons) {</span>
+    		// ignore degenerate epsilons
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">    		if (epsilon.from == epsilon.to)</span>
+<span class="nc" id="L303">    			continue;</span>
+    		
+<span class="fc" id="L305">    		forward.add(epsilon.from, epsilon.to);</span>
+<span class="fc" id="L306">    		backward.add(epsilon.to, epsilon.from);</span>
+    		
+<span class="fc" id="L308">    		StatePair pair = new StatePair(epsilon.from, epsilon.to);</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">    		if (!all.containsKey(pair))</span>
+<span class="fc" id="L310">    			all.put(pair, new TreeSet&lt;Character&gt;(epsilon.illegalCharacters()));</span>
+    		else
+<span class="nc" id="L312">    			all.get(pair).retainAll(epsilon.illegalCharacters());</span>
+<span class="fc" id="L313">    		workset.add(pair);</span>
+    	}
+    	
+    	// calculate the transitive closure.
+    	// for every eps.tr. (s1,s2), we find a transition (s2,s3), and create (s1,s3).
+    	// workset contains the (s1,s2) pairs that may yield a new transition like above.
+<span class="fc bfc" id="L319" title="All 2 branches covered.">    	while (!workset.isEmpty()) {</span>
+<span class="fc" id="L320">    		Iterator&lt;StatePair&gt; it = workset.iterator();</span>
+<span class="fc" id="L321">    		StatePair pair = it.next();</span>
+<span class="fc" id="L322">    		it.remove();</span>
+    		
+<span class="fc" id="L324">    		State s1 = pair.getFirstState();</span>
+<span class="fc" id="L325">    		State s2 = pair.getSecondState();</span>
+    		
+<span class="fc bfc" id="L327" title="All 2 branches covered.">    		for (State s3 : forward.getView(s2)) {</span>
+    			// do not create degenerate epsilons
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">    			if (s1 == s3)</span>
+<span class="nc" id="L330">    				continue;</span>
+    			
+<span class="pc bpc" id="L332" title="3 of 6 branches missed.">    			assert s1 != s2 &amp;&amp; s2 != s3;</span>
+    			
+<span class="fc" id="L334">    			TreeSet&lt;Character&gt; illegal = new TreeSet&lt;Character&gt;(all.get(pair));</span>
+<span class="fc" id="L335">    			illegal.addAll(all.get(new StatePair(s2, s3)));</span>
+    			
+    			boolean changed;
+<span class="fc" id="L338">    			StatePair p2 = new StatePair(s1, s3);</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">    			if (!all.containsKey(p2)) {</span>
+<span class="fc" id="L340">    				all.put(p2, illegal);</span>
+<span class="fc" id="L341">    				forward.add(s1, s3); // note: we are not modifying the view being iterated because s1!=s2</span>
+<span class="fc" id="L342">    				backward.add(s3, s1);</span>
+<span class="fc" id="L343">    				changed = true;</span>
+<span class="fc" id="L344">    			} else {</span>
+<span class="nc" id="L345">    				changed = all.get(p2).retainAll(illegal);</span>
+    			}
+    			
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">    			if (changed) {</span>
+<span class="fc" id="L349">    				workset.add(p2);</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">    				for (State s0 : backward.getView(s1)) {</span>
+<span class="nc" id="L351">    					workset.add(new StatePair(s0, s1));</span>
+    				}
+    			}
+    		}
+    	}
+		
+		// closure completed, time to add the transitions
+<span class="fc" id="L358">    	LinkedList&lt;StateTransitionPair&gt; transitions = new LinkedList&lt;StateTransitionPair&gt;();</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">		for (Map.Entry&lt;StatePair, TreeSet&lt;Character&gt;&gt; entry : all.entrySet()) {</span>
+<span class="fc" id="L360">			StatePair pair = entry.getKey();</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">			for (Transition tr : pair.getSecondState().getTransitions()) {</span>
+<span class="fc" id="L362">				char ch = tr.getMin();</span>
+				// TreeSet is sorted, so we visit the illegal characters in increasing order
+				// at every illegal character, we add the interval below, since it must be a legal interval 
+<span class="fc bfc" id="L365" title="All 2 branches covered.">				for (Character illegal : entry.getValue()) {</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">					if (illegal &lt; ch)</span>
+<span class="nc" id="L367">						continue;</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">					if (illegal &gt; tr.getMax())</span>
+<span class="fc" id="L369">						break;</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">					if (illegal &gt; ch) {</span>
+<span class="fc" id="L371">						transitions.add(new StateTransitionPair(pair.getFirstState(), new Transition(ch, (char)(illegal - 1), tr.getDest())));</span>
+					}
+<span class="fc" id="L373">					ch = (char)(illegal + 1);</span>
+				}
+<span class="fc bfc" id="L375" title="All 2 branches covered.">				if (ch &lt;= tr.getMax()) {</span>
+<span class="fc" id="L376">					transitions.add(new StateTransitionPair(pair.getFirstState(), new Transition(ch, tr.getMax(), tr.getDest())));</span>
+				}
+			}
+		}
+<span class="fc bfc" id="L380" title="All 2 branches covered.">		for (StateTransitionPair pair : transitions) {</span>
+<span class="fc" id="L381">			pair.state.addTransition(pair.transition);</span>
+		}
+<span class="fc" id="L383">		auto.setDeterministic(false);</span>
+<span class="fc" id="L384">    }</span>
+
+    /**
+     * If the search string is empty, the replace operation inserts the replacement string
+     * between every character in the original string, and as prefix and suffix. 
+     * This does not generalize well, so the case is handled specifically by this method.
+     * &lt;/p&gt;
+     * For every state &lt;tt&gt;s&lt;/tt&gt;, we create a path to read the replacement. All outgoing
+     * transitions from &lt;tt&gt;s&lt;/tt&gt; are changed to go out from last state in the replacement path.
+     * &lt;tt&gt;s&lt;/tt&gt; then gets all the transitions from the first state in the replacement path.
+     * If &lt;tt&gt;s&lt;/tt&gt; was an accept state, the last state in its replacement path is made an accept
+     * state, and &lt;tt&gt;s&lt;/tt&gt; is no longer an accept state (because the replacement string is inserted
+     * as suffix).  
+     * @param a input automaton. Will not be modified.
+     * @return new automaton
+     */
+    private Automaton emptyStringOp(Automaton a) {
+<span class="nc" id="L401">    	Automaton result = a.clone();</span>
+    	
+<span class="nc bnc" id="L403" title="All 2 branches missed.">    	for (State state : result.getStates()) {</span>
+<span class="nc" id="L404">    		LinkedList&lt;State&gt; insert = makeString(replaceBy);</span>
+<span class="nc" id="L405">    		insert.getLast().getTransitions().addAll(state.getTransitions());</span>
+<span class="nc" id="L406">    		state.getTransitions().clear();</span>
+<span class="nc" id="L407">    		state.getTransitions().addAll(insert.getFirst().getTransitions());</span>
+    		
+<span class="nc bnc" id="L409" title="All 2 branches missed.">    		if (state.isAccept()) {</span>
+<span class="nc" id="L410">    			insert.getLast().setAccept(true);</span>
+<span class="nc" id="L411">    			state.setAccept(false);</span>
+    		}
+    	}
+    	
+<span class="nc" id="L415">    	return result;</span>
+    }
+    
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc bnc" id="L420" title="All 2 branches missed.">        if (searchFor.length() == 1) {</span>
+<span class="nc" id="L421">            a = a.remove(searchFor.charAt(0));</span>
+        }
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        for (char c : replaceBy.toCharArray()) {</span>
+<span class="nc" id="L424">            a = a.add(c);</span>
+        }
+<span class="nc" id="L426">        return a;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L431">        return &quot;replace6[&quot; + Basic.escapeString(searchFor) + &quot;-&gt;&quot; + Basic.escapeString(replaceBy) + &quot;]&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L436">        return 1;</span>
+    }
+
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

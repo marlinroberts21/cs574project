@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Postfix.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Postfix.java</span></div><h1>Postfix.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.string.charset.CharSet;
+
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Automaton operation for {@link StringBuffer#substring(int)}.
+ */
+public class Postfix extends UnaryOperation {
+
+    /**
+     * Constructs new operation object.
+     */
+<span class="fc" id="L19">    public Postfix() {</span>
+<span class="fc" id="L20">    }</span>
+
+    /**
+     * Automaton operation.
+     * Constructs new automaton as copy of &lt;tt&gt;a&lt;/tt&gt; with a new initial state &lt;i&gt;p&lt;/i&gt;.
+     * Epsilon transitions are added from &lt;i&gt;p&lt;/i&gt; to every other state.
+     *
+     * @param a input automaton
+     * @return resulting automaton
+     */
+    @Override
+    public Automaton op(Automaton a) {
+<span class="fc" id="L32">        Automaton b = a.clone();</span>
+<span class="fc" id="L33">        State initial = new State();</span>
+<span class="fc" id="L34">        Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (State s : b.getStates()) {</span>
+<span class="fc" id="L36">            epsilons.add(new StatePair(initial, s));</span>
+        }
+<span class="fc" id="L38">        b.setInitialState(initial);</span>
+<span class="fc" id="L39">        b.addEpsilons(epsilons);</span>
+<span class="pc" id="L40">        b.minimize();</span>
+<span class="fc" id="L41">        return b;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L46">        return &quot;postfix&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L51">        return 4;</span>
+    }
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L56">        return a;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L61">        return getClass().hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L66">        return obj instanceof Postfix;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Simplifier.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.flow.operations</a> &gt; <span class="el_source">Simplifier.java</span></div><h1>Simplifier.java</h1><pre class="source lang-java linenums">package dk.brics.string.flow.operations;
+
+import dk.brics.string.flow.*;
+import dk.brics.string.stringoperations.Basic;
+
+import java.util.*;
+
+/**
+ * Flow graph simplifier.
+ */
+public class Simplifier {
+
+    private Simplifier() {
+    }
+
+    /**
+     * Simplifies the given graph.
+     * Performs the following optimizations:
+     * &lt;ul&gt;
+     * &lt;li&gt;Nodes that are of same type and have ingoing edges from the same nodes are merged.
+     * &lt;li&gt;Sequences of assignments with only one ingoing edge are compressed.
+     * &lt;li&gt;Concatenation nodes are bypassed if the first argument has exactly one edge and it comes
+     * from an initialization node with the empty string.
+     * &lt;li&gt;Self-loops on assignments are removed.
+     * &lt;/ul&gt;
+     *
+     * @return a map from the original nodes to the corresponding
+     *         node in the simplified graph
+     */
+    public static Map&lt;Node, Node&gt; simplify(FlowGraph g) {
+<span class="nc" id="L31">        ArrayList&lt;Node&gt; old_nodes = new ArrayList&lt;Node&gt;(g.getNodes());</span>
+<span class="nc" id="L32">        Map&lt;Node, Node&gt; simp_map = new HashMap&lt;Node, Node&gt;(); // map containing all simplifications</span>
+<span class="nc" id="L33">        Set&lt;Node&gt; dirty_s = new HashSet&lt;Node&gt;(g.getNodes());</span>
+<span class="nc" id="L34">        LinkedList&lt;Node&gt; dirty_l = new LinkedList&lt;Node&gt;(g.getNodes());</span>
+<span class="nc" id="L35">        Map&lt;NodeEquivalence, Node&gt; equiv = new HashMap&lt;NodeEquivalence, Node&gt;();</span>
+<span class="nc" id="L36">        Set&lt;Node&gt; removed_nodes = new HashSet&lt;Node&gt;();</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        while (!dirty_l.isEmpty()) {</span>
+<span class="nc" id="L38">            Node n = dirty_l.removeFirst();</span>
+<span class="nc" id="L39">            dirty_s.remove(n);</span>
+<span class="nc" id="L40">            NodeEquivalence ne = new NodeEquivalence(n);</span>
+<span class="nc" id="L41">            Node nn = null;</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">            if (equiv.containsKey(ne)) {</span>
+                // already seen equivalent node
+<span class="nc" id="L44">                nn = equiv.get(ne);</span>
+<span class="nc" id="L45">                redirectUses(n, nn);</span>
+<span class="nc" id="L46">                new RedirectDefs(n, nn);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">            } else if (n instanceof AssignmentNode) {</span>
+<span class="nc" id="L48">                Use from = ((AssignmentNode) n).getArg();</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">                if (from.getDefs().contains(n)) {</span>
+                    // found self-loop on assignment
+<span class="nc" id="L51">                    from.removeDef(n);</span>
+<span class="nc" id="L52">                    n.getUses().remove(n);</span>
+                }
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                if (from.getDefs().size() == 1) {</span>
+<span class="nc" id="L55">                    Node def = from.getDefs().iterator().next();</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                    if (def != n) {</span>
+                        // found assignment node with only one ingoing edge
+<span class="nc" id="L58">                        def.getUses().remove(from);</span>
+<span class="nc" id="L59">                        redirectUses(n, def);</span>
+<span class="nc" id="L60">                        nn = def;</span>
+                    }
+                }
+<span class="nc bnc" id="L63" title="All 2 branches missed.">            } else if (n instanceof ConcatenationNode) {</span>
+<span class="nc" id="L64">                Use left = ((ConcatenationNode) n).getArg1();</span>
+<span class="nc" id="L65">                Use right = ((ConcatenationNode) n).getArg2();</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                if (left.getDefs().size() == 1) {</span>
+<span class="nc" id="L67">                    Node ld = left.getDefs().iterator().next();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">                    if (ld instanceof InitializationNode &amp;&amp;</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">                            ((InitializationNode) ld).getReg().equals(Basic.makeEmptyString())) {</span>
+                        // found concat node where left arg is one init node with &quot;&quot;
+<span class="nc" id="L71">                        AssignmentNode a = g.addAssignmentNode();</span>
+<span class="nc" id="L72">                        ld.getUses().remove(left);</span>
+<span class="nc" id="L73">                        redirectUses(n, a);</span>
+<span class="nc" id="L74">                        redirectDefs(right, a.getArg());</span>
+<span class="nc" id="L75">                        nn = a;</span>
+                    }
+                }
+
+            }
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (nn != null) {</span>
+                // mark all uses dirty
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                for (Use use : nn.getUses()) {</span>
+<span class="nc" id="L83">                    Node un = use.getUser();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                    if (!dirty_s.contains(un)) {</span>
+<span class="nc" id="L85">                        equiv.remove(new NodeEquivalence(un));</span>
+<span class="nc" id="L86">                        dirty_l.addLast(un);</span>
+<span class="nc" id="L87">                        dirty_s.add(un);</span>
+                    }
+                }
+<span class="nc" id="L90">                simp_map.put(n, nn);</span>
+<span class="nc" id="L91">                removed_nodes.add(n);</span>
+<span class="nc" id="L92">            } else {</span>
+<span class="nc" id="L93">                equiv.put(ne, n);</span>
+            }
+        }
+<span class="nc" id="L96">        g.removeNodes(removed_nodes);</span>
+        // build final mapping
+<span class="nc" id="L98">        Map&lt;Node, Node&gt; trans_map = new HashMap&lt;Node, Node&gt;();</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (Node n : old_nodes) {</span>
+<span class="nc" id="L100">            Node n2 = n;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            while (simp_map.containsKey(n2)) {</span>
+<span class="nc" id="L102">                n2 = simp_map.get(n2);</span>
+            }
+<span class="nc" id="L104">            trans_map.put(n, n2);</span>
+        }
+<span class="nc" id="L106">        return trans_map;</span>
+    }
+
+    static void redirectUses(Node n1, Node n2) {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (Use u : n1.getUses()) {</span>
+<span class="nc" id="L111">            u.removeDef(n1);</span>
+<span class="nc" id="L112">            u.addDef(n2);</span>
+<span class="nc" id="L113">            n2.getUses().add(u);</span>
+        }
+<span class="nc" id="L115">        n1.getUses().clear();</span>
+<span class="nc" id="L116">    }</span>
+
+    static void redirectDefs(Use u1, Use u2) {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        for (Node d : u1.getDefs()) {</span>
+<span class="nc" id="L120">            d.getUses().remove(u1);</span>
+<span class="nc" id="L121">            d.getUses().add(u2);</span>
+<span class="nc" id="L122">            u2.addDef(d);</span>
+        }
+<span class="nc" id="L124">        u1.clearDefs();</span>
+<span class="nc" id="L125">    }</span>
+
+    /**
+     * Normalizes the given graph.
+     * In a normalized graph, only assignment nodes may have multiple incoming edges.
+     * (Concat nodes and binary operation nodes have at most one edge for each argument.)
+     */
+    public static void normalize(FlowGraph g) {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        for (Node n : new ArrayList&lt;Node&gt;(g.getNodes())) {</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (n instanceof ConcatenationNode) {</span>
+<span class="nc" id="L135">                Use left = ((ConcatenationNode) n).getArg1();</span>
+<span class="nc" id="L136">                Use right = ((ConcatenationNode) n).getArg2();</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                if (left.getDefs().size() &gt; 1) {</span>
+<span class="nc" id="L138">                    AssignmentNode a = g.addAssignmentNode();</span>
+<span class="nc" id="L139">                    redirectDefs(left, a.getArg());</span>
+<span class="nc" id="L140">                    left.addDefUse(a);</span>
+                }
+<span class="nc bnc" id="L142" title="All 2 branches missed.">                if (right.getDefs().size() &gt; 1) {</span>
+<span class="nc" id="L143">                    AssignmentNode a = g.addAssignmentNode();</span>
+<span class="nc" id="L144">                    redirectDefs(right, a.getArg());</span>
+<span class="nc" id="L145">                    right.addDefUse(a);</span>
+                }
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            } else if (n instanceof UnaryNode) {</span>
+<span class="nc" id="L148">                Use arg = ((UnaryNode) n).getArg();</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                if (arg.getDefs().size() &gt; 1) {</span>
+<span class="nc" id="L150">                    AssignmentNode a = g.addAssignmentNode();</span>
+<span class="nc" id="L151">                    redirectDefs(arg, a.getArg());</span>
+<span class="nc" id="L152">                    arg.addDefUse(a);</span>
+                }
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            } else if (n instanceof BinaryNode) {</span>
+<span class="nc" id="L155">                Use arg1 = ((BinaryNode) n).getArg1();</span>
+<span class="nc" id="L156">                Use arg2 = ((BinaryNode) n).getArg2();</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">                if (arg1.getDefs().size() &gt; 1) {</span>
+<span class="nc" id="L158">                    AssignmentNode a = g.addAssignmentNode();</span>
+<span class="nc" id="L159">                    redirectDefs(arg1, a.getArg());</span>
+<span class="nc" id="L160">                    arg1.addDefUse(a);</span>
+                }
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                if (arg2.getDefs().size() &gt; 1) {</span>
+<span class="nc" id="L163">                    AssignmentNode a = g.addAssignmentNode();</span>
+<span class="nc" id="L164">                    redirectDefs(arg2, a.getArg());</span>
+<span class="nc" id="L165">                    arg2.addDefUse(a);</span>
+                }
+            }
+        }
+<span class="nc" id="L169">    }</span>
+
+    static class RedirectDefs implements NodeVisitor {
+
+        private Node n2;
+
+<span class="nc" id="L175">        public RedirectDefs(Node n1, Node n2) {</span>
+<span class="nc" id="L176">            this.n2 = n2;</span>
+<span class="nc" id="L177">            n1.visitBy(this);</span>
+<span class="nc" id="L178">        }</span>
+
+        public void visitAssignmentNode(AssignmentNode n) {
+<span class="nc" id="L181">            Simplifier.redirectDefs(n.getArg(), ((AssignmentNode) n2).getArg());</span>
+<span class="nc" id="L182">        }</span>
+
+        public void visitConcatenationNode(ConcatenationNode n) {
+<span class="nc" id="L185">            Simplifier.redirectDefs(n.getArg1(), ((ConcatenationNode) n2).getArg1());</span>
+<span class="nc" id="L186">            Simplifier.redirectDefs(n.getArg2(), ((ConcatenationNode) n2).getArg2());</span>
+<span class="nc" id="L187">        }</span>
+
+        public void visitInitializationNode(InitializationNode n) {
+<span class="nc" id="L190">        }</span>
+
+        public void visitUnaryNode(UnaryNode n) {
+<span class="nc" id="L193">            Simplifier.redirectDefs(n.getArg(), ((UnaryNode) n2).getArg());</span>
+<span class="nc" id="L194">        }</span>
+
+        public void visitBinaryNode(BinaryNode n) {
+<span class="nc" id="L197">            Simplifier.redirectDefs(n.getArg1(), ((BinaryNode) n2).getArg1());</span>
+<span class="nc" id="L198">            Simplifier.redirectDefs(n.getArg2(), ((BinaryNode) n2).getArg2());</span>
+<span class="nc" id="L199">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

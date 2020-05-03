@@ -1,0 +1,1105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Automaton.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">Automaton.java</span></div><h1>Automaton.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OptionalDataException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Finite-state automaton with regular expression operations.
+ * &lt;p&gt;
+ * Class invariants:
+ * &lt;ul&gt;
+ * &lt;li&gt; An automaton is either represented explicitly (with {@link State} and {@link Transition} objects)
+ *      or with a singleton string (see {@link #getSingleton()} and {@link #expandSingleton()}) in case the automaton is known to accept exactly one string.
+ *      (Implicitly, all states and transitions of an automaton are reachable from its initial state.)
+ * &lt;li&gt; Automata are always reduced (see {@link #reduce()}) 
+ *      and have no transitions to dead states (see {@link #removeDeadTransitions()}).
+ * &lt;li&gt; If an automaton is nondeterministic, then {@link #isDeterministic()} returns false (but
+ *      the converse is not required).
+ * &lt;li&gt; Automata provided as input to operations are generally assumed to be disjoint.
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * If the states or transitions are manipulated manually, the {@link #restoreInvariant()}
+ * and {@link #setDeterministic(boolean)} methods should be used afterwards to restore 
+ * representation invariants that are assumed by the built-in automata operations.
+ * 
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class Automaton implements Serializable, Cloneable {
+	
+	static final long serialVersionUID = 10001;
+	
+	/**
+	 * Minimize using Huffman's O(n&lt;sup&gt;2&lt;/sup&gt;) algorithm. 
+	 * This is the standard text-book algorithm.
+	 * @see #setMinimization(int)
+	 */
+	public static final int MINIMIZE_HUFFMAN = 0;
+	
+	/**
+	 * Minimize using Brzozowski's O(2&lt;sup&gt;n&lt;/sup&gt;) algorithm. 
+	 * This algorithm uses the reverse-determinize-reverse-determinize trick, which has a bad
+	 * worst-case behavior but often works very well in practice 
+	 * (even better than Hopcroft's!).
+	 * @see #setMinimization(int)
+	 */
+	public static final int MINIMIZE_BRZOZOWSKI = 1;
+	
+	/**
+	 * Minimize using Hopcroft's O(n log n) algorithm.
+	 * This is regarded as one of the most generally efficient algorithms that exist.
+	 * @see #setMinimization(int)
+	 */
+	public static final int MINIMIZE_HOPCROFT = 2;
+
+	/**
+	 * Minimize using Valmari's O(n + m log m) algorithm.
+	 * @see #setMinimization(int)
+	 */
+	public static final int MINIMIZE_VALMARI = 3;
+	
+	/** Selects minimization algorithm (default: &lt;code&gt;MINIMIZE_HOPCROFT&lt;/code&gt;). */
+<span class="fc" id="L106">	static int minimization = MINIMIZE_HOPCROFT;</span>
+	
+	/** Initial state of this automaton. */
+	State initial;
+	
+	/** If true, then this automaton is definitely deterministic 
+	 (i.e., there are no choices for any run, but a run may crash). */
+	boolean deterministic;
+	
+	/** Extra data associated with this automaton. */
+	transient Object info;
+	
+	/** Hash code. Recomputed by {@link #minimize()}. */
+	int hash_code;
+	
+	/** Singleton string. Null if not applicable. */
+	String singleton;
+	
+	/** Minimize always flag. */
+<span class="fc" id="L125">	static boolean minimize_always = false;</span>
+	
+	/** Selects whether operations may modify the input automata (default: &lt;code&gt;false&lt;/code&gt;). */
+<span class="fc" id="L128">	static boolean allow_mutation = false;</span>
+	
+	/** Caches the &lt;code&gt;isDebug&lt;/code&gt; state. */
+<span class="fc" id="L131">	static Boolean is_debug = null;</span>
+	
+	/** 
+	 * Constructs a new automaton that accepts the empty language.
+	 * Using this constructor, automata can be constructed manually from
+	 * {@link State} and {@link Transition} objects.
+	 * @see #setInitialState(State)
+	 * @see State
+	 * @see Transition
+	 */
+<span class="fc" id="L141">	public Automaton() {</span>
+<span class="fc" id="L142">		initial = new State();</span>
+<span class="fc" id="L143">		deterministic = true;</span>
+<span class="fc" id="L144">		singleton = null;</span>
+<span class="fc" id="L145">	}</span>
+	
+	boolean isDebug() {
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (is_debug == null)</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">			is_debug = System.getProperty(&quot;dk.brics.automaton.debug&quot;) != null;</span>
+<span class="fc" id="L150">		return is_debug;</span>
+	}
+	
+	/** 
+	 * Selects minimization algorithm (default: &lt;code&gt;MINIMIZE_HOPCROFT&lt;/code&gt;). 
+	 * @param algorithm minimization algorithm
+	 */
+	static public void setMinimization(int algorithm) {
+<span class="fc" id="L158">		minimization = algorithm;</span>
+<span class="fc" id="L159">	}</span>
+	
+	/**
+	 * Sets or resets minimize always flag.
+	 * If this flag is set, then {@link #minimize()} will automatically
+	 * be invoked after all operations that otherwise may produce non-minimal automata.
+	 * By default, the flag is not set.
+	 * @param flag if true, the flag is set
+	 */
+	static public void setMinimizeAlways(boolean flag) {
+<span class="nc" id="L169">		minimize_always = flag;</span>
+<span class="nc" id="L170">	}</span>
+	
+	/**
+	 * Sets or resets allow mutate flag.
+	 * If this flag is set, then all automata operations may modify automata given as input;
+	 * otherwise, operations will always leave input automata languages unmodified. 
+	 * By default, the flag is not set.
+	 * @param flag if true, the flag is set
+	 * @return previous value of the flag
+	 */
+	static public boolean setAllowMutate(boolean flag) {
+<span class="nc" id="L181">		boolean b = allow_mutation;</span>
+<span class="nc" id="L182">		allow_mutation = flag;</span>
+<span class="nc" id="L183">		return b;</span>
+	}
+	
+	/**
+	 * Returns the state of the allow mutate flag.
+	 * If this flag is set, then all automata operations may modify automata given as input;
+	 * otherwise, operations will always leave input automata languages unmodified. 
+	 * By default, the flag is not set.
+	 * @return current value of the flag
+	 */
+	static boolean getAllowMutate() {
+<span class="nc" id="L194">		return allow_mutation;</span>
+	}
+	
+	void checkMinimizeAlways() {
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (minimize_always)</span>
+<span class="nc" id="L199">			minimize();</span>
+<span class="fc" id="L200">	}</span>
+	
+	boolean isSingleton() {
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		return singleton!=null;</span>
+	}
+
+	/**
+	 * Returns the singleton string for this automaton.
+	 * An automaton that accepts exactly one string &lt;i&gt;may&lt;/i&gt; be represented
+	 * in singleton mode. In that case, this method may be used to obtain the string.
+	 * @return string, null if this automaton is not in singleton mode.
+	 */
+	public String getSingleton() {
+<span class="nc" id="L213">		return singleton;</span>
+	}
+	
+	/** 
+	 * Sets initial state. 
+	 * @param s state
+	 */
+	public void setInitialState(State s) {
+<span class="fc" id="L221">		initial = s;</span>
+<span class="fc" id="L222">		singleton = null;</span>
+<span class="fc" id="L223">	}</span>
+	
+	/** 
+	 * Gets initial state. 
+	 * @return state
+	 */
+	public State getInitialState() {
+<span class="fc" id="L230">		expandSingleton();</span>
+<span class="fc" id="L231">		return initial;</span>
+	}
+	
+	/**
+	 * Returns deterministic flag for this automaton.
+	 * @return true if the automaton is definitely deterministic, false if the automaton
+	 *         may be nondeterministic
+	 */
+	public boolean isDeterministic() {
+<span class="fc" id="L240">		return deterministic;</span>
+	}
+	
+	/**
+	 * Sets deterministic flag for this automaton.
+	 * This method should (only) be used if automata are constructed manually.
+	 * @param deterministic true if the automaton is definitely deterministic, false if the automaton
+	 *                      may be nondeterministic
+	 */
+	public void setDeterministic(boolean deterministic) {
+<span class="fc" id="L250">		this.deterministic = deterministic;</span>
+<span class="fc" id="L251">	}</span>
+	
+	/**
+	 * Associates extra information with this automaton. 
+	 * @param info extra information
+	 */
+	public void setInfo(Object info) {
+<span class="fc" id="L258">		this.info = info;</span>
+<span class="fc" id="L259">	}</span>
+	
+	/**
+	 * Returns extra information associated with this automaton. 
+	 * @return extra information
+	 * @see #setInfo(Object)
+	 */
+	public Object getInfo()	{
+<span class="nc" id="L267">		return info;</span>
+	}
+	
+	/** 
+	 * Returns the set of states that are reachable from the initial state.
+	 * @return set of {@link State} objects
+	 */
+	public Set&lt;State&gt; getStates() {
+<span class="fc" id="L275">		expandSingleton();</span>
+		Set&lt;State&gt; visited;
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">		if (isDebug())</span>
+<span class="nc" id="L278">			visited = new LinkedHashSet&lt;State&gt;();</span>
+		else
+<span class="fc" id="L280">			visited = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L281">		LinkedList&lt;State&gt; worklist = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L282">		worklist.add(initial);</span>
+<span class="fc" id="L283">		visited.add(initial);</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">		while (worklist.size() &gt; 0) {</span>
+<span class="fc" id="L285">			State s = worklist.removeFirst();</span>
+			Collection&lt;Transition&gt; tr;
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">			if (isDebug())</span>
+<span class="nc" id="L288">				tr = s.getSortedTransitions(false);</span>
+			else
+<span class="fc" id="L290">				tr = s.transitions;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">			for (Transition t : tr)</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">				if (!visited.contains(t.to)) {</span>
+<span class="fc" id="L293">					visited.add(t.to);</span>
+<span class="fc" id="L294">					worklist.add(t.to);</span>
+				}
+		}
+<span class="fc" id="L297">		return visited;</span>
+	}
+	
+	/** 
+	 * Returns the set of reachable accept states. 
+	 * @return set of {@link State} objects
+	 */
+	public Set&lt;State&gt; getAcceptStates() {
+<span class="fc" id="L305">		expandSingleton();</span>
+<span class="fc" id="L306">		HashSet&lt;State&gt; accepts = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L307">		HashSet&lt;State&gt; visited = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L308">		LinkedList&lt;State&gt; worklist = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L309">		worklist.add(initial);</span>
+<span class="fc" id="L310">		visited.add(initial);</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">		while (worklist.size() &gt; 0) {</span>
+<span class="fc" id="L312">			State s = worklist.removeFirst();</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">			if (s.accept)</span>
+<span class="fc" id="L314">				accepts.add(s);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">			for (Transition t : s.transitions)</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">				if (!visited.contains(t.to)) {</span>
+<span class="fc" id="L317">					visited.add(t.to);</span>
+<span class="fc" id="L318">					worklist.add(t.to);</span>
+				}
+		}
+<span class="fc" id="L321">		return accepts;</span>
+	}
+	
+	/** 
+	 * Assigns consecutive numbers to the given states. 
+	 */
+	static void setStateNumbers(Set&lt;State&gt; states) {
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">		if (states.size() == Integer.MAX_VALUE)</span>
+<span class="nc" id="L329">			throw new IllegalArgumentException(&quot;number of states exceeded Integer.MAX_VALUE&quot;);</span>
+<span class="fc" id="L330">		int number = 0;</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">		for (State s : states)</span>
+<span class="fc" id="L332">			s.number = number++;</span>
+<span class="fc" id="L333">	}</span>
+	
+	/** 
+	 * Adds transitions to explicit crash state to ensure that transition function is total. 
+	 */
+	void totalize() {
+<span class="fc" id="L339">		State s = new State();</span>
+<span class="fc" id="L340">		s.transitions.add(new Transition(Character.MIN_VALUE, Character.MAX_VALUE, s));</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">		for (State p : getStates()) {</span>
+<span class="fc" id="L342">			int maxi = Character.MIN_VALUE;</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">			for (Transition t : p.getSortedTransitions(false)) {</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">				if (t.min &gt; maxi)</span>
+<span class="fc" id="L345">					p.transitions.add(new Transition((char)maxi, (char)(t.min - 1), s));</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">				if (t.max + 1 &gt; maxi)</span>
+<span class="fc" id="L347">					maxi = t.max + 1;</span>
+			}
+<span class="fc bfc" id="L349" title="All 2 branches covered.">			if (maxi &lt;= Character.MAX_VALUE)</span>
+<span class="fc" id="L350">				p.transitions.add(new Transition((char)maxi, Character.MAX_VALUE, s));</span>
+		}
+<span class="fc" id="L352">	}</span>
+	
+	/**
+	 * Restores representation invariant.
+	 * This method must be invoked before any built-in automata operation is performed 
+	 * if automaton states or transitions are manipulated manually.
+	 * @see #setDeterministic(boolean)
+	 */
+	public void restoreInvariant() {
+<span class="fc" id="L361">		removeDeadTransitions();</span>
+<span class="fc" id="L362">	}</span>
+	
+	/** 
+	 * Reduces this automaton.
+	 * An automaton is &quot;reduced&quot; by combining overlapping and adjacent edge intervals with same destination. 
+	 */
+	public void reduce() {
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">		if (isSingleton())</span>
+<span class="nc" id="L370">			return;</span>
+<span class="fc" id="L371">		Set&lt;State&gt; states = getStates();</span>
+<span class="fc" id="L372">		setStateNumbers(states);</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">		for (State s : states) {</span>
+<span class="fc" id="L374">			List&lt;Transition&gt; st = s.getSortedTransitions(true);</span>
+<span class="fc" id="L375">			s.resetTransitions();</span>
+<span class="fc" id="L376">			State p = null;</span>
+<span class="fc" id="L377">			int min = -1, max = -1;</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">			for (Transition t : st) {</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">				if (p == t.to) {</span>
+<span class="fc bfc" id="L380" title="All 2 branches covered.">					if (t.min &lt;= max + 1) {</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">						if (t.max &gt; max)</span>
+<span class="fc" id="L382">							max = t.max;</span>
+<span class="fc" id="L383">					} else {</span>
+<span class="pc bpc" id="L384" title="1 of 2 branches missed.">						if (p != null)</span>
+<span class="fc" id="L385">							s.transitions.add(new Transition((char)min, (char)max, p));</span>
+<span class="fc" id="L386">						min = t.min;</span>
+<span class="fc" id="L387">						max = t.max;</span>
+					}
+<span class="fc" id="L389">				} else {</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">					if (p != null)</span>
+<span class="fc" id="L391">						s.transitions.add(new Transition((char)min, (char)max, p));</span>
+<span class="fc" id="L392">					p = t.to;</span>
+<span class="fc" id="L393">					min = t.min;</span>
+<span class="fc" id="L394">					max = t.max;</span>
+				}
+			}
+<span class="fc bfc" id="L397" title="All 2 branches covered.">			if (p != null)</span>
+<span class="fc" id="L398">				s.transitions.add(new Transition((char)min, (char)max, p));</span>
+		}
+<span class="fc" id="L400">		clearHashCode();</span>
+<span class="fc" id="L401">	}</span>
+	
+	/** 
+	 * Returns sorted array of all interval start points. 
+	 */
+	char[] getStartPoints() {
+<span class="fc" id="L407">		Set&lt;Character&gt; pointset = new HashSet&lt;Character&gt;();</span>
+<span class="fc" id="L408">		pointset.add(Character.MIN_VALUE);</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">		for (State s : getStates()) {</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">			for (Transition t : s.transitions) {</span>
+<span class="fc" id="L411">				pointset.add(t.min);</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">				if (t.max &lt; Character.MAX_VALUE)</span>
+<span class="fc" id="L413">					pointset.add((char)(t.max + 1));</span>
+			}
+		}
+<span class="fc" id="L416">		char[] points = new char[pointset.size()];</span>
+<span class="fc" id="L417">		int n = 0;</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">		for (Character m : pointset)</span>
+<span class="fc" id="L419">			points[n++] = m;</span>
+<span class="fc" id="L420">		Arrays.sort(points);</span>
+<span class="fc" id="L421">		return points;</span>
+	}
+	
+	/** 
+	 * Returns the set of live states. A state is &quot;live&quot; if an accept state is reachable from it. 
+	 * @return set of {@link State} objects
+	 */
+	public Set&lt;State&gt; getLiveStates() {
+<span class="fc" id="L429">		expandSingleton();</span>
+<span class="fc" id="L430">		return getLiveStates(getStates());</span>
+	}
+	
+	private Set&lt;State&gt; getLiveStates(Set&lt;State&gt; states) {
+<span class="fc" id="L434">		HashMap&lt;State, Set&lt;State&gt;&gt; map = new HashMap&lt;State, Set&lt;State&gt;&gt;();</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">		for (State s : states)</span>
+<span class="fc" id="L436">			map.put(s, new HashSet&lt;State&gt;());</span>
+<span class="fc bfc" id="L437" title="All 2 branches covered.">		for (State s : states)</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">			for (Transition t : s.transitions)</span>
+<span class="fc" id="L439">				map.get(t.to).add(s);</span>
+<span class="fc" id="L440">		Set&lt;State&gt; live = new HashSet&lt;State&gt;(getAcceptStates());</span>
+<span class="fc" id="L441">		LinkedList&lt;State&gt; worklist = new LinkedList&lt;State&gt;(live);</span>
+<span class="fc bfc" id="L442" title="All 2 branches covered.">		while (worklist.size() &gt; 0) {</span>
+<span class="fc" id="L443">			State s = worklist.removeFirst();</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">			for (State p : map.get(s))</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">				if (!live.contains(p)) {</span>
+<span class="fc" id="L446">					live.add(p);</span>
+<span class="fc" id="L447">					worklist.add(p);</span>
+				}
+		}
+<span class="fc" id="L450">		return live;</span>
+	}
+	
+	/** 
+	 * Removes transitions to dead states and calls {@link #reduce()} and {@link #clearHashCode()}.
+	 * (A state is &quot;dead&quot; if no accept state is reachable from it.)
+	 */
+	public void removeDeadTransitions() {
+<span class="fc" id="L458">		clearHashCode();</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">		if (isSingleton())</span>
+<span class="nc" id="L460">			return;</span>
+<span class="fc" id="L461">		Set&lt;State&gt; states = getStates();</span>
+<span class="fc" id="L462">		Set&lt;State&gt; live = getLiveStates(states);</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">		for (State s : states) {</span>
+<span class="fc" id="L464">			Set&lt;Transition&gt; st = s.transitions;</span>
+<span class="fc" id="L465">			s.resetTransitions();</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">			for (Transition t : st)</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">				if (live.contains(t.to))</span>
+<span class="fc" id="L468">					s.transitions.add(t);</span>
+		}
+<span class="fc" id="L470">		reduce();</span>
+<span class="fc" id="L471">	}</span>
+	
+	/** 
+	 * Returns a sorted array of transitions for each state (and sets state numbers). 
+	 */
+	static Transition[][] getSortedTransitions(Set&lt;State&gt; states) {
+<span class="fc" id="L477">		setStateNumbers(states);</span>
+<span class="fc" id="L478">		Transition[][] transitions = new Transition[states.size()][];</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">		for (State s : states)</span>
+<span class="fc" id="L480">			transitions[s.number] = s.getSortedTransitionArray(false);</span>
+<span class="fc" id="L481">		return transitions;</span>
+	}
+	
+	/** 
+	 * Expands singleton representation to normal representation.
+	 * Does nothing if not in singleton representation. 
+	 */
+	public void expandSingleton() {
+<span class="fc bfc" id="L489" title="All 2 branches covered.">		if (isSingleton()) {</span>
+<span class="fc" id="L490">			State p = new State();</span>
+<span class="fc" id="L491">			initial = p;</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">			for (int i = 0; i &lt; singleton.length(); i++) {</span>
+<span class="fc" id="L493">				State q = new State();</span>
+<span class="fc" id="L494">				q.number = i;</span>
+<span class="fc" id="L495">				p.transitions.add(new Transition(singleton.charAt(i), q));</span>
+<span class="fc" id="L496">				p = q;</span>
+			}
+<span class="fc" id="L498">			p.accept = true;</span>
+<span class="fc" id="L499">			deterministic = true;</span>
+<span class="fc" id="L500">			singleton = null;</span>
+		}
+<span class="fc" id="L502">	}</span>
+	
+	/**
+	 * Returns the number of states in this automaton.
+	 */
+	public int getNumberOfStates() {
+<span class="fc bfc" id="L508" title="All 2 branches covered.">		if (isSingleton())</span>
+<span class="fc" id="L509">			return singleton.length() + 1;</span>
+<span class="fc" id="L510">		return getStates().size();</span>
+	}
+	
+	/**
+	 * Returns the number of transitions in this automaton. This number is counted
+	 * as the total number of edges, where one edge may be a character interval.
+	 */
+	public int getNumberOfTransitions() {
+<span class="fc bfc" id="L518" title="All 2 branches covered.">		if (isSingleton())</span>
+<span class="fc" id="L519">			return singleton.length();</span>
+<span class="fc" id="L520">		int c = 0;</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">		for (State s : getStates())</span>
+<span class="fc" id="L522">			c += s.transitions.size();</span>
+<span class="fc" id="L523">		return c;</span>
+	}
+	
+	/**
+	 * Returns true if the language of this automaton is equal to the language
+	 * of the given automaton. Implemented using &lt;code&gt;hashCode&lt;/code&gt; and
+	 * &lt;code&gt;subsetOf&lt;/code&gt;.
+	 */
+	@Override
+	public boolean equals(Object obj) {
+<span class="pc bpc" id="L533" title="1 of 2 branches missed.">		if (obj == this)</span>
+<span class="nc" id="L534">			return true;</span>
+<span class="pc bpc" id="L535" title="1 of 2 branches missed.">		if (!(obj instanceof Automaton))</span>
+<span class="nc" id="L536">			return false;</span>
+<span class="fc" id="L537">		Automaton a = (Automaton)obj;</span>
+<span class="pc bpc" id="L538" title="1 of 4 branches missed.">		if (isSingleton() &amp;&amp; a.isSingleton())</span>
+<span class="fc" id="L539">			return singleton.equals(a.singleton);</span>
+<span class="pc bpc" id="L540" title="3 of 6 branches missed.">		return hashCode() == a.hashCode() &amp;&amp; subsetOf(a) &amp;&amp; a.subsetOf(this);</span>
+	}
+	
+	/**
+	 * Returns hash code for this automaton. The hash code is based on the
+	 * number of states and transitions in the minimized automaton.
+	 * Invoking this method may involve minimizing the automaton.
+	 */
+	@Override
+	public int hashCode() {
+<span class="fc bfc" id="L550" title="All 2 branches covered.">		if (hash_code == 0)</span>
+<span class="pc" id="L551">			minimize();</span>
+<span class="fc" id="L552">		return hash_code;</span>
+	}
+	
+	/**
+	 * Recomputes the hash code.
+	 * The automaton must be minimal when this operation is performed.
+	 */
+	void recomputeHashCode() {
+<span class="fc" id="L560">		hash_code = getNumberOfStates() * 3 + getNumberOfTransitions() * 2;</span>
+<span class="pc bpc" id="L561" title="1 of 2 branches missed.">		if (hash_code == 0)</span>
+<span class="nc" id="L562">			hash_code = 1;</span>
+<span class="fc" id="L563">	}</span>
+	
+	/**
+	 * Must be invoked when the stored hash code may no longer be valid.
+	 */
+	void clearHashCode() {
+<span class="fc" id="L569">		hash_code = 0;</span>
+<span class="fc" id="L570">	}</span>
+	
+	/**
+	 * Returns a string representation of this automaton.
+	 */
+	@Override
+	public String toString() {
+<span class="nc" id="L577">		StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L578" title="All 2 branches missed.">		if (isSingleton()) {</span>
+<span class="nc" id="L579">			b.append(&quot;singleton: &quot;);</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">			for (char c : singleton.toCharArray())</span>
+<span class="nc" id="L581">				Transition.appendCharString(c, b);</span>
+<span class="nc" id="L582">			b.append(&quot;\n&quot;);</span>
+<span class="nc" id="L583">		} else {</span>
+<span class="nc" id="L584">			Set&lt;State&gt; states = getStates();</span>
+<span class="nc" id="L585">			setStateNumbers(states);</span>
+<span class="nc" id="L586">			b.append(&quot;initial state: &quot;).append(initial.number).append(&quot;\n&quot;);</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">			for (State s : states)</span>
+<span class="nc" id="L588">				b.append(s.toString());</span>
+		}
+<span class="nc" id="L590">		return b.toString();</span>
+	}
+
+	/**
+	 * Returns &lt;a href=&quot;http://www.research.att.com/sw/tools/graphviz/&quot; target=&quot;_top&quot;&gt;Graphviz Dot&lt;/a&gt; 
+	 * representation of this automaton.
+	 */
+	public String toDot() {
+<span class="nc" id="L598">		StringBuilder b = new StringBuilder(&quot;digraph Automaton {\n&quot;);</span>
+<span class="nc" id="L599">		b.append(&quot;  rankdir = LR;\n&quot;);</span>
+<span class="nc" id="L600">		Set&lt;State&gt; states = getStates();</span>
+<span class="nc" id="L601">		setStateNumbers(states);</span>
+<span class="nc bnc" id="L602" title="All 2 branches missed.">		for (State s : states) {</span>
+<span class="nc" id="L603">			b.append(&quot;  &quot;).append(s.number);</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">			if (s.accept)</span>
+<span class="nc" id="L605">				b.append(&quot; [shape=doublecircle,label=\&quot;\&quot;];\n&quot;);</span>
+			else
+<span class="nc" id="L607">				b.append(&quot; [shape=circle,label=\&quot;\&quot;];\n&quot;);</span>
+<span class="nc bnc" id="L608" title="All 2 branches missed.">			if (s == initial) {</span>
+<span class="nc" id="L609">				b.append(&quot;  initial [shape=plaintext,label=\&quot;\&quot;];\n&quot;);</span>
+<span class="nc" id="L610">				b.append(&quot;  initial -&gt; &quot;).append(s.number).append(&quot;\n&quot;);</span>
+			}
+<span class="nc bnc" id="L612" title="All 2 branches missed.">			for (Transition t : s.transitions) {</span>
+<span class="nc" id="L613">				b.append(&quot;  &quot;).append(s.number);</span>
+<span class="nc" id="L614">				t.appendDot(b);</span>
+			}
+		}
+<span class="nc" id="L617">		return b.append(&quot;}\n&quot;).toString();</span>
+	}
+	
+	/**
+	 * Returns a clone of this automaton, expands if singleton.
+	 */
+	Automaton cloneExpanded() {
+<span class="fc" id="L624">		Automaton a = clone();</span>
+<span class="fc" id="L625">		a.expandSingleton();</span>
+<span class="fc" id="L626">		return a;</span>
+	}
+
+	/**
+	 * Returns a clone of this automaton unless &lt;code&gt;allow_mutation&lt;/code&gt; is set, expands if singleton.
+	 */
+	Automaton cloneExpandedIfRequired() {
+<span class="pc bpc" id="L633" title="1 of 2 branches missed.">		if (allow_mutation) {</span>
+<span class="nc" id="L634">			expandSingleton();</span>
+<span class="nc" id="L635">			return this;</span>
+		} else
+<span class="fc" id="L637">			return cloneExpanded();</span>
+	}
+
+	/**
+	 * Returns a clone of this automaton.
+	 */
+	@Override
+	public Automaton clone() {
+		try {
+<span class="fc" id="L646">			Automaton a = (Automaton)super.clone();</span>
+<span class="fc bfc" id="L647" title="All 2 branches covered.">			if (!isSingleton()) {</span>
+<span class="fc" id="L648">				HashMap&lt;State, State&gt; m = new HashMap&lt;State, State&gt;();</span>
+<span class="fc" id="L649">				Set&lt;State&gt; states = getStates();</span>
+<span class="fc bfc" id="L650" title="All 2 branches covered.">				for (State s : states)</span>
+<span class="fc" id="L651">					m.put(s, new State());</span>
+<span class="fc bfc" id="L652" title="All 2 branches covered.">				for (State s : states) {</span>
+<span class="fc" id="L653">					State p = m.get(s);</span>
+<span class="fc" id="L654">					p.accept = s.accept;</span>
+<span class="fc bfc" id="L655" title="All 2 branches covered.">					if (s == initial)</span>
+<span class="fc" id="L656">						a.initial = p;</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">					for (Transition t : s.transitions)</span>
+<span class="fc" id="L658">						p.transitions.add(new Transition(t.min, t.max, m.get(t.to)));</span>
+				}
+			}
+<span class="fc" id="L661">			return a;</span>
+<span class="nc" id="L662">		} catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L663">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	/**
+	 * Returns a clone of this automaton, or this automaton itself if &lt;code&gt;allow_mutation&lt;/code&gt; flag is set. 
+	 */
+	Automaton cloneIfRequired() {
+<span class="nc bnc" id="L671" title="All 2 branches missed.">		if (allow_mutation)</span>
+<span class="nc" id="L672">			return this;</span>
+		else
+<span class="nc" id="L674">			return clone();</span>
+	}
+	
+	/** 
+	 * Retrieves a serialized &lt;code&gt;Automaton&lt;/code&gt; located by a URL.
+	 * @param url URL of serialized automaton
+	 * @exception IOException if input/output related exception occurs
+	 * @exception ClassCastException if the data is not a serialized &lt;code&gt;Automaton&lt;/code&gt;
+	 * @exception ClassNotFoundException if the class of the serialized object cannot be found
+	 */
+	public static Automaton load(URL url) throws IOException, ClassCastException, ClassNotFoundException {
+<span class="nc" id="L685">		return load(url.openStream());</span>
+	}
+	
+	/**
+	 * Retrieves a serialized &lt;code&gt;Automaton&lt;/code&gt; from a stream.
+	 * @param stream input stream with serialized automaton
+	 * @exception IOException if input/output related exception occurs
+	 * @exception ClassCastException if the data is not a serialized &lt;code&gt;Automaton&lt;/code&gt;
+	 * @exception ClassNotFoundException if the class of the serialized object cannot be found
+	 */
+	public static Automaton load(InputStream stream) throws IOException, ClassCastException, ClassNotFoundException {
+<span class="fc" id="L696">		ObjectInputStream s = new ObjectInputStream(stream);</span>
+<span class="fc" id="L697">		return (Automaton)s.readObject();</span>
+	}
+	
+	/**
+	 * Writes this &lt;code&gt;Automaton&lt;/code&gt; to the given stream.
+	 * @param stream output stream for serialized automaton
+	 * @exception IOException if input/output related exception occurs
+	 */
+	public void store(OutputStream stream) throws IOException {
+<span class="fc" id="L706">		ObjectOutputStream s = new ObjectOutputStream(stream);</span>
+<span class="fc" id="L707">		s.writeObject(this);</span>
+<span class="fc" id="L708">		s.flush();</span>
+<span class="fc" id="L709">	}</span>
+
+	/** 
+	 * See {@link BasicAutomata#makeEmpty()}.
+	 */
+	public static Automaton makeEmpty()	{
+<span class="fc" id="L715">		return BasicAutomata.makeEmpty();</span>
+	}
+
+	/** 
+	 * See {@link BasicAutomata#makeEmptyString()}.
+	 */
+	public static Automaton makeEmptyString() {
+<span class="fc" id="L722">		return BasicAutomata.makeEmptyString();</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeAnyString()}.
+	 */
+	public static Automaton makeAnyString()	{
+<span class="fc" id="L729">		return BasicAutomata.makeAnyString();</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeAnyChar()}.
+	 */
+	public static Automaton makeAnyChar() {
+<span class="fc" id="L736">		return BasicAutomata.makeAnyChar();</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeChar(char)}.
+	 */
+	public static Automaton makeChar(char c) {
+<span class="fc" id="L743">		return BasicAutomata.makeChar(c);</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeCharRange(char, char)}.
+	 */
+	public static Automaton makeCharRange(char min, char max) {
+<span class="fc" id="L750">		return BasicAutomata.makeCharRange(min, max);</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeCharSet(String)}.
+	 */
+	public static Automaton makeCharSet(String set) {
+<span class="nc" id="L757">		return BasicAutomata.makeCharSet(set);</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeInterval(int, int, int)}.
+	 */
+	public static Automaton makeInterval(int min, int max, int digits) throws IllegalArgumentException {
+<span class="nc" id="L764">		return BasicAutomata.makeInterval(min, max, digits);</span>
+	}
+	
+	/** 
+	 * See {@link BasicAutomata#makeString(String)}.
+	 */
+	public static Automaton makeString(String s) {
+<span class="fc" id="L771">		return BasicAutomata.makeString(s);</span>
+	}
+	
+    /** 
+     * See {@link BasicAutomata#makeStringUnion(CharSequence...)}.
+     */
+    public static Automaton makeStringUnion(CharSequence... strings) {
+<span class="nc" id="L778">        return BasicAutomata.makeStringUnion(strings);</span>
+    }
+
+	/**
+	 * See {@link BasicAutomata#makeMaxInteger(String)}.
+	 */
+	public static Automaton makeMaxInteger(String n) {
+<span class="nc" id="L785">		return BasicAutomata.makeMaxInteger(n);</span>
+	}
+	
+	/**
+	 * See {@link BasicAutomata#makeMinInteger(String)}.
+	 */
+	public static Automaton makeMinInteger(String n) {
+<span class="nc" id="L792">		return BasicAutomata.makeMinInteger(n);</span>
+	}
+
+	/**
+	 * See {@link BasicAutomata#makeTotalDigits(int)}.
+	 */
+	public static Automaton makeTotalDigits(int i) {
+<span class="nc" id="L799">		return BasicAutomata.makeTotalDigits(i);</span>
+	}
+
+	/**
+	 * See {@link BasicAutomata#makeFractionDigits(int)}.
+	 */
+	public static Automaton makeFractionDigits(int i) {
+<span class="nc" id="L806">		return BasicAutomata.makeFractionDigits(i);</span>
+	}
+	
+	/**
+	 * See {@link BasicAutomata#makeIntegerValue(String)}.
+	 */
+	public static Automaton makeIntegerValue(String value) {
+<span class="nc" id="L813">		return BasicAutomata.makeIntegerValue(value);</span>
+	}
+	
+	/**
+	 * See {@link BasicAutomata#makeDecimalValue(String)}.
+	 */
+	public static Automaton makeDecimalValue(String value) {
+<span class="nc" id="L820">		return BasicAutomata.makeDecimalValue(value);</span>
+	}
+	
+	/**
+	 * See {@link BasicAutomata#makeStringMatcher(String)}.
+	 */
+	public static Automaton makeStringMatcher(String s) {
+<span class="nc" id="L827">		return BasicAutomata.makeStringMatcher(s);</span>
+	}
+	
+	/** 
+	 * See {@link BasicOperations#concatenate(Automaton, Automaton)}.
+	 */
+	public Automaton concatenate(Automaton a) {
+<span class="fc" id="L834">		return BasicOperations.concatenate(this, a);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#concatenate(List)}.
+	 */
+	static public Automaton concatenate(List&lt;Automaton&gt; l) {
+<span class="nc" id="L841">		return BasicOperations.concatenate(l);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#optional(Automaton)}.
+	 */
+	public Automaton optional() {
+<span class="fc" id="L848">		return BasicOperations.optional(this);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#repeat(Automaton)}.
+	 */
+	public Automaton repeat() {
+<span class="nc" id="L855">		return BasicOperations.repeat(this);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#repeat(Automaton, int)}.
+	 */
+	public Automaton repeat(int min) {
+<span class="fc" id="L862">		return BasicOperations.repeat(this, min);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#repeat(Automaton, int, int)}.
+	 */
+	public Automaton repeat(int min, int max) {
+<span class="fc" id="L869">		return BasicOperations.repeat(this, min, max);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#complement(Automaton)}.
+	 */
+	public Automaton complement() {
+<span class="fc" id="L876">		return BasicOperations.complement(this);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#minus(Automaton, Automaton)}.
+	 */
+	public Automaton minus(Automaton a) {
+<span class="fc" id="L883">		return BasicOperations.minus(this, a);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#intersection(Automaton, Automaton)}.
+	 */
+	public Automaton intersection(Automaton a) {
+<span class="fc" id="L890">		return BasicOperations.intersection(this, a);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#subsetOf(Automaton, Automaton)}.
+	 */
+	public boolean subsetOf(Automaton a) {
+<span class="fc" id="L897">		return BasicOperations.subsetOf(this, a);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#union(Automaton, Automaton)}.
+	 */
+	public Automaton union(Automaton a) {
+<span class="fc" id="L904">		return BasicOperations.union(this, a);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#union(Collection)}.
+	 */
+	static public Automaton union(Collection&lt;Automaton&gt; l) {
+<span class="nc" id="L911">		return BasicOperations.union(l);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#determinize(Automaton)}.
+	 */
+	public void determinize() {
+<span class="fc" id="L918">		BasicOperations.determinize(this);</span>
+<span class="fc" id="L919">	}</span>
+
+	/** 
+	 * See {@link BasicOperations#addEpsilons(Automaton, Collection)}.
+	 */
+	public void addEpsilons(Collection&lt;StatePair&gt; pairs) {
+<span class="fc" id="L925">		BasicOperations.addEpsilons(this, pairs);</span>
+<span class="fc" id="L926">	}</span>
+	
+	/**
+	 * See {@link BasicOperations#isEmptyString(Automaton)}.
+	 */
+	public boolean isEmptyString() {
+<span class="fc" id="L932">		return BasicOperations.isEmptyString(this);</span>
+	}
+
+	/**
+	 * See {@link BasicOperations#isEmpty(Automaton)}.
+	 */
+	public boolean isEmpty() {
+<span class="fc" id="L939">		return BasicOperations.isEmpty(this);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#isTotal(Automaton)}.
+	 */
+	public boolean isTotal() {
+<span class="nc" id="L946">		return BasicOperations.isTotal(this);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#getShortestExample(Automaton, boolean)}.
+	 */
+	public String getShortestExample(boolean accepted) {
+<span class="fc" id="L953">		return BasicOperations.getShortestExample(this, accepted);</span>
+	}
+	
+	/**
+	 * See {@link BasicOperations#run(Automaton, String)}.
+	 */
+	public boolean run(String s) {
+<span class="fc" id="L960">		return BasicOperations.run(this, s);</span>
+	}
+	
+	/**
+	 * See {@link MinimizationOperations#minimize(Automaton)}.
+	 */
+	public void minimize() {
+<span class="fc" id="L967">		MinimizationOperations.minimize(this);</span>
+<span class="fc" id="L968">	}</span>
+	
+	/**
+	 * See {@link MinimizationOperations#minimize(Automaton)}.
+	 * Returns the automaton being given as argument.
+	 */
+	public static Automaton minimize(Automaton a) {
+<span class="nc" id="L975">		a.minimize();</span>
+<span class="nc" id="L976">		return a;</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#overlap(Automaton, Automaton)}.
+	 */
+	public Automaton overlap(Automaton a) {
+<span class="nc" id="L983">		return SpecialOperations.overlap(this, a);</span>
+	}
+	
+	/** 
+	 * See {@link SpecialOperations#singleChars(Automaton)}.
+	 */
+	public Automaton singleChars() {
+<span class="fc" id="L990">		return SpecialOperations.singleChars(this);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#trim(Automaton, String, char)}.
+	 */
+	public Automaton trim(String set, char c) {
+<span class="nc" id="L997">		return SpecialOperations.trim(this, set, c);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#compress(Automaton, String, char)}.
+	 */
+	public Automaton compress(String set, char c) {
+<span class="nc" id="L1004">		return SpecialOperations.compress(this, set, c);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#subst(Automaton, Map)}.
+	 */
+	public Automaton subst(Map&lt;Character,Set&lt;Character&gt;&gt; map) {
+<span class="nc" id="L1011">		return SpecialOperations.subst(this, map);</span>
+	}
+
+	/**
+	 * See {@link SpecialOperations#subst(Automaton, char, String)}.
+	 */
+	public Automaton subst(char c, String s) {
+<span class="nc" id="L1018">		return SpecialOperations.subst(this, c, s);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#homomorph(Automaton, char[], char[])}.
+	 */
+	public Automaton homomorph(char[] source, char[] dest) {
+<span class="nc" id="L1025">		return SpecialOperations.homomorph(this, source, dest);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#projectChars(Automaton, Set)}.
+	 */
+	public Automaton projectChars(Set&lt;Character&gt; chars) {
+<span class="nc" id="L1032">		return SpecialOperations.projectChars(this, chars);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#isFinite(Automaton)}.
+	 */
+	public boolean isFinite() {
+<span class="fc" id="L1039">		return SpecialOperations.isFinite(this);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#getStrings(Automaton, int)}.
+	 */
+	public Set&lt;String&gt; getStrings(int length) {
+<span class="nc" id="L1046">		return SpecialOperations.getStrings(this, length);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#getFiniteStrings(Automaton)}.
+	 */
+	public Set&lt;String&gt; getFiniteStrings() {
+<span class="nc" id="L1053">		return SpecialOperations.getFiniteStrings(this);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#getFiniteStrings(Automaton, int)}.
+	 */
+	public Set&lt;String&gt; getFiniteStrings(int limit) {
+<span class="fc" id="L1060">		return SpecialOperations.getFiniteStrings(this, limit);</span>
+	}
+
+	/**
+	 * See {@link SpecialOperations#getCommonPrefix(Automaton)}.
+	 */
+	public String getCommonPrefix() {
+<span class="nc" id="L1067">		return SpecialOperations.getCommonPrefix(this);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#prefixClose(Automaton)}.
+	 */
+	public void prefixClose() {
+<span class="nc" id="L1074">		SpecialOperations.prefixClose(this);</span>
+<span class="nc" id="L1075">	}</span>
+
+	/**
+	 * See {@link SpecialOperations#hexCases(Automaton)}.
+	 */
+	public static Automaton hexCases(Automaton a) {
+<span class="nc" id="L1081">		return SpecialOperations.hexCases(a);</span>
+	}
+	
+	/**
+	 * See {@link SpecialOperations#replaceWhitespace(Automaton)}.
+	 */
+	public static Automaton replaceWhitespace(Automaton a) {
+<span class="nc" id="L1088">		return SpecialOperations.replaceWhitespace(a);</span>
+	}
+	
+	/**
+	 * See {@link ShuffleOperations#shuffleSubsetOf(Collection, Automaton, Character, Character)}.
+	 */ 
+	public static String shuffleSubsetOf(Collection&lt;Automaton&gt; ca, Automaton a, Character suspend_shuffle, Character resume_shuffle) {
+<span class="nc" id="L1095">		return ShuffleOperations.shuffleSubsetOf(ca, a, suspend_shuffle, resume_shuffle);</span>
+	}
+
+	/** 
+	 * See {@link ShuffleOperations#shuffle(Automaton, Automaton)}.
+	 */
+	public Automaton shuffle(Automaton a) {
+<span class="nc" id="L1102">		return ShuffleOperations.shuffle(this, a);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

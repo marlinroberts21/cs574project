@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StatementTranslatorFacadeImpl.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">StatementTranslatorFacadeImpl.java</span></div><h1>StatementTranslatorFacadeImpl.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import soot.Local;
+import soot.SootClass;
+import soot.SootField;
+import soot.SootMethod;
+import soot.Type;
+import soot.ValueBox;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.ParameterRef;
+import soot.jimple.Stmt;
+import soot.jimple.toolkits.annotation.nullcheck.NullnessAnalysis;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.intermediate.Field;
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.intermediate.VariableType;
+import dk.brics.string.util.Pair;
+
+/**
+ * Acts as the middle-man between {@link MethodTranslator} and {@link StatementTranslatorImpl}.
+ * &lt;p/&gt;
+ * {@link StatementTranslatorImpl} requires a large facade implementation to use ({@link IntermediateFactory}),
+ * and the method translator wants a simple-to-use statement translator.
+ * This class satisfies both by acting as a facade pattern in both directions.
+ */
+public class StatementTranslatorFacadeImpl implements IntermediateFactory, StatementTranslatorFacade {
+	
+	private StatementTranslator methodBodyTranslator;
+	private SootMethod sootMethod;
+	
+<span class="nc" id="L37">	private List&lt;HotspotValueBoxPair&gt; currentHotspots = new LinkedList&lt;HotspotValueBoxPair&gt;();</span>
+	
+	/** Holds all the statements added in the current translation */
+<span class="nc" id="L40">	private List&lt;Statement&gt; currentStatements = new LinkedList&lt;Statement&gt;();</span>
+	
+	private VariableManager variableManager;
+	private TranslationContext jt;
+	private Stmt sootStatement;
+	
+	private NullnessAnalysis nullAnalysis;
+	private ControlFlowBuilder cfgBuilder;
+	private Method intermediateMethod;
+	
+<span class="nc" id="L50">	public StatementTranslatorFacadeImpl(StatementTranslator translator) {</span>
+<span class="nc" id="L51">		this.methodBodyTranslator = translator;</span>
+<span class="nc" id="L52">	}</span>
+    
+	public TranslatedStatement translateStatement(Stmt stmt, SootMethod sootMethod,
+			NullnessAnalysis nullAnalysis, TranslationContext jt) {
+<span class="nc" id="L56">		this.jt = jt;</span>
+<span class="nc" id="L57">		this.sootStatement = stmt;</span>
+<span class="nc" id="L58">		this.sootMethod = sootMethod;</span>
+<span class="nc" id="L59">        this.intermediateMethod = jt.getMethod(sootMethod);</span>
+<span class="nc" id="L60">		this.nullAnalysis = nullAnalysis;</span>
+<span class="nc" id="L61">		this.variableManager = jt.getVariableManager();</span>
+<span class="nc" id="L62">		this.cfgBuilder = new ControlFlowBuilder(intermediateMethod);</span>
+<span class="nc" id="L63">		currentHotspots.clear();</span>
+<span class="nc" id="L64">		currentStatements.clear();</span>
+		
+<span class="nc" id="L66">		methodBodyTranslator.translateStatement(stmt, this);</span>
+		
+<span class="nc" id="L68">		Pair&lt;Statement, Statement&gt; pair = cfgBuilder.finish();</span>
+		
+		// prepare the result
+<span class="nc" id="L71">		TranslatedStatement translated = new TranslatedStatement(pair.getFirst(), pair.getSecond());</span>
+		
+		// add the hotspots we found
+<span class="nc" id="L74">		translated.getHotspots().addAll(currentHotspots);</span>
+		
+		// add all the statements in a list
+<span class="nc" id="L77">		translated.getStatements().addAll(currentStatements);</span>
+		
+<span class="nc" id="L79">		return translated;</span>
+	}
+
+    public void addHotspot(Variable var, ValueBox box) {
+<span class="nc" id="L83">        Variable hotspotValue = createVariable(var.getType());</span>
+<span class="nc" id="L84">        Hotspot hot = new Hotspot(hotspotValue, var);</span>
+<span class="nc" id="L85">        currentHotspots.add(new HotspotValueBoxPair(hot, box));</span>
+<span class="nc" id="L86">        addStatement(hot);</span>
+<span class="nc" id="L87">    }</span>
+    
+	public void startBranch() {
+<span class="nc" id="L90">		cfgBuilder.startBranch();</span>
+<span class="nc" id="L91">	}</span>
+	public void useBranch() {
+<span class="nc" id="L93">    	cfgBuilder.useBranch();</span>
+<span class="nc" id="L94">	}</span>
+	public void endBranch() {
+<span class="nc" id="L96">    	cfgBuilder.endBranch();</span>
+<span class="nc" id="L97">	}</span>
+	public void addStatement(Statement s) {
+<span class="nc" id="L99">        cfgBuilder.addStatement(s);</span>
+<span class="nc" id="L100">        currentStatements.add(s);</span>
+<span class="nc" id="L101">	}</span>
+	public Variable getLocal(Local local) {
+<span class="nc" id="L103">		return variableManager.getLocal(local);</span>
+	}
+	public Variable createVariable(VariableType type) {
+<span class="nc" id="L106">		return variableManager.createVariable(type);</span>
+	}
+	public Variable getNothing() {
+<span class="nc" id="L109">		return variableManager.getNothing();</span>
+	}
+	public Field getField(SootField field) {
+<span class="nc" id="L112">		return variableManager.getField(field);</span>
+	}
+	
+	public Method getMethod(SootMethod method) {
+<span class="nc" id="L116">		return jt.getMethod(method);</span>
+	}
+	public Variable getParameter(ParameterRef ref) {
+<span class="nc" id="L119">		return jt.getParameter(sootMethod, ref);</span>
+	}
+	public List&lt;SootMethod&gt; getTargetsOf(InstanceInvokeExpr expr) {
+<span class="nc" id="L122">		return jt.getTargetsOf(expr);</span>
+	}
+	public Method getToStringMethod(SootClass c) {
+<span class="nc" id="L125">		return jt.getToStringMethod(c);</span>
+	}
+	public boolean isHotspot(ValueBox expr) {
+<span class="nc" id="L128">		return jt.isHotspot(expr);</span>
+	}
+	public boolean canBeNull(Local local) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		return !nullAnalysis.isAlwaysNonNullBefore(sootStatement, local);</span>
+	}
+	public void setExpressionVariable(ValueBox value, Variable variable) {
+<span class="nc" id="L134">	    jt.setExpressionVariable(value.getValue(), variable);</span>
+<span class="nc" id="L135">	}</span>
+    public Automaton getFieldType(SootField field) {
+<span class="nc" id="L137">        return jt.getFieldType(field);</span>
+    }
+    public Automaton getMethodReturnType(SootMethod method) {
+<span class="nc" id="L140">        return jt.getMethodReturnType(method);</span>
+    }
+    public Automaton getParameterType(ParameterRef ref) {
+<span class="nc" id="L143">        return jt.getParameterType(sootMethod, ref.getIndex());</span>
+    }
+    public boolean isSubtypeOf(SootClass a, SootClass b) {
+<span class="nc" id="L146">    	return jt.isSubtypeOf(a,b);</span>
+    }
+    public VariableType fromSootType(Type type) {
+<span class="nc" id="L149">    	return jt.fromSootType(type);</span>
+    }
+	
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

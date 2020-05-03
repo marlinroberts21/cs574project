@@ -1,0 +1,806 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StatementTranslatorImpl.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">StatementTranslatorImpl.java</span></div><h1>StatementTranslatorImpl.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import soot.ArrayType;
+import soot.Local;
+import soot.RefType;
+import soot.SootMethod;
+import soot.Type;
+import soot.Value;
+import soot.ValueBox;
+import soot.jimple.ArrayRef;
+import soot.jimple.AssignStmt;
+import soot.jimple.BreakpointStmt;
+import soot.jimple.CastExpr;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.EnterMonitorStmt;
+import soot.jimple.EqExpr;
+import soot.jimple.ExitMonitorStmt;
+import soot.jimple.FieldRef;
+import soot.jimple.GotoStmt;
+import soot.jimple.IdentityStmt;
+import soot.jimple.IfStmt;
+import soot.jimple.InstanceFieldRef;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.IntConstant;
+import soot.jimple.InterfaceInvokeExpr;
+import soot.jimple.InvokeExpr;
+import soot.jimple.InvokeStmt;
+import soot.jimple.LookupSwitchStmt;
+import soot.jimple.NeExpr;
+import soot.jimple.NewArrayExpr;
+import soot.jimple.NewExpr;
+import soot.jimple.NewMultiArrayExpr;
+import soot.jimple.NopStmt;
+import soot.jimple.NullConstant;
+import soot.jimple.ParameterRef;
+import soot.jimple.RetStmt;
+import soot.jimple.ReturnStmt;
+import soot.jimple.ReturnVoidStmt;
+import soot.jimple.SpecialInvokeExpr;
+import soot.jimple.StaticFieldRef;
+import soot.jimple.StaticInvokeExpr;
+import soot.jimple.Stmt;
+import soot.jimple.StmtSwitch;
+import soot.jimple.StringConstant;
+import soot.jimple.TableSwitchStmt;
+import soot.jimple.ThrowStmt;
+import soot.jimple.VirtualInvokeExpr;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.intermediate.ArrayAddAll;
+import dk.brics.string.intermediate.ArrayAssignment;
+import dk.brics.string.intermediate.ArrayCorrupt;
+import dk.brics.string.intermediate.ArrayFromArray;
+import dk.brics.string.intermediate.ArrayNew;
+import dk.brics.string.intermediate.ArrayWriteArray;
+import dk.brics.string.intermediate.ArrayWriteElement;
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.ObjectAssignment;
+import dk.brics.string.intermediate.ObjectCorrupt;
+import dk.brics.string.intermediate.PrimitiveAssignment;
+import dk.brics.string.intermediate.PrimitiveFromArray;
+import dk.brics.string.intermediate.PrimitiveInit;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.StringAssignment;
+import dk.brics.string.intermediate.StringBufferAssignment;
+import dk.brics.string.intermediate.StringBufferCorrupt;
+import dk.brics.string.intermediate.StringBufferInit;
+import dk.brics.string.intermediate.StringFromArray;
+import dk.brics.string.intermediate.StringInit;
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.intermediate.VariableType;
+import dk.brics.string.stringoperations.Basic;
+
+/**
+ * Translates Jimple-expressions and -statements into {@link Statement}s in intermediate form.
+ * &lt;p/&gt;
+ * This interface requires an implementation of the {@link IntermediateFactory} facade,
+ * which is currently provided by the {@link StatementTranslatorFacadeImpl}.
+ * &lt;p/&gt;
+ * Note that this class is also responsible for creating {@link Hotspot} statements for each
+ * &lt;tt&gt;ValueBox&lt;/tt&gt; marked as a hotspot. {@link IntermediateFactory#isHotspot} defines what
+ * is a hotspot.
+ */
+<span class="nc bnc" id="L87" title="All 2 branches missed.">public class StatementTranslatorImpl extends ExprAnswerVisitor&lt;ValueBox, Variable&gt; implements StmtSwitch, StatementTranslator {</span>
+	
+	private IntermediateFactory factory;
+	private MethodCallTranslator methodCallTranslator;
+	private FieldReferenceTranslator fieldReferenceTranslator;
+
+<span class="nc" id="L93">	public StatementTranslatorImpl(MethodCallTranslator methodCalls, FieldReferenceTranslator fields) {</span>
+<span class="nc" id="L94">		this.methodCallTranslator = methodCalls;</span>
+<span class="nc" id="L95">		this.fieldReferenceTranslator = fields;</span>
+<span class="nc" id="L96">	}</span>
+	
+	private Variable makeVariable(VariableType type) {
+<span class="nc" id="L99">		return factory.createVariable(type);</span>
+	}
+	private void addStatement(Statement stm) {
+<span class="nc" id="L102">		factory.addStatement(stm);</span>
+<span class="nc" id="L103">	}</span>
+	
+	private VariableType getType(Type type) {
+<span class="nc" id="L106">		return factory.fromSootType(type);</span>
+	}
+	
+	private void assignNull(Variable to) {
+<span class="nc bnc" id="L110" title="All 5 branches missed.">		switch (to.getType()) {</span>
+		case STRING:
+<span class="nc" id="L112">			addStatement(new StringInit(to, Automatons.getNull()));</span>
+<span class="nc" id="L113">			break;</span>
+			
+		case STRINGBUFFER:
+			// make a string buffer with the empty language of possible strings
+<span class="nc" id="L117">			Variable temp = makeVariable(VariableType.STRING);</span>
+<span class="nc" id="L118">			addStatement(new StringBufferInit(to, temp));</span>
+<span class="nc" id="L119">			break;</span>
+			
+		case ARRAY:
+			// make an array with the empty language of possible strings, by not writing any strings to it
+<span class="nc" id="L123">			addStatement(new ArrayNew(to));</span>
+<span class="nc" id="L124">			break;</span>
+			
+		case PRIMITIVE:
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		    assert false;</span>
+		    break;
+			
+		default:
+			break; // XXX add ObjectNull-statement?? this ensures that the variable is not an alias of another variable anymore 
+		}
+<span class="nc" id="L133">	}</span>
+	
+	private void assignValue(Variable to, Variable from) {
+		// ignore uninteresting assignments 
+<span class="nc bnc" id="L137" title="All 8 branches missed.">		if ((to.getType() == VariableType.NONE || to.getType() == VariableType.NULL) &amp;&amp; (from.getType() == VariableType.NONE || from.getType() == VariableType.NULL))</span>
+<span class="nc" id="L138">			return;</span>
+		
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		if (from.getType() == VariableType.NULL) {</span>
+<span class="nc" id="L141">			assignNull(to);</span>
+<span class="nc" id="L142">			return;</span>
+		}
+		
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		if (to.getType() == VariableType.NONE) {</span>
+<span class="nc" id="L146">		    return;</span>
+		}
+		
+		// useful error checking
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (to.getType().cannotBeAliasOf(from.getType()))</span>
+<span class="nc" id="L151">			throw new RuntimeException(&quot;Cannot assign from &quot; + from.getType() + &quot; to &quot; + to.getType());</span>
+		
+<span class="nc bnc" id="L153" title="All 5 branches missed.">		switch (from.getType()) {</span>
+		case STRING:
+<span class="nc" id="L155">			addStatement(new StringAssignment(to, from));</span>
+<span class="nc" id="L156">			break;</span>
+			
+		case STRINGBUFFER:
+<span class="nc" id="L159">			addStatement(new StringBufferAssignment(to, from));</span>
+<span class="nc" id="L160">			break;</span>
+			
+		case ARRAY:
+<span class="nc" id="L163">			addStatement(new ArrayAssignment(to, from));</span>
+<span class="nc" id="L164">			break;</span>
+			
+		case PRIMITIVE:
+<span class="nc" id="L167">		    addStatement(new PrimitiveAssignment(to, from));</span>
+<span class="nc" id="L168">		    break;</span>
+			
+		default:
+<span class="nc" id="L171">			addStatement(new ObjectAssignment(to, from));</span>
+		}
+<span class="nc" id="L173">	}</span>
+	
+	/**
+	 * Corrupts the object pointed to by the specified variable, if that
+	 * object is mutable.
+	 */
+	private void corruptIfMutable(Variable var) {
+<span class="nc bnc" id="L180" title="All 4 branches missed.">		if (var.getType() == VariableType.NONE || var.getType() == VariableType.NULL) // we don't care if this object is corrupted</span>
+<span class="nc" id="L181">			return;</span>
+<span class="nc bnc" id="L182" title="All 4 branches missed.">		switch (var.getType()) {</span>
+		case STRING:
+		case PRIMITIVE:
+<span class="nc" id="L185">			break;</span>
+		case STRINGBUFFER:
+<span class="nc" id="L187">			addStatement(new StringBufferCorrupt(var));</span>
+<span class="nc" id="L188">			break;</span>
+		case ARRAY:
+<span class="nc" id="L190">			addStatement(new ArrayCorrupt(var));</span>
+<span class="nc" id="L191">			break;</span>
+		default:
+<span class="nc" id="L193">			addStatement(new ObjectCorrupt(var));</span>
+		}
+<span class="nc" id="L195">	}</span>
+	
+	private Variable makeAnyStringVariable() {
+<span class="nc" id="L198">		Variable v = makeVariable(VariableType.STRING);</span>
+<span class="nc" id="L199">		addStatement(new StringInit(v, Basic.makeAnyString()));</span>
+<span class="nc" id="L200">		return v;</span>
+	}
+	private Variable makeConstantStringVariable(String value) {
+<span class="nc" id="L203">		Variable v = makeVariable(VariableType.STRING);</span>
+<span class="nc" id="L204">		addStatement(new StringInit(v, Automaton.makeString(value)));</span>
+<span class="nc" id="L205">		return v;</span>
+	}
+    private Variable makeConstantCharVariable(char value) {
+<span class="nc" id="L208">        Variable v = makeVariable(VariableType.STRING);</span>
+<span class="nc" id="L209">        addStatement(new StringInit(v, Automaton.makeChar(value)));</span>
+<span class="nc" id="L210">        return v;</span>
+    }
+    private Variable makeAutomatonVariable(Automaton automaton) {
+<span class="nc" id="L213">        Variable v = makeVariable(VariableType.STRING);</span>
+<span class="nc" id="L214">        addStatement(new StringInit(v, automaton));</span>
+<span class="nc" id="L215">        return v;</span>
+    }
+	
+	/**
+	 * Returns a variable that may contain any non-corrupt value of the specified type.
+	 */
+	private Variable getAnyValueOf(VariableType type) {
+<span class="nc bnc" id="L222" title="All 2 branches missed.">		if (type == VariableType.NONE)</span>
+<span class="nc" id="L223">			return getNothing();</span>
+<span class="nc" id="L224">		Variable v = makeVariable(type);</span>
+<span class="nc" id="L225">		assignAnyValue(v);</span>
+<span class="nc" id="L226">		return v;</span>
+	}
+	
+	/**
+	 * Assigns an unknown value to the specified variable. 
+	 */
+	private void assignAnyValue(Variable v) {
+<span class="nc bnc" id="L233" title="All 5 branches missed.">		switch (v.getType()) {</span>
+		case STRING:
+<span class="nc" id="L235">			addStatement(new StringInit(v, Basic.makeAnyString()));</span>
+<span class="nc" id="L236">			break;</span>
+		case STRINGBUFFER:
+<span class="nc" id="L238">			addStatement(new StringBufferInit(v, makeAnyStringVariable()));</span>
+<span class="nc" id="L239">			break;</span>
+		case ARRAY:
+<span class="nc" id="L241">			addStatement(new ArrayNew(v));</span>
+<span class="nc" id="L242">			addStatement(new ArrayWriteElement(v, makeAnyStringVariable()));</span>
+<span class="nc" id="L243">			break;</span>
+		case PRIMITIVE:
+<span class="nc" id="L245">		    addStatement(new PrimitiveInit(v, Automaton.makeAnyChar()));</span>
+		    break;
+		default:
+			// no initialization necessary of uncertain objects
+		}
+<span class="nc" id="L250">	}</span>
+	
+	/**
+	 * Returns a variable of type &lt;tt&gt;NONE&lt;/tt&gt;.
+	 */
+	private Variable getNothing() {
+<span class="nc" id="L256">		return factory.getNothing();</span>
+	}
+	
+	/**
+	 * Translates the expression contained in the specified value box, and returns
+	 * a variable holding the result. This should always be used instead of &lt;tt&gt;applyTo&lt;/tt&gt;
+	 * directly, since this also takes care of creating hotspots.
+	 * @param box the jimple expression to translate
+	 * @return a variable holding the result
+	 */
+	private Variable translateExpression(ValueBox box) {
+<span class="nc" id="L267">		Variable result = applyTo(box.getValue(), box);</span>
+		
+<span class="nc bnc" id="L269" title="All 2 branches missed.">		if (factory.isHotspot(box)) {</span>
+<span class="nc" id="L270">		    factory.addHotspot(result, box);</span>
+		}
+		
+<span class="nc" id="L273">		factory.setExpressionVariable(box, result);</span>
+		
+<span class="nc" id="L275">		return result;</span>
+	}
+	
+	/* (non-Javadoc)
+	 * @see dk.brics.string.java.StatementTranslator#translateStatement(soot.jimple.Stmt, dk.brics.string.java.IntermediateFactory)
+	 */
+	public void translateStatement(Stmt statement, IntermediateFactory factory) {
+<span class="nc" id="L282">		this.factory = factory;</span>
+<span class="nc" id="L283">		statement.apply(this);</span>
+<span class="nc" id="L284">	}</span>
+	
+	//
+	//		VISITOR METHODS
+	//
+	
+	@Override
+	public Variable caseLocal(Local v, ValueBox box) {
+<span class="nc" id="L292">		return factory.getLocal(v);</span>
+	}
+	
+	@Override
+	public Variable caseArrayRef(ArrayRef v, ValueBox box) {
+		// read something from an array
+<span class="nc" id="L298">		Variable arrayObject = translateExpression(v.getBaseBox());</span>
+<span class="nc" id="L299">		VariableType innerType = getType(v.getType());</span>
+		
+<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (innerType == VariableType.NONE)</span>
+<span class="nc" id="L302">			return getNothing();</span>
+		
+<span class="nc" id="L304">		Variable result = makeVariable(innerType);</span>
+<span class="nc bnc" id="L305" title="All 4 branches missed.">		switch (innerType) {</span>
+		case STRINGBUFFER:
+<span class="nc" id="L307">			addStatement(new StringBufferCorrupt(result));</span>
+<span class="nc" id="L308">			break;</span>
+			
+		case ARRAY:
+<span class="nc" id="L311">			addStatement(new ArrayFromArray(result, arrayObject));</span>
+<span class="nc" id="L312">			break;</span>
+			
+		case PRIMITIVE:
+<span class="nc" id="L315">		    addStatement(new PrimitiveFromArray(result, arrayObject));</span>
+<span class="nc" id="L316">		    break;</span>
+			
+		default:
+<span class="nc" id="L319">			addStatement(new StringFromArray(result, arrayObject));</span>
+		}
+		
+<span class="nc" id="L322">		return result;</span>
+	}
+	
+	@Override
+	public Variable caseCastExpr(CastExpr v, ValueBox box) {
+<span class="nc" id="L327">		Variable operand = translateExpression(v.getOpBox());</span>
+<span class="nc" id="L328">		VariableType castTo = getType(v.getCastType());</span>
+		
+		// whatever comes out of the cast must satisfy both the operand's type and the casted type
+<span class="nc" id="L331">		VariableType resultType = operand.getType().greatestLowerBound(castTo);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">		if (resultType == VariableType.NONE) {</span>
+<span class="nc" id="L333">			return getNothing();</span>
+		}
+		
+		// upgrade the result to the casted type
+		// other parts of the translation can use the additional information
+		Variable result;
+<span class="nc bnc" id="L339" title="All 2 branches missed.">		if (resultType == operand.getType()) {</span>
+<span class="nc" id="L340">			result = operand;</span>
+<span class="nc" id="L341">		} else {</span>
+<span class="nc" id="L342">			result = factory.createVariable(resultType);</span>
+<span class="nc" id="L343">			assignValue(result, operand);</span>
+		}
+		
+<span class="nc" id="L346">		return result;</span>
+	}
+	
+	@Override
+	public Variable caseInterfaceInvokeExpr(InterfaceInvokeExpr v, ValueBox box) {
+<span class="nc" id="L351">		return invokeExpr(v, box);</span>
+	}
+	
+	@Override
+	public Variable caseVirtualInvokeExpr(VirtualInvokeExpr v, ValueBox box) {
+<span class="nc" id="L356">		return invokeExpr(v, box);</span>
+	}
+	
+	@Override
+	public Variable caseSpecialInvokeExpr(SpecialInvokeExpr v, ValueBox box) {
+<span class="nc" id="L361">		Variable callee = translateExpression(v.getBaseBox());</span>
+
+		// evaluate all arguments
+<span class="nc" id="L364">		List&lt;Variable&gt; arguments = new ArrayList&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">		for (int i=0; i&lt;v.getArgCount(); i++) {</span>
+<span class="nc" id="L366">			arguments.add(translateExpression(v.getArgBox(i)));</span>
+		}
+		
+		// if the called class could not be found (ie a phantom class), treat it as a corrupt call
+<span class="nc bnc" id="L370" title="All 2 branches missed.">		if (v.getMethodRef().declaringClass().isPhantom()) {</span>
+<span class="nc" id="L371">		    return handlePhantomInvocation(v, arguments);</span>
+		}
+		
+<span class="nc" id="L374">        SootMethod method = v.getMethod();</span>
+		
+		// Is this a constructor call?
+<span class="nc bnc" id="L377" title="All 2 branches missed.">		if (method.getName().equals(&quot;&lt;init&gt;&quot;)) {</span>
+<span class="nc" id="L378">			return handleConstructor(v, callee, arguments);</span>
+		}
+		
+		// try to handle it as an abstract method call. even though we know the exact target,
+		// this is the correct thing to do according to the MethodCallTranslator interface.
+<span class="nc" id="L383">		Variable result = methodCallTranslator.translateAbstractMethodCall(v, method, callee, arguments, factory);</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">		if (result != null)</span>
+<span class="nc" id="L385">			return result;</span>
+		
+		// Otherwise just handle it as a normal call with only one possible target
+<span class="nc" id="L388">		result = makeVariable(getType(v.getMethod().getReturnType()));</span>
+<span class="nc" id="L389">		handleInvocationTarget(result, v, method, callee, arguments);</span>
+		
+        // if the called method was annotated, use the static type instead
+<span class="nc" id="L392">        Automaton staticType = factory.getMethodReturnType(v.getMethod());</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">        if (staticType != null)</span>
+<span class="nc" id="L394">            return makeAutomatonVariable(staticType);</span>
+        else
+<span class="nc" id="L396">            return result;</span>
+	}
+	
+	private Variable handleConstructor(SpecialInvokeExpr expr, Variable callee, List&lt;Variable&gt; arguments) {
+<span class="nc bnc" id="L400" title="All 2 branches missed.">		if (methodCallTranslator.translateConstructorCall(expr, callee, arguments, factory)) {</span>
+<span class="nc" id="L401">			return getNothing();</span>
+		}
+		// Do some worst-case handling otherwise
+		// corrupt callee and all arguments
+<span class="nc" id="L405">		corruptIfMutable(callee);</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">		for (Variable arg : arguments) {</span>
+<span class="nc" id="L407">			corruptIfMutable(arg);</span>
+		}
+<span class="nc" id="L409">		return getNothing();</span>
+	}
+	
+	private Variable invokeExpr(InstanceInvokeExpr v, ValueBox box) {
+        // evaluate all arguments
+<span class="nc" id="L414">        List&lt;Variable&gt; arguments = new ArrayList&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        for (int i=0; i&lt;v.getArgCount(); i++) {</span>
+<span class="nc" id="L416">            arguments.add(translateExpression(v.getArgBox(i)));</span>
+        }
+        
+        // if we are calling a phantom method, just corrupt everything involved
+<span class="nc bnc" id="L420" title="All 2 branches missed.">	    if (v.getMethodRef().declaringClass().isPhantom()) {</span>
+<span class="nc" id="L421">	        return handlePhantomInvocation(v, arguments);</span>
+	    }
+		
+<span class="nc" id="L424">	    SootMethod method = v.getMethod();</span>
+<span class="nc" id="L425">		Variable callee = translateExpression(v.getBaseBox());</span>
+		
+		// Special case: clone() on an array or collection
+<span class="nc bnc" id="L428" title="All 6 branches missed.">		if (method.getName().equals(&quot;clone&quot;) &amp;&amp; method.getParameterCount() == 0 &amp;&amp; callee.getType() == VariableType.ARRAY) {</span>
+<span class="nc" id="L429">			return handleArrayClone(callee);</span>
+		}
+		
+		// try to translate the abstract call
+<span class="nc" id="L433">		Variable r2 = methodCallTranslator.translateAbstractMethodCall(v, v.getMethod(), callee, arguments, factory);</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">		if (r2 != null)</span>
+<span class="nc" id="L435">			return r2;</span>
+		
+		// find the possible implementations that get called
+<span class="nc" id="L438">		List&lt;SootMethod&gt; targets = factory.getTargetsOf(v);</span>
+		
+<span class="nc bnc" id="L440" title="All 2 branches missed.">		if (targets.size() == 0) {</span>
+		    // try to translate the abstract method call. A resolver could know something useful.
+<span class="nc" id="L442">		    Variable result = methodCallTranslator.translateMethodCall(v, method, callee, arguments, factory);</span>
+		    
+<span class="nc bnc" id="L444" title="All 2 branches missed.">		    if (result != null)</span>
+<span class="nc" id="L445">		        return result;</span>
+		}
+        
+        // create a variable with the result
+<span class="nc" id="L449">        VariableType returnType = getType(method.getReturnType());</span>
+<span class="nc" id="L450">        Variable result = makeVariable(returnType);</span>
+        
+        // split the control-flow graph for each possible target
+<span class="nc" id="L453">		factory.startBranch();</span>
+		
+		// if no targets can be seen, we will assume it is a corrupting call (externally implemented)
+		// TODO: Externally extended/implemented classes should be made more explicit with a strategy interface
+		// TODO: Resolvers never get a chance to resolve this type of method call.
+		//       For example, HttpServletRequest.getRequestURI() because its implementation is dynamically loaded.
+<span class="nc bnc" id="L459" title="All 2 branches missed.">		if (targets.size() == 0) {</span>
+<span class="nc" id="L460">			handleCorruptInvocation(result, callee.getType(), callee, arguments);</span>
+<span class="nc" id="L461">			factory.useBranch();</span>
+		}
+		
+<span class="nc bnc" id="L464" title="All 2 branches missed.">		for (SootMethod target : targets) {</span>
+<span class="nc" id="L465">			handleInvocationTarget(result, v, target, callee, arguments);</span>
+<span class="nc" id="L466">			factory.useBranch();</span>
+		}
+		
+<span class="nc" id="L469">		factory.endBranch();</span>
+		
+		// if the called method was annotated, use the static type instead
+<span class="nc" id="L472">        Automaton staticType = factory.getMethodReturnType(v.getMethod());</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">		if (staticType != null)</span>
+<span class="nc" id="L474">		    return makeAutomatonVariable(staticType);</span>
+		else
+<span class="nc" id="L476">		    return result;</span>
+	}
+	
+	/**
+	 * Creates statements for an invocation to a known method implementation.
+	 * @param result where to store the result (has type &lt;tt&gt;NONE&lt;/tt&gt; if method returns &lt;tt&gt;void&lt;/tt&gt;).
+	 * @param v the invocation expression
+	 * @param target method implementation being called; may differ from &lt;tt&gt;v.getMethod()&lt;/tt&gt;.
+	 * @param callee variable holding the object being called on
+	 * @param arguments variables holding the method call's arguments
+	 */
+	private void handleInvocationTarget(Variable result, InstanceInvokeExpr v, SootMethod target, Variable callee, List&lt;Variable&gt; arguments) {
+<span class="nc" id="L488">		Variable goodResult = methodCallTranslator.translateMethodCall(v, target, callee, arguments, factory);</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">		if (goodResult != null) {</span>
+<span class="nc" id="L490">			assignValue(result, goodResult);</span>
+<span class="nc" id="L491">		} else {</span>
+			// if the method declaring the method might be an interesting mutable type,
+			// corrupt the callee
+<span class="nc" id="L494">			VariableType declaringClass = factory.fromSootType(target.getDeclaringClass().getType());</span>
+<span class="nc" id="L495">			handleCorruptInvocation(result, declaringClass, callee, arguments);</span>
+		}
+<span class="nc" id="L497">	}</span>
+	
+	/**
+	 * Creates statements corresponding to an invocation to an unknown method, thus corrupting every variable involved.
+	 * @param result where to store the (corrupt) result
+	 * @param declaringClass the type of the class declaring the method (on a best-known basis)
+	 * @param callee variable holding the object being called on
+	 * @param arguments variables holding the method call's arguments
+	 */
+	private void handleCorruptInvocation(Variable result, VariableType declaringClass, Variable callee, List&lt;Variable&gt; arguments) {
+<span class="nc bnc" id="L507" title="All 2 branches missed.">		if (declaringClass.mightBeUsefulMutable()) {</span>
+<span class="nc" id="L508">			corruptIfMutable(callee);</span>
+		}
+		
+		// corrupt all arguments
+<span class="nc bnc" id="L512" title="All 2 branches missed.">		for (Variable arg : arguments) {</span>
+<span class="nc" id="L513">			corruptIfMutable(arg);</span>
+		}
+		
+		// give the result any corrupt value
+<span class="nc" id="L517">		assignAnyValue(result);</span>
+<span class="nc" id="L518">		corruptIfMutable(result);</span>
+<span class="nc" id="L519">	}</span>
+	
+	private Variable handlePhantomInvocation(InvokeExpr exp, List&lt;Variable&gt; arguments) {
+<span class="nc" id="L522">	    Variable result = makeVariable(getType(exp.getType()));</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">	    for (Variable arg : arguments) {</span>
+<span class="nc" id="L524">	        corruptIfMutable(arg);</span>
+	    }
+<span class="nc" id="L526">        assignAnyValue(result);</span>
+<span class="nc" id="L527">        corruptIfMutable(result);</span>
+<span class="nc" id="L528">	    return result;</span>
+	}
+	
+	/**
+	 * Creates statements that simulate &lt;tt&gt;String[].clone()&lt;/tt&gt;.
+	 * &lt;p/&gt;
+	 * Cannot currently be handled by method call translators, because it is 
+	 * really &lt;tt&gt;Object.clone()&lt;/tt&gt; being called, followed by a typecast (which is invisible in Java).
+	 */
+	private Variable handleArrayClone(Variable callee) {
+<span class="nc" id="L538">		Variable result = factory.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L539">		factory.addStatement(new ArrayAddAll(result, callee));</span>
+<span class="nc" id="L540">		return result;</span>
+	}
+	
+	@Override
+	public Variable caseNewExpr(NewExpr v, ValueBox box) {
+<span class="nc" id="L545">		return makeVariable(getType(v.getBaseType()));</span>
+	}
+	
+	@Override
+	public Variable caseNewArrayExpr(NewArrayExpr v, ValueBox box) {
+<span class="nc" id="L550">		return handleArrayNew(v.getBaseType());</span>
+	}
+	
+	@Override
+	public Variable caseNewMultiArrayExpr(NewMultiArrayExpr v, ValueBox box) {
+<span class="nc" id="L555">		return handleArrayNew(v.getBaseType());</span>
+	}
+    
+    private Variable handleArrayNew(Type type) {
+<span class="nc bnc" id="L559" title="All 2 branches missed.">        if (getType(type) == VariableType.NONE)  // arrays of uninteresting types may be ignored</span>
+<span class="nc" id="L560">            return getNothing();</span>
+        
+        // dig out the element type
+<span class="nc" id="L563">        Type elementType = type;</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">        while (elementType instanceof ArrayType) {</span>
+<span class="nc" id="L565">            elementType = ((ArrayType)elementType).getElementType();</span>
+        }
+        
+<span class="nc" id="L568">        Variable var = makeVariable(VariableType.ARRAY);</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        if (elementType instanceof RefType) {</span>
+            // object arrays are filled with null initially
+<span class="nc" id="L571">            addStatement(new ArrayWriteElement(var, makeConstantStringVariable(&quot;null&quot;))); </span>
+<span class="nc" id="L572">        } else {</span>
+            // primitive arrays are filled zeros initially
+<span class="nc" id="L574">            addStatement(new ArrayWriteElement(var, makeConstantCharVariable('\0')));</span>
+        }
+<span class="nc" id="L576">        return var;</span>
+    }
+	
+	@Override
+	public Variable caseNullConstant(NullConstant v, ValueBox box) {
+<span class="nc" id="L581">		return makeVariable(VariableType.NULL);</span>
+	}
+	
+	@Override
+	public Variable caseParameterRef(ParameterRef v, ValueBox box) {
+<span class="nc" id="L586">	    Automaton staticType = factory.getParameterType(v);</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">	    if (staticType != null) {</span>
+<span class="nc" id="L588">	        return makeAutomatonVariable(staticType);</span>
+	    }
+<span class="nc" id="L590">		return factory.getParameter(v);</span>
+	}
+	
+	@Override
+	public Variable caseStaticInvokeExpr(StaticInvokeExpr v, ValueBox box) {
+<span class="nc" id="L595">	    Variable result = null;</span>
+	    
+	    // find the static string return type, if it has one
+<span class="nc" id="L598">	    Automaton staticReturn = factory.getMethodReturnType(v.getMethod());</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">	    if (staticReturn != null) {</span>
+<span class="nc" id="L600">	        result = makeAutomatonVariable(staticReturn);</span>
+	    }
+	    
+		// evaluate all arguments
+<span class="nc" id="L604">		List&lt;Variable&gt; arguments = new ArrayList&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L605" title="All 2 branches missed.">		for (int i=0; i&lt;v.getArgCount(); i++) {</span>
+<span class="nc" id="L606">			arguments.add(translateExpression(v.getArgBox(i)));</span>
+		}
+        
+		// translate the method call (if possible)
+<span class="nc" id="L610">		Variable goodResult = methodCallTranslator.translateStaticMethodCall(v, arguments, factory);</span>
+<span class="nc bnc" id="L611" title="All 2 branches missed.">		if (result == null) {</span>
+<span class="nc" id="L612">		    result = goodResult;</span>
+		}
+<span class="nc bnc" id="L614" title="All 2 branches missed.">		if (goodResult != null) {</span>
+<span class="nc" id="L615">			return result;</span>
+		}
+		
+		// Do some worst-case handling otherwise
+		// corrupt all arguments
+<span class="nc bnc" id="L620" title="All 2 branches missed.">		for (Variable arg : arguments) {</span>
+<span class="nc" id="L621">			corruptIfMutable(arg);</span>
+		}
+		
+		// create a return-value that can have any value and is corrupt
+<span class="nc bnc" id="L625" title="All 2 branches missed.">		if (result == null) {</span>
+<span class="nc" id="L626">		    result = getAnyValueOf(VariableType.OBJECT);</span>
+<span class="nc" id="L627">	        corruptIfMutable(result);</span>
+		}
+		
+<span class="nc" id="L630">		return result;</span>
+	}
+	
+	@Override
+	public Variable caseStringConstant(StringConstant v, ValueBox box) {
+<span class="nc" id="L635">		return makeConstantStringVariable(v.value);</span>
+	}
+	
+	@Override
+	public Variable caseIntConstant(IntConstant v, ValueBox question) {
+<span class="nc" id="L640">	    Variable result = makeVariable(VariableType.PRIMITIVE);</span>
+<span class="nc bnc" id="L641" title="All 4 branches missed.">	    if (v.value &gt;= Character.MIN_VALUE &amp;&amp; v.value &lt;= Character.MAX_VALUE) {</span>
+<span class="nc" id="L642">	        addStatement(new PrimitiveInit(result, Automaton.makeChar((char)v.value)));</span>
+<span class="nc" id="L643">	    } else {</span>
+<span class="nc" id="L644">	        addStatement(new PrimitiveInit(result, Automaton.makeAnyChar()));</span>
+	    }
+<span class="nc" id="L646">	    return result;</span>
+	}
+	
+	@Override
+	public Variable caseInstanceFieldRef(InstanceFieldRef v, ValueBox box) {
+<span class="nc" id="L651">		return handleFieldRef(v, box);</span>
+	}
+	
+	@Override
+	public Variable caseStaticFieldRef(StaticFieldRef v, ValueBox box) {
+<span class="nc" id="L656">	    return handleFieldRef(v, box);</span>
+	}
+	
+	private Variable handleFieldRef(FieldRef v, ValueBox box) {
+<span class="nc" id="L660">	    VariableType type = factory.fromSootType(v.getType());</span>
+<span class="nc bnc" id="L661" title="All 2 branches missed.">        if (type == VariableType.NONE)</span>
+<span class="nc" id="L662">            return getNothing();</span>
+        
+        // if the field is @Type annotated, create a variable with its static type 
+<span class="nc bnc" id="L665" title="All 2 branches missed.">        if (factory.fromSootType(v.getType()) == VariableType.STRING) {</span>
+<span class="nc" id="L666">            Automaton staticType = factory.getFieldType(v.getField());</span>
+<span class="nc bnc" id="L667" title="All 2 branches missed.">            if (staticType != null) {</span>
+<span class="nc" id="L668">                return makeAutomatonVariable(staticType);</span>
+            }
+        }
+        
+<span class="nc" id="L672">        Variable result = fieldReferenceTranslator.translateFieldRef(v, box, factory);</span>
+<span class="nc bnc" id="L673" title="All 2 branches missed.">        if (result != null) {</span>
+<span class="nc" id="L674">            return result;</span>
+        }
+        
+<span class="nc" id="L677">        result = getAnyValueOf(type);</span>
+<span class="nc" id="L678">        corruptIfMutable(result);</span>
+<span class="nc" id="L679">        return result;</span>
+	}
+	
+	@Override
+	public Variable caseEqExpr(EqExpr v, ValueBox question) {
+<span class="nc" id="L684">	    translateExpression(v.getOp1Box());</span>
+<span class="nc" id="L685">	    translateExpression(v.getOp2Box());</span>
+<span class="nc" id="L686">	    return getAnyValueOf(VariableType.PRIMITIVE);</span>
+	}
+	@Override
+	public Variable caseNeExpr(NeExpr v, ValueBox question) {
+<span class="nc" id="L690">	    translateExpression(v.getOp1Box());</span>
+<span class="nc" id="L691">	    translateExpression(v.getOp2Box());</span>
+<span class="nc" id="L692">	    return getAnyValueOf(VariableType.PRIMITIVE);</span>
+	}
+	
+	@Override
+	public Variable defaultExpr(Object v, ValueBox box) {
+<span class="nc" id="L697">		return getNothing();</span>
+	}
+	
+	
+	//
+	//	STATEMENTS 
+	//
+
+	public void caseAssignStmt(AssignStmt stmt) {
+<span class="nc" id="L706">		assignment(stmt);</span>
+<span class="nc" id="L707">	}</span>
+	public void caseIdentityStmt(IdentityStmt stmt) {
+<span class="nc" id="L709">		assignment(stmt);</span>
+<span class="nc" id="L710">	}</span>
+	public void assignment(DefinitionStmt stmt) {
+<span class="nc" id="L712">		Variable result = translateExpression(stmt.getRightOpBox());</span>
+		
+<span class="nc bnc" id="L714" title="All 2 branches missed.">		if (result.getType() == VariableType.NONE) {</span>
+<span class="nc" id="L715">			return; // no need to track this object</span>
+		}
+		
+		// assign to a local variable?
+<span class="nc bnc" id="L719" title="All 2 branches missed.">		if (stmt.getLeftOp() instanceof Local) {</span>
+<span class="nc" id="L720">			Variable lefthandSide = factory.getLocal((Local)stmt.getLeftOp());</span>
+<span class="nc" id="L721">			assignValue(lefthandSide, result);</span>
+		
+		// assign to a field?
+<span class="nc bnc" id="L724" title="All 2 branches missed.">		} else if (stmt.getLeftOp() instanceof FieldRef) {</span>
+<span class="nc" id="L725">			FieldRef ref = (FieldRef)stmt.getLeftOp();</span>
+			
+			// delegate the translation
+<span class="nc" id="L728">			fieldReferenceTranslator.translateFieldAssignment(ref, result, factory);</span>
+		
+		// assign into an array slot?
+<span class="nc bnc" id="L731" title="All 2 branches missed.">		} else if (stmt.getLeftOp() instanceof ArrayRef) {</span>
+<span class="nc" id="L732">			ArrayRef left = (ArrayRef)stmt.getLeftOp();</span>
+<span class="nc" id="L733">			Value array = left.getBase();</span>
+<span class="nc bnc" id="L734" title="All 2 branches missed.">			if (array instanceof Local) {</span>
+<span class="nc" id="L735">				Local arrayLocal = (Local)array;</span>
+<span class="nc" id="L736">				Variable arrayVariable = factory.getLocal(arrayLocal);</span>
+				
+<span class="nc bnc" id="L738" title="All 3 branches missed.">				switch (result.getType()) {</span>
+				case STRING:
+				case PRIMITIVE:
+<span class="nc" id="L741">					addStatement(new ArrayWriteElement(arrayVariable, result));</span>
+<span class="nc" id="L742">					break;</span>
+					
+				case ARRAY:
+<span class="nc" id="L745">					addStatement(new ArrayWriteArray(arrayVariable, result));</span>
+<span class="nc" id="L746">					break;</span>
+					
+				default:
+<span class="nc" id="L749">					corruptIfMutable(result);</span>
+<span class="nc" id="L750">					corruptIfMutable(arrayVariable);</span>
+					break;
+				}
+<span class="nc" id="L753">			} else {</span>
+				// we are probably storing a string into a field of type array
+				// just ignore it; we don't track mutable arrays anyway
+<span class="nc" id="L756">				corruptIfMutable(result);</span>
+			}
+		
+		// assign to what!?
+<span class="nc" id="L760">		} else {</span>
+<span class="nc" id="L761">			throw new RuntimeException(&quot;Unknown left-hand side &quot; + stmt.getClass().getCanonicalName());</span>
+		}
+<span class="nc" id="L763">	}</span>
+	
+	public void caseInvokeStmt(InvokeStmt stmt) {
+<span class="nc" id="L766">		translateExpression(stmt.getInvokeExprBox());</span>
+<span class="nc" id="L767">	}</span>
+	public void caseReturnStmt(ReturnStmt stmt) {
+<span class="nc" id="L769">		Variable returnValue = translateExpression(stmt.getOpBox());</span>
+<span class="nc" id="L770">		addStatement(new Return(returnValue));</span>
+<span class="nc" id="L771">	}</span>
+	public void caseReturnVoidStmt(ReturnVoidStmt stmt) {
+<span class="nc" id="L773">		addStatement(new Return(getNothing()));</span>
+<span class="nc" id="L774">	}</span>
+	
+	public void defaultCase(Object obj) {
+<span class="nc" id="L777">	}</span>
+	
+	/* ASSERTION-RELAVANT STATEMENTS */
+	public void caseIfStmt(IfStmt stmt) {
+	    // translate this so assertions can use the expressions we evaluate
+<span class="nc" id="L782">	    translateExpression(stmt.getConditionBox());</span>
+<span class="nc" id="L783">    }</span>
+	public void caseLookupSwitchStmt(LookupSwitchStmt stmt) {
+<span class="nc" id="L785">		translateExpression(stmt.getKeyBox());</span>
+<span class="nc" id="L786">	}</span>
+    
+	/* IGNORED STATEMENTS */
+	public void caseBreakpointStmt(BreakpointStmt stmt) {
+<span class="nc" id="L790">	}</span>
+	public void caseEnterMonitorStmt(EnterMonitorStmt stmt) {
+<span class="nc" id="L792">	}</span>
+	public void caseExitMonitorStmt(ExitMonitorStmt stmt) {
+<span class="nc" id="L794">	}</span>
+	public void caseGotoStmt(GotoStmt stmt) {
+<span class="nc" id="L796">	}</span>
+	public void caseNopStmt(NopStmt stmt) {
+<span class="nc" id="L798">	}</span>
+	public void caseRetStmt(RetStmt stmt) {
+<span class="nc" id="L800">	}</span>
+	public void caseTableSwitchStmt(TableSwitchStmt stmt) {
+<span class="nc" id="L802">	}</span>
+	public void caseThrowStmt(ThrowStmt stmt) {
+<span class="nc" id="L804">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

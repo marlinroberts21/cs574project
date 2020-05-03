@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RegularApproximation.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar.operations</a> &gt; <span class="el_source">RegularApproximation.java</span></div><h1>RegularApproximation.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar.operations;
+
+import dk.brics.string.directedgraph.StronglyConnectedComponents;
+import dk.brics.string.grammar.*;
+import dk.brics.string.grammar.operations.Component.Recursion;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * Mohri-Nederhof approximation of grammars.
+ */
+public class RegularApproximation {
+
+    private Grammar g;
+
+    private StronglyConnectedComponents&lt;Nonterminal, Component&gt; comp;
+
+    /**
+     * Constructs a new approximator.
+     */
+<span class="nc" id="L23">    public RegularApproximation(Grammar g) {</span>
+<span class="nc" id="L24">        this.g = g;</span>
+<span class="nc" id="L25">    }</span>
+
+    /**
+     * Performs Mohri-Nederhof regular approximation on the grammar.
+     * The grammar is assumed to have no operation cycles (see {@link Grammar#approximateOperationCycles()}).
+     *
+     * @param hotspots nonterminals that correspond to expressions where automata are extracted later
+     */
+    public void approximate(Collection&lt;Nonterminal&gt; hotspots) {
+
+        // find components and their recursion kinds
+<span class="nc" id="L36">        GrammarAsDirectedGraph gd = new GrammarAsDirectedGraph(g);</span>
+<span class="nc" id="L37">        comp = new StronglyConnectedComponents&lt;Nonterminal, Component&gt;(gd);</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (Component c : comp.getComponents()) {</span>
+<span class="nc" id="L39">            c.findRecursion();</span>
+        }
+<span class="nc" id="L41">        boolean need_epsilon[] = new boolean[g.getNumberOfNonterminals()];</span>
+<span class="nc" id="L42">        final Nonterminal[] primed = new Nonterminal[g.getNumberOfNonterminals()];</span>
+<span class="nc" id="L43">        List&lt;List&lt;Production&gt;&gt; oldproductions = new ArrayList&lt;List&lt;Production&gt;&gt;();</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        for (int i = 0; i &lt; g.getNumberOfNonterminals(); i++) {</span>
+<span class="nc" id="L45">            oldproductions.add(null);</span>
+        }
+
+        // find nonterminals that need epsilons
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (Nonterminal a : g.getNonterminals()) {</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (hotspots.contains(a)) {</span>
+<span class="nc" id="L51">                need_epsilon[a.getKey()] = true;</span>
+            }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            for (Nonterminal b : gd.getSuccesors().get(a.getKey())) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                if (comp.getComponent(a) != comp.getComponent(b)) {</span>
+<span class="nc" id="L55">                    need_epsilon[b.getKey()] = true;</span>
+                }
+            }
+        }
+
+        // find components that have both right and left recursion
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        for (final Component c : comp.getComponents()) {</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            if (c.getRecursion() == Recursion.BOTH) {</span>
+<span class="nc" id="L63">                List&lt;Nonterminal&gt; nonterminals = new ArrayList&lt;Nonterminal&gt;(c.getNodes());</span>
+
+                // make primed nonterminals and epsilon transitions
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                for (Nonterminal a : nonterminals) {</span>
+<span class="nc" id="L67">                    int an = a.getKey();</span>
+<span class="nc" id="L68">                    oldproductions.set(an, a.getProductions());</span>
+<span class="nc" id="L69">                    a.setProductions(new ArrayList&lt;Production&gt;());</span>
+                    // A' -&gt; &quot;&quot;  if hotspot or used by other component
+<span class="nc" id="L71">                    Nonterminal nonterminal = newNonterminal(c);</span>
+<span class="nc" id="L72">                    nonterminal.setTaint(a.isTaint());</span>
+<span class="nc" id="L73">                    primed[an] = nonterminal;</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                    if (need_epsilon[an]) {</span>
+<span class="nc" id="L75">                        g.addEpsilonProduction(primed[an]);</span>
+                    }
+                }
+
+                // make new productions and extra nonterminals for each original nonterminal
+<span class="nc bnc" id="L80" title="All 2 branches missed.">                for (Nonterminal a : nonterminals) {</span>
+<span class="nc" id="L81">                    final int an = a.getKey();</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">                    for (Production p : oldproductions.get(an)) {</span>
+<span class="nc" id="L83">                        p.visitBy(a, new ProductionVisitor() {</span>
+
+                            // A -&gt; B
+                            public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                                if (c.contains(p.getNonterminal())) {</span>
+                                    // A -&gt; B  =&gt;  A -&gt; B, B' -&gt; A'
+<span class="nc" id="L89">                                    g.addUnitProduction(a, p.getNonterminal());</span>
+<span class="nc" id="L90">                                    g.addUnitProduction(primed[p.getNonterminal().getKey()], primed[an]);</span>
+<span class="nc" id="L91">                                } else {</span>
+                                    // A -&gt; X  =&gt;  A -&gt; X A'
+<span class="nc" id="L93">                                    g.addPairProduction(a, p.getNonterminal(), primed[an]);</span>
+                                }
+<span class="nc" id="L95">                            }</span>
+
+                            // A -&gt; B C
+                            public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">                                if (c.contains(p.getNonterminal1())) {</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                                    if (c.contains(p.getNonterminal2())) {</span>
+                                        // A -&gt; B C  =&gt;  A -&gt; B, B' -&gt; C, C' -&gt; A'
+<span class="nc" id="L102">                                        g.addUnitProduction(a, p.getNonterminal1());</span>
+<span class="nc" id="L103">                                        g.addUnitProduction(primed[p.getNonterminal1().getKey()], p.getNonterminal2());</span>
+<span class="nc" id="L104">                                        g.addUnitProduction(primed[p.getNonterminal2().getKey()], primed[an]);</span>
+<span class="nc" id="L105">                                    } else {</span>
+                                        // A -&gt; B X  =&gt;  A -&gt; B, B' -&gt; X A'
+<span class="nc" id="L107">                                        g.addUnitProduction(a, p.getNonterminal1());</span>
+<span class="nc" id="L108">                                        g.addPairProduction(primed[p.getNonterminal1().getKey()], p.getNonterminal2(), primed[an]);</span>
+                                    }
+<span class="nc" id="L110">                                } else {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">                                    if (c.contains(p.getNonterminal2())) {</span>
+                                        // A -&gt; X B  =&gt;  A -&gt; X B, B' -&gt; A'
+<span class="nc" id="L113">                                        g.addPairProduction(a, p.getNonterminal1(), p.getNonterminal2());</span>
+<span class="nc" id="L114">                                        g.addUnitProduction(primed[p.getNonterminal2().getKey()], primed[an]);</span>
+<span class="nc" id="L115">                                    } else {</span>
+                                        // A -&gt; X Y  =&gt;  A -&gt; R A', R -&gt; X Y
+<span class="nc" id="L117">                                        Nonterminal r = newNonterminal(c);</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">                                        r.setTaint(p.getNonterminal1().isTaint() || p.getNonterminal2().isTaint());</span>
+<span class="nc" id="L119">                                        g.addPairProduction(a, r, primed[an]);</span>
+<span class="nc" id="L120">                                        g.addPairProduction(r, p.getNonterminal1(), p.getNonterminal2());</span>
+                                    }
+                                }
+<span class="nc" id="L123">                            }</span>
+
+                            // A -&gt; reg
+                            public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+                                // A -&gt; reg  =&gt;  A -&gt; R A', R -&gt; reg
+<span class="nc" id="L128">                                Nonterminal r = newNonterminal(c);</span>
+<span class="nc" id="L129">                                r.setTaint(a.isTaint());</span>
+<span class="nc" id="L130">                                g.addPairProduction(a, r, primed[an]);</span>
+<span class="nc" id="L131">                                g.addAutomatonProduction(r, p.getAutomaton());</span>
+<span class="nc" id="L132">                            }</span>
+
+                            // A -&gt; op1(X)
+                            public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+                                // A -&gt; op1(X)  =&gt;  A -&gt; R A', R -&gt; op1(X)
+<span class="nc" id="L137">                                Nonterminal r = newNonterminal(c);</span>
+<span class="nc" id="L138">                                r.setTaint(a.isTaint());</span>
+<span class="nc" id="L139">                                g.addPairProduction(a, r, primed[an]);</span>
+<span class="nc" id="L140">                                g.addUnaryProduction(r, p.getOperation(), p.getNonterminal());</span>
+<span class="nc" id="L141">                            }</span>
+
+                            // A -&gt; op1(X,Y)
+                            public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+                                // A -&gt; op2(X,Y)  =&gt;  A -&gt; R A', R -&gt; op2(X,Y)
+<span class="nc" id="L146">                                Nonterminal r = newNonterminal(c);</span>
+<span class="nc" id="L147">                                r.setTaint(a.isTaint());</span>
+<span class="nc" id="L148">                                g.addPairProduction(a, r, primed[an]);</span>
+<span class="nc" id="L149">                                g.addBinaryProduction(r, p.getOperation(), p.getNonterminal1(), p.getNonterminal2());</span>
+<span class="nc" id="L150">                            }</span>
+
+                            // A -&gt; &quot;&quot;
+                            public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+                                // A -&gt; &quot;&quot;  =&gt;  A -&gt; A'
+<span class="nc" id="L155">                                g.addUnitProduction(a, primed[an]);</span>
+<span class="nc" id="L156">                            }</span>
+                        });
+                    }
+                }
+
+                // now this component only has right recursion
+<span class="nc" id="L162">                c.setRecursion(Recursion.RIGHT);</span>
+            }
+        }
+<span class="nc" id="L165">    }</span>
+
+    private Nonterminal newNonterminal(Component c) {
+<span class="nc" id="L168">        Nonterminal n = g.addNonterminal();</span>
+<span class="nc" id="L169">        comp.add(n, c);</span>
+<span class="nc" id="L170">        return n;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

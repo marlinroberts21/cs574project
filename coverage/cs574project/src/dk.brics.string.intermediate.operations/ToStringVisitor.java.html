@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ToStringVisitor.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">ToStringVisitor.java</span></div><h1>ToStringVisitor.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import dk.brics.string.intermediate.*;
+import dk.brics.string.stringoperations.Basic;
+
+/**
+ * Visitor for producing string representations of statements.
+ * Used by the {@link dk.brics.string.intermediate.Statement#toString toString}
+ * method of {@link dk.brics.string.intermediate.Statement}.
+ */
+public class ToStringVisitor implements StatementVisitor {
+    
+    private OperationAssertionAnalysis ass;
+    
+<span class="nc" id="L15">    public ToStringVisitor(OperationAssertionAnalysis ass) {</span>
+<span class="nc" id="L16">        this.ass = ass;</span>
+<span class="nc" id="L17">    }</span>
+<span class="nc" id="L18">    public ToStringVisitor() {</span>
+<span class="nc" id="L19">    }</span>
+    
+
+    /**
+     * The string representaion, set by the visit methods.
+     */
+    public String result;
+
+    public void visitPrimitiveAssignment(PrimitiveAssignment s) {
+<span class="nc" id="L28">        result = s.to + &quot; = &quot; + s.from + &quot;;&quot;;</span>
+<span class="nc" id="L29">    }</span>
+    public void visitPrimitiveInit(PrimitiveInit s) {
+<span class="nc" id="L31">        result = s.to + &quot; = &quot; + Basic.getName(s.regexp);</span>
+<span class="nc" id="L32">    }</span>
+    public void visitStringBufferAppendChar(StringBufferAppendChar s) {
+<span class="nc" id="L34">        result = s.to + &quot;.append(&quot; + s.from + &quot;);&quot;;</span>
+<span class="nc" id="L35">    }</span>
+    public void visitBasicUnaryOp(BasicUnaryOp s) {
+<span class="nc" id="L37">        result = s.to + &quot; = &quot; + s.from + &quot;.&quot; + s.op + &quot;();&quot;;</span>
+<span class="nc" id="L38">    }</span>
+    public void visitBasicBinaryOp(BasicBinaryOp s) {
+<span class="nc" id="L40">        result = s.to + &quot; = &quot; + s.first + &quot;.&quot; + s.op + &quot;(&quot; + s.second + &quot;);&quot;;</span>
+<span class="nc" id="L41">    }</span>
+    public void visitAssertBinaryOp(AssertBinaryOp s) {
+<span class="nc" id="L43">        result = &quot;assert &quot; + s.op + &quot;(&quot; + s.to + &quot;,&quot;+s.from+&quot;);&quot;;</span>
+<span class="nc bnc" id="L44" title="All 4 branches missed.">        if (ass != null &amp;&amp; !ass.isAssertionValid(s)) {</span>
+<span class="nc" id="L45">            result = &quot;invalid &quot; + result;</span>
+        }
+<span class="nc" id="L47">    }</span>
+    public void visitAssertUnaryOp(AssertUnaryOp s) {
+<span class="nc" id="L49">        result = &quot;assert &quot; + s.op + &quot;(&quot; + s.to + &quot;);&quot;;</span>
+<span class="nc bnc" id="L50" title="All 4 branches missed.">        if (ass != null &amp;&amp; !ass.isAssertionValid(s)) {</span>
+<span class="nc" id="L51">            result = &quot;invalid &quot; + result;</span>
+        }
+<span class="nc" id="L53">    }</span>
+    public void visitAssertAliases(AssertAliases s) {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">    	if (s.alias) {</span>
+<span class="nc" id="L56">    		result = &quot;assert &quot; + s.a + &quot; == &quot; + s.b;</span>
+<span class="nc" id="L57">    	} else {</span>
+<span class="nc" id="L58">    		result = &quot;assert &quot; + s.a + &quot; != &quot; + s.b;</span>
+    	}
+<span class="nc" id="L60">    }</span>
+    
+    public void visitArrayAssignment(ArrayAssignment s) {
+<span class="nc" id="L63">        result = s.to + &quot; = &quot; + s.from + &quot;;&quot;;</span>
+<span class="nc" id="L64">    }</span>
+
+    public void visitArrayCorrupt(ArrayCorrupt s) {
+<span class="nc" id="L67">        result = &quot;corrupt &quot; + s.to + &quot;;&quot;;</span>
+<span class="nc" id="L68">    }</span>
+    
+    public void visitArrayAddAll(ArrayAddAll s) {
+<span class="nc" id="L71">        result = s.to + &quot; += &quot; + s.from + &quot;[]&quot;;</span>
+<span class="nc" id="L72">    }</span>
+
+    public void visitArrayFromArray(ArrayFromArray s) {
+<span class="nc" id="L75">        result = s.to + &quot; = &quot; + s.from + &quot;[];&quot;;</span>
+<span class="nc" id="L76">    }</span>
+
+    public void visitArrayNew(ArrayNew s) {
+<span class="nc" id="L79">        result = s.to + &quot; = new [];&quot;;</span>
+<span class="nc" id="L80">    }</span>
+
+    public void visitArrayWriteArray(ArrayWriteArray s) {
+<span class="nc" id="L83">        result = s.to + &quot;[] = &quot; + s.from;</span>
+<span class="nc" id="L84">    }</span>
+
+    public void visitArrayWriteElement(ArrayWriteElement s) {
+<span class="nc" id="L87">        result = s.to + &quot;[] = &quot; + s.from;</span>
+<span class="nc" id="L88">    }</span>
+
+    public void visitCall(Call s) {
+<span class="nc" id="L91">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L92">        sb.append(s.retvar);</span>
+<span class="nc" id="L93">        sb.append(&quot; = &quot;);</span>
+<span class="nc" id="L94">        sb.append(s.target.getName());</span>
+<span class="nc" id="L95">        sb.append(&quot;(&quot;);</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (int i = 0; i &lt; s.args.length; i++) {</span>
+<span class="nc" id="L97">            sb.append(s.args[i]);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            if (i &lt; s.args.length - 1) {</span>
+<span class="nc" id="L99">                sb.append(&quot;, &quot;);</span>
+            }
+        }
+<span class="nc" id="L102">        sb.append(&quot;);&quot;);</span>
+<span class="nc" id="L103">        result = sb.toString();</span>
+<span class="nc" id="L104">    }</span>
+
+    public void visitMethodHead(MethodHead s) {
+<span class="nc" id="L107">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L108">        sb.append(&quot;(&quot;);</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        for (int i = 0; i &lt; s.params.length; i++) {</span>
+<span class="nc" id="L110">            sb.append(s.params[i]);</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (i &lt; s.params.length - 1) {</span>
+<span class="nc" id="L112">                sb.append(&quot;, &quot;);</span>
+            }
+        }
+<span class="nc" id="L115">        sb.append(&quot;)&quot;);</span>
+<span class="nc" id="L116">        result = sb.toString();</span>
+<span class="nc" id="L117">    }</span>
+
+    public void visitNop(Nop s) {
+<span class="nc" id="L120">        result = &quot;nop;&quot;;</span>
+<span class="nc" id="L121">    }</span>
+
+    public void visitReturn(Return s) {
+<span class="nc" id="L124">        result = &quot;return &quot; + s.retvar + &quot;;&quot;;</span>
+<span class="nc" id="L125">    }</span>
+
+    public void visitStringAssignment(StringAssignment s) {
+<span class="nc" id="L128">        result = s.to + &quot; = &quot; + s.from + &quot;;&quot;;</span>
+<span class="nc" id="L129">    }</span>
+
+    public void visitStringBufferAppend(StringBufferAppend s) {
+<span class="nc" id="L132">        result = s.to + &quot;.append(&quot; + s.from + &quot;);&quot;;</span>
+<span class="nc" id="L133">    }</span>
+
+    public void visitStringBufferAssignment(StringBufferAssignment s) {
+<span class="nc" id="L136">        result = s.to + &quot; = &quot; + s.from + &quot;;&quot;;</span>
+<span class="nc" id="L137">    }</span>
+
+    public void visitStringBufferBinaryOp(StringBufferBinaryOp s) {
+<span class="nc" id="L140">        result = s.to + &quot;.&quot; + s.op + &quot;(&quot; + s.from + &quot;);&quot;;</span>
+<span class="nc" id="L141">    }</span>
+
+    public void visitStringBufferCorrupt(StringBufferCorrupt s) {
+<span class="nc" id="L144">        result = &quot;corrupt &quot; + s.to + &quot;;&quot;;</span>
+<span class="nc" id="L145">    }</span>
+
+    public void visitStringBufferInit(StringBufferInit s) {
+<span class="nc" id="L148">        result = s.to + &quot; = new(&quot; + s.from + &quot;);&quot;;</span>
+<span class="nc" id="L149">    }</span>
+
+    public void visitStringBufferPrepend(StringBufferPrepend s) {
+<span class="nc" id="L152">        result = s.to + &quot;.prepend(&quot; + s.from + &quot;);&quot;;</span>
+<span class="nc" id="L153">    }</span>
+
+    public void visitStringBufferUnaryOp(StringBufferUnaryOp s) {
+<span class="nc" id="L156">        result = s.to + &quot;.&quot; + s.op + &quot;();&quot;;</span>
+<span class="nc" id="L157">    }</span>
+
+    public void visitStringConcat(StringConcat s) {
+<span class="nc" id="L160">        result = s.to + &quot; = &quot; + s.left + &quot; + &quot; + s.right + &quot;;&quot;;</span>
+<span class="nc" id="L161">    }</span>
+
+    public void visitStringFromArray(StringFromArray s) {
+<span class="nc" id="L164">        result = s.to + &quot; = &quot; + s.from + &quot;[];&quot;;</span>
+<span class="nc" id="L165">    }</span>
+    public void visitPrimitiveFromArray(PrimitiveFromArray s) {
+<span class="nc" id="L167">        result = s.to + &quot; = &quot; + s.from + &quot;[];&quot;;</span>
+<span class="nc" id="L168">    }</span>
+
+    public void visitStringFromStringBuffer(StringFromStringBuffer s) {
+<span class="nc" id="L171">        result = s.to + &quot; = &quot; + s.from + &quot;.s.toString();&quot;;</span>
+<span class="nc" id="L172">    }</span>
+
+    public void visitStringInit(StringInit s) {
+<span class="nc" id="L175">        result = s.to + &quot; = &quot; + Basic.getName(s.regexp) + &quot;;&quot;;</span>
+<span class="nc" id="L176">    }</span>
+
+	public void visitObjectAssignment(ObjectAssignment s) {
+<span class="nc" id="L179">		result = s.to + &quot; ~= &quot; + s.from;</span>
+<span class="nc" id="L180">	}</span>
+
+	public void visitObjectCorrupt(ObjectCorrupt s) {
+<span class="nc" id="L183">		result = &quot;corrupt obj &quot; + s.to;</span>
+<span class="nc" id="L184">	}</span>
+	
+	public void visitHotspot(Hotspot s) {
+<span class="nc" id="L187">		result = &quot;hotspot(&quot; + s.to + &quot;) = &quot; + s.from;</span>
+<span class="nc" id="L188">	}</span>
+	
+	public void visitFieldAssignment(FieldAssignment s) {
+<span class="nc" id="L191">		result = s.getField() + &quot; = &quot; + s.getFrom();</span>
+<span class="nc" id="L192">	}</span>
+	
+	public void visitFieldReference(FieldReference s) {
+<span class="nc" id="L195">		result = s.getTo() + &quot; = &quot; + s.getField();</span>
+<span class="nc" id="L196">	}</span>
+	
+	public void visitCatch(Catch s) {
+<span class="nc" id="L199">		result = &quot;catch&quot;;</span>
+<span class="nc" id="L200">	}</span>
+	public void visitExceptionalReturn(ExceptionalReturn s) {
+<span class="nc" id="L202">		result = &quot;except return&quot;;</span>
+<span class="nc" id="L203">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

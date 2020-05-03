@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Reverse.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Reverse.java</span></div><h1>Reverse.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Automaton operation for {@link StringBuffer#reverse()}.
+ */
+public class Reverse extends UnaryOperation {
+
+    /**
+     * Constructs new operation object.
+     */
+<span class="fc" id="L22">    public Reverse() {</span>
+<span class="fc" id="L23">    }</span>
+
+    /**
+     * Automaton operation.
+     * Constructs new automaton as copy of &lt;tt&gt;a&lt;/tt&gt; with a fresh initial state, epsilon transitions
+     * from that state to all old accept states, the old initial state as only new accept state, and all
+     * transitions reversed.
+     *
+     * @param a input automaton
+     * @return resulting automaton
+     */
+    @Override
+    public Automaton op(Automaton a) {
+<span class="fc" id="L36">        Automaton b = new Automaton();</span>
+<span class="fc" id="L37">        Map&lt;State, State&gt; map = new HashMap&lt;State, State&gt;();</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        for (State s : a.getStates()) {</span>
+<span class="fc" id="L39">            State ss = new State();</span>
+<span class="fc" id="L40">            map.put(s, ss);</span>
+        }
+<span class="fc" id="L42">        State initial = new State();</span>
+<span class="fc" id="L43">        b.setInitialState(initial);</span>
+<span class="fc" id="L44">        map.get(a.getInitialState()).setAccept(true);</span>
+<span class="fc" id="L45">        Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (State s : a.getStates()) {</span>
+<span class="fc" id="L47">            State ss = map.get(s);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (s.isAccept()) {</span>
+<span class="fc" id="L49">                epsilons.add(new StatePair(initial, ss));</span>
+            }
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            for (Transition t : s.getTransitions()) {</span>
+<span class="fc" id="L52">                State pp = map.get(t.getDest());</span>
+<span class="fc" id="L53">                pp.addTransition(new Transition(t.getMin(), t.getMax(), ss));</span>
+            }
+        }
+<span class="fc" id="L56">        b.setDeterministic(false);</span>
+<span class="fc" id="L57">        b.addEpsilons(epsilons);</span>
+<span class="pc" id="L58">        b.minimize();</span>
+<span class="fc" id="L59">        return b;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L64">        return &quot;reverse&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L69">        return 1;</span>
+    }
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L74">        return a;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L79">        return getClass().hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L84">        return obj instanceof Reverse;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

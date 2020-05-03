@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Trim.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Trim.java</span></div><h1>Trim.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+
+import java.util.*;
+
+/**
+ * Automaton operation for {@link String#trim()}.
+ */
+public class Trim extends UnaryOperation {
+
+    /**
+     * Constructs new operation object.
+     */
+<span class="fc" id="L18">    public Trim() {</span>
+<span class="fc" id="L19">    }</span>
+
+    /**
+     * Automaton operation.
+     * Constructs new automaton as copy of &lt;tt&gt;a&lt;/tt&gt; with a new initial state and a new accept state.
+     * Non-epsilon transitions are added from the new initial state to states that are reachable from the
+     * old initial state in zero or more special chars followed by one non-special char, thereby skipping initial
+     * special chars. Similarly, non-epsilon transitions are added from states that can reach the old
+     * final state in one non-special char followed by zero or more special chars to the new final state,
+     * thereby skipping final special chars. (&quot;Special&quot; chars are those with value less than or equal to 0x20.)
+     * The new initial state is accepting if the old one could reach an accept state by zero or more special chars.
+     *
+     * @param a input automaton
+     * @return resulting automaton
+     */
+    @Override
+    public Automaton op(Automaton a) {
+<span class="fc" id="L36">        Automaton b = a.clone();</span>
+<span class="fc" id="L37">        b.setDeterministic(false);</span>
+<span class="fc" id="L38">        Map&lt;State, Set&lt;State&gt;&gt; normal_prevs = new HashMap&lt;State, Set&lt;State&gt;&gt;();</span>
+<span class="fc" id="L39">        Map&lt;State, Set&lt;State&gt;&gt; special_prevs = new HashMap&lt;State, Set&lt;State&gt;&gt;();</span>
+<span class="fc" id="L40">        findPrevs(b, normal_prevs, special_prevs);</span>
+<span class="fc" id="L41">        Set&lt;State&gt; pre = findPreSet(b);</span>
+<span class="fc" id="L42">        Set&lt;State&gt; post = findPostSet(b, special_prevs);</span>
+<span class="fc" id="L43">        boolean initial_accept = post.contains(b.getInitialState());</span>
+<span class="fc" id="L44">        State initial = new State();</span>
+<span class="fc" id="L45">        b.setInitialState(initial);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (State s : pre) {</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            for (Transition t : new ArrayList&lt;Transition&gt;(s.getTransitions())) {</span>
+<span class="fc" id="L48">                char min = t.getMin();</span>
+<span class="fc" id="L49">                char max = t.getMax();</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                if (min &lt;= '\u0020') {</span>
+<span class="fc" id="L51">                    min = '\u0021';</span>
+                }
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                if (min &lt;= max) {</span>
+<span class="fc" id="L54">                    initial.addTransition(new Transition(min, max, t.getDest()));</span>
+                }
+            }
+        }
+<span class="fc" id="L58">        State accept = new State();</span>
+<span class="fc" id="L59">        accept.setAccept(true);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (State s : b.getAcceptStates()) {</span>
+<span class="fc" id="L61">            s.setAccept(false);</span>
+        }
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (initial_accept) {</span>
+<span class="fc" id="L64">            initial.setAccept(true);</span>
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (State s : post) {</span>
+<span class="fc" id="L67">            Set&lt;State&gt; prevset = normal_prevs.get(s);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            if (prevset != null) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                for (State p : prevset) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                    for (Transition t : new ArrayList&lt;Transition&gt;(p.getTransitions())) {</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                        if (t.getDest() == s) {</span>
+<span class="fc" id="L72">                            char min = t.getMin();</span>
+<span class="fc" id="L73">                            char max = t.getMax();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                            if (min &lt;= '\u0020') {</span>
+<span class="fc" id="L75">                                min = '\u0021';</span>
+                            }
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                            if (min &lt;= max) {</span>
+<span class="fc" id="L78">                                p.addTransition(new Transition(min, max, accept));</span>
+                            }
+                        }
+                    }
+                }
+            }
+        }
+<span class="pc" id="L85">        b.minimize();</span>
+<span class="fc" id="L86">        return b;</span>
+    }
+
+    private Set&lt;State&gt; findPreSet(Automaton b) {
+<span class="fc" id="L90">        Set&lt;State&gt; pre = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L91">        TreeSet&lt;State&gt; pending = new TreeSet&lt;State&gt;();</span>
+<span class="fc" id="L92">        pending.add(b.getInitialState());</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        while (!pending.isEmpty()) {</span>
+<span class="fc" id="L94">            State p = pending.first();</span>
+<span class="fc" id="L95">            pending.remove(p);</span>
+<span class="fc" id="L96">            pre.add(p);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            for (Transition t : p.getTransitions()) {</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                if (t.getMin() &lt;= '\u0020') {</span>
+<span class="fc" id="L99">                    State q = t.getDest();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">                    if (!pre.contains(q)) {</span>
+<span class="fc" id="L101">                        pending.add(q);</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L106">        return pre;</span>
+    }
+
+    private Set&lt;State&gt; findPostSet(Automaton b, Map&lt;State, Set&lt;State&gt;&gt; special_prevs) {
+<span class="fc" id="L110">        Set&lt;State&gt; post = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L111">        TreeSet&lt;State&gt; pending = new TreeSet&lt;State&gt;();</span>
+<span class="fc" id="L112">        pending.addAll(b.getAcceptStates());</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        while (!pending.isEmpty()) {</span>
+<span class="fc" id="L114">            State p = pending.first();</span>
+<span class="fc" id="L115">            pending.remove(p);</span>
+<span class="fc" id="L116">            post.add(p);</span>
+<span class="fc" id="L117">            Set&lt;State&gt; prevset = special_prevs.get(p);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (prevset != null) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">                for (State q : prevset) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                    if (!post.contains(q)) {</span>
+<span class="fc" id="L121">                        pending.add(q);</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L126">        return post;</span>
+    }
+
+    private void findPrevs(Automaton b, Map&lt;State, Set&lt;State&gt;&gt; normal_prevs, Map&lt;State, Set&lt;State&gt;&gt; special_prevs) {
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (State s : b.getStates()) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            for (Transition t : s.getTransitions()) {</span>
+<span class="fc" id="L132">                char min = t.getMin();</span>
+<span class="fc" id="L133">                char max = t.getMax();</span>
+<span class="fc" id="L134">                State dest = t.getDest();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (min &lt;= '\u0020') {</span>
+<span class="fc" id="L136">                    Set&lt;State&gt; prevset = special_prevs.get(dest);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                    if (prevset == null) {</span>
+<span class="fc" id="L138">                        prevset = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L139">                        special_prevs.put(dest, prevset);</span>
+                    }
+<span class="fc" id="L141">                    prevset.add(s);</span>
+                }
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                if (max &gt; '\u0020') {</span>
+<span class="fc" id="L144">                    Set&lt;State&gt; prevset = normal_prevs.get(dest);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">                    if (prevset == null) {</span>
+<span class="fc" id="L146">                        prevset = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L147">                        normal_prevs.put(dest, prevset);</span>
+                    }
+<span class="fc" id="L149">                    prevset.add(s);</span>
+                }
+            }
+        }
+<span class="fc" id="L153">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L157">        return &quot;trim&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L162">        return 1;</span>
+    }
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L167">        return a;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L172">        return getClass().hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L177">        return obj instanceof Trim;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

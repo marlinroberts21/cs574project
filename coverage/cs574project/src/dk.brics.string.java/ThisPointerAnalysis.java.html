@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ThisPointerAnalysis.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">ThisPointerAnalysis.java</span></div><h1>ThisPointerAnalysis.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import soot.Local;
+import soot.Unit;
+import soot.Value;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.Stmt;
+import soot.jimple.ThisRef;
+import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.scalar.ForwardFlowAnalysis;
+
+/**
+ * Determines which variables definitely refer to &lt;tt&gt;this&lt;/tt&gt; at each program point.
+ * &lt;p/&gt;
+ * This class has been well tested, but is currently unused.
+ */
+public class ThisPointerAnalysis extends ForwardFlowAnalysis&lt;Unit, Set&lt;Local&gt;&gt; {
+	
+	public ThisPointerAnalysis(ExceptionalUnitGraph g) {
+<span class="nc" id="L23">		super(g);</span>
+<span class="nc" id="L24">		doAnalysis();</span>
+<span class="nc" id="L25">	}</span>
+	
+	public Set&lt;Local&gt; getThisLocalsBefore(Stmt stmt) {
+<span class="nc" id="L28">		return super.getFlowBefore(stmt);</span>
+	}
+	public Set&lt;Local&gt; getThisLocalsAfter(Stmt stmt) {
+<span class="nc" id="L31">		return super.getFlowAfter(stmt);</span>
+	}
+	
+	@Override
+	protected void flowThrough(Set&lt;Local&gt; in, Unit node, Set&lt;Local&gt; out) {
+<span class="nc" id="L36">		out.clear();</span>
+<span class="nc" id="L37">		out.addAll(in);</span>
+		
+<span class="nc" id="L39">		Stmt stmt = (Stmt)node;</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">		if (!(stmt instanceof DefinitionStmt)) {</span>
+<span class="nc" id="L41">			return;</span>
+		}
+		
+<span class="nc" id="L44">		DefinitionStmt def = (DefinitionStmt)stmt;</span>
+<span class="nc" id="L45">		Value left = def.getLeftOp();</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">		if (!(left instanceof Local)) {</span>
+<span class="nc" id="L47">			return;</span>
+		}
+		
+<span class="nc" id="L50">		Local local = (Local)left;</span>
+		
+<span class="nc" id="L52">		Value right = def.getRightOp();</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (right instanceof ThisRef) {</span>
+<span class="nc" id="L54">			out.add(local);</span>
+<span class="nc bnc" id="L55" title="All 4 branches missed.">		} else if (right instanceof Local &amp;&amp; in.contains(right)) {</span>
+<span class="nc" id="L56">			out.add(local);</span>
+<span class="nc" id="L57">		} else {</span>
+<span class="nc" id="L58">			out.remove(local);</span>
+		}
+<span class="nc" id="L60">	}</span>
+	
+	@Override
+	protected void copy(Set&lt;Local&gt; source, Set&lt;Local&gt; dest) {
+<span class="nc" id="L64">		dest.clear();</span>
+<span class="nc" id="L65">		dest.addAll(source);</span>
+<span class="nc" id="L66">	}</span>
+
+	@Override
+	protected Set&lt;Local&gt; entryInitialFlow() {
+<span class="nc" id="L70">		return new HashSet&lt;Local&gt;();</span>
+	}
+	
+	@Override
+	protected void merge(Set&lt;Local&gt; in1, Set&lt;Local&gt; in2, Set&lt;Local&gt; out) {
+<span class="nc" id="L75">		out.clear();</span>
+<span class="nc" id="L76">		out.addAll(in1);</span>
+<span class="nc" id="L77">		out.retainAll(in2);</span>
+<span class="nc" id="L78">	}</span>
+	
+	@Override
+	protected Set&lt;Local&gt; newInitialFlow() {
+<span class="nc" id="L82">		return new HashSet&lt;Local&gt;();</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

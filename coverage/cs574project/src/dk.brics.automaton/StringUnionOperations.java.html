@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StringUnionOperations.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">StringUnionOperations.java</span></div><h1>StringUnionOperations.java</h1><pre class="source lang-java linenums">package dk.brics.automaton;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+
+/**
+ * Operations for building minimal deterministic automata from sets of strings. 
+ * The algorithm requires sorted input data, but is very fast (nearly linear with the input size).
+ * 
+ * @author Dawid Weiss
+ */
+<span class="nc bnc" id="L14" title="All 2 branches missed.">final public class StringUnionOperations {</span>
+
+	/**
+	 * Lexicographic order of input sequences.
+	 */
+<span class="nc" id="L19">	public final static Comparator&lt;CharSequence&gt; LEXICOGRAPHIC_ORDER = new Comparator&lt;CharSequence&gt;() {</span>
+		public int compare(CharSequence s1, CharSequence s2) {
+<span class="nc" id="L21">			final int lens1 = s1.length();</span>
+<span class="nc" id="L22">			final int lens2 = s2.length();</span>
+<span class="nc" id="L23">			final int max = Math.min(lens1, lens2);</span>
+
+<span class="nc bnc" id="L25" title="All 2 branches missed.">			for (int i = 0; i &lt; max; i++) {</span>
+<span class="nc" id="L26">				final char c1 = s1.charAt(i);</span>
+<span class="nc" id="L27">				final char c2 = s2.charAt(i);</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">				if (c1 != c2)</span>
+<span class="nc" id="L29">					return c1 - c2;</span>
+			}
+<span class="nc" id="L31">			return lens1 - lens2;</span>
+		}
+<span class="nc" id="L33">	};</span>
+
+	/**
+	 * State with &lt;code&gt;char&lt;/code&gt; labels on transitions.
+	 */
+<span class="nc bnc" id="L38" title="All 2 branches missed.">	final static class State {</span>
+
+		/** An empty set of labels. */
+<span class="nc" id="L41">		private final static char[] NO_LABELS = new char[0];</span>
+
+		/** An empty set of states. */
+<span class="nc" id="L44">		private final static State[] NO_STATES = new State[0];</span>
+
+		/**
+		 * Labels of outgoing transitions. Indexed identically to {@link #states}.
+		 * Labels must be sorted lexicographically.
+		 */
+<span class="nc" id="L50">		char[] labels = NO_LABELS;</span>
+
+		/**
+		 * States reachable from outgoing transitions. Indexed identically to
+		 * {@link #labels}.
+		 */
+<span class="nc" id="L56">		State[] states = NO_STATES;</span>
+
+		/**
+		 * &lt;code&gt;true&lt;/code&gt; if this state corresponds to the end of at least one
+		 * input sequence.
+		 */
+		boolean is_final;
+
+		/**
+		 * Returns the target state of a transition leaving this state and labeled
+		 * with &lt;code&gt;label&lt;/code&gt;. If no such transition exists, returns
+		 * &lt;code&gt;null&lt;/code&gt;.
+		 */
+		public State getState(char label) {
+<span class="nc" id="L70">			final int index = Arrays.binarySearch(labels, label);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">			return index &gt;= 0 ? states[index] : null; </span>
+		}
+
+		/**
+		 * Returns an array of outgoing transition labels. The array is sorted in 
+		 * lexicographic order and indexes correspond to states returned from 
+		 * {@link #getStates()}.
+		 */
+		public char [] getTransitionLabels() {
+<span class="nc" id="L80">			return this.labels;</span>
+		}
+
+		/**
+		 * Returns an array of outgoing transitions from this state. The returned
+		 * array must not be changed.
+		 */
+		public State[] getStates() {
+<span class="nc" id="L88">			return this.states;</span>
+		}
+
+		/**
+		 * Two states are equal if:
+		 * &lt;ul&gt;
+		 * &lt;li&gt;they have an identical number of outgoing transitions, labeled with
+		 * the same labels&lt;/li&gt;
+		 * &lt;li&gt;corresponding outgoing transitions lead to the same states (to states
+		 * with an identical right-language).
+		 * &lt;/ul&gt;
+		 */
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc" id="L102">			final State other = (State) obj;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">			return is_final == other.is_final</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">			&amp;&amp; Arrays.equals(this.labels, other.labels)</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">			&amp;&amp; referenceEquals(this.states, other.states);</span>
+		}
+
+		/**
+		 * Return &lt;code&gt;true&lt;/code&gt; if this state has any children (outgoing
+		 * transitions).
+		 */
+		public boolean hasChildren() {
+<span class="nc bnc" id="L113" title="All 2 branches missed.">			return labels.length &gt; 0;</span>
+		}
+
+		/**
+		 * Is this state a final state in the automaton?
+		 */
+		public boolean isFinal() {
+<span class="nc" id="L120">			return is_final;</span>
+		}
+
+		/**
+		 * Compute the hash code of the &lt;i&gt;current&lt;/i&gt; status of this state.
+		 */
+		@Override
+		public int hashCode() {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">			int hash = is_final ? 1 : 0;</span>
+
+<span class="nc" id="L130">			hash ^= hash * 31 + this.labels.length;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">			for (char c : this.labels)</span>
+<span class="nc" id="L132">				hash ^= hash * 31 + c;</span>
+
+			/*
+			 * Compare the right-language of this state using reference-identity of
+			 * outgoing states. This is possible because states are interned (stored
+			 * in registry) and traversed in post-order, so any outgoing transitions
+			 * are already interned.
+			 */
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			for (State s : this.states) {</span>
+<span class="nc" id="L141">				hash ^= System.identityHashCode(s);</span>
+			}
+
+<span class="nc" id="L144">			return hash;</span>
+		}
+
+		/**
+		 * Create a new outgoing transition labeled &lt;code&gt;label&lt;/code&gt; and return
+		 * the newly created target state for this transition.
+		 */
+		State newState(char label) {
+<span class="nc bnc" id="L152" title="All 4 branches missed.">			assert Arrays.binarySearch(labels, label) &lt; 0 : &quot;State already has transition labeled: &quot;</span>
+<span class="nc" id="L153">				+ label;</span>
+
+<span class="nc" id="L155">			labels = copyOf(labels, labels.length + 1);</span>
+<span class="nc" id="L156">			states = copyOf(states, states.length + 1);</span>
+
+<span class="nc" id="L158">			labels[labels.length - 1] = label;</span>
+<span class="nc" id="L159">			return states[states.length - 1] = new State();</span>
+		}
+
+		/**
+		 * Return the most recent transitions's target state.
+		 */
+		State lastChild() {
+<span class="nc bnc" id="L166" title="All 4 branches missed.">			assert hasChildren() : &quot;No outgoing transitions.&quot;;</span>
+<span class="nc" id="L167">			return states[states.length - 1];</span>
+		}
+
+		/**
+		 * Return the associated state if the most recent transition
+		 * is labeled with &lt;code&gt;label&lt;/code&gt;.
+		 */
+		State lastChild(char label) {
+<span class="nc" id="L175">			final int index = labels.length - 1;</span>
+<span class="nc" id="L176">			State s = null;</span>
+<span class="nc bnc" id="L177" title="All 4 branches missed.">			if (index &gt;= 0 &amp;&amp; labels[index] == label) {</span>
+<span class="nc" id="L178">				s = states[index];</span>
+			}
+<span class="nc bnc" id="L180" title="All 4 branches missed.">			assert s == getState(label);</span>
+<span class="nc" id="L181">			return s;</span>
+		}
+
+		/**
+		 * Replace the last added outgoing transition's target state with the given
+		 * state.
+		 */
+		void replaceLastChild(State state) {
+<span class="nc bnc" id="L189" title="All 4 branches missed.">			assert hasChildren() : &quot;No outgoing transitions.&quot;;</span>
+<span class="nc" id="L190">			states[states.length - 1] = state;</span>
+<span class="nc" id="L191">		}</span>
+
+		/**
+		 * JDK1.5-replacement of {@link Arrays#copyOf(char[], int)}
+		 */
+		private static char[] copyOf(char[] original, int newLength) {
+<span class="nc" id="L197">			char[] copy = new char[newLength];</span>
+<span class="nc" id="L198">			System.arraycopy(original, 0, copy, 0, Math.min(original.length,</span>
+<span class="nc" id="L199">					newLength));</span>
+<span class="nc" id="L200">			return copy;</span>
+		}
+
+		/**
+		 * JDK1.5-replacement of {@link Arrays#copyOf(char[], int)}
+		 */
+		public static State[] copyOf(State[] original, int newLength) {
+<span class="nc" id="L207">			State[] copy = new State[newLength];</span>
+<span class="nc" id="L208">			System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));</span>
+<span class="nc" id="L209">			return copy;</span>
+		}
+
+		/**
+		 * Compare two lists of objects for reference-equality.
+		 */
+		private static boolean referenceEquals(Object[] a1, Object[] a2) {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">			if (a1.length != a2.length)</span>
+<span class="nc" id="L217">				return false;</span>
+
+<span class="nc bnc" id="L219" title="All 2 branches missed.">			for (int i = 0; i &lt; a1.length; i++)</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">				if (a1[i] != a2[i])</span>
+<span class="nc" id="L221">					return false;</span>
+
+<span class="nc" id="L223">			return true;</span>
+		}
+	}
+
+	/**
+	 * &quot;register&quot; for state interning.
+	 */
+<span class="nc" id="L230">	private HashMap&lt;State, State&gt; register = new HashMap&lt;State, State&gt;();</span>
+
+	/**
+	 * Root automaton state.
+	 */
+<span class="nc" id="L235">	private State root = new State();</span>
+
+	/**
+	 * Previous sequence added to the automaton in {@link #add(CharSequence)}.
+	 */
+	private StringBuilder previous;
+
+	/**
+	 * Add another character sequence to this automaton. The sequence must be
+	 * lexicographically larger or equal compared to any previous sequences
+	 * added to this automaton (the input must be sorted).
+	 */
+	public void add(CharSequence current) {
+<span class="nc bnc" id="L248" title="All 4 branches missed.">		assert register != null : &quot;Automaton already built.&quot;;</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">		assert current.length() &gt; 0 : &quot;Input sequences must not be empty.&quot;;</span>
+<span class="nc bnc" id="L250" title="All 6 branches missed.">		assert previous == null || LEXICOGRAPHIC_ORDER.compare(previous, current) &lt;= 0 : </span>
+<span class="nc" id="L251">			&quot;Input must be sorted: &quot; + previous + &quot; &gt;= &quot; + current;</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">		assert setPrevious(current);</span>
+
+		// Descend in the automaton (find matching prefix). 
+<span class="nc" id="L255">		int pos = 0, max = current.length();</span>
+<span class="nc" id="L256">		State next, state = root;</span>
+<span class="nc bnc" id="L257" title="All 4 branches missed.">		while (pos &lt; max &amp;&amp; (next = state.lastChild(current.charAt(pos))) != null) {</span>
+<span class="nc" id="L258">			state = next;</span>
+<span class="nc" id="L259">			pos++;</span>
+		}
+
+<span class="nc bnc" id="L262" title="All 2 branches missed.">		if (state.hasChildren())</span>
+<span class="nc" id="L263">			replaceOrRegister(state);</span>
+
+<span class="nc" id="L265">		addSuffix(state, current, pos);</span>
+<span class="nc" id="L266">	}</span>
+
+	/**
+	 * Finalize the automaton and return the root state. No more strings can be
+	 * added to the builder after this call.
+	 * 
+	 * @return Root automaton state.
+	 */
+	public State complete() {
+<span class="nc bnc" id="L275" title="All 2 branches missed.">		if (this.register == null)</span>
+<span class="nc" id="L276">			throw new IllegalStateException();</span>
+
+<span class="nc bnc" id="L278" title="All 2 branches missed.">		if (root.hasChildren())</span>
+<span class="nc" id="L279">			replaceOrRegister(root);</span>
+
+<span class="nc" id="L281">		register = null;</span>
+<span class="nc" id="L282">		return root;</span>
+	}
+
+	/**
+	 * Internal recursive traversal for conversion.
+	 */
+	private static dk.brics.automaton.State convert(State s, 
+			IdentityHashMap&lt;State, dk.brics.automaton.State&gt; visited) {
+<span class="nc" id="L290">		dk.brics.automaton.State converted = visited.get(s);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">		if (converted != null)</span>
+<span class="nc" id="L292">			return converted;</span>
+
+<span class="nc" id="L294">		converted = new dk.brics.automaton.State();</span>
+<span class="nc" id="L295">		converted.setAccept(s.is_final);</span>
+
+<span class="nc" id="L297">		visited.put(s, converted);</span>
+<span class="nc" id="L298">		int i = 0;</span>
+<span class="nc" id="L299">		char [] labels = s.labels;</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">		for (StringUnionOperations.State target : s.states) {</span>
+<span class="nc" id="L301">			converted.addTransition(new Transition(labels[i++], convert(target, visited)));</span>
+		}
+
+<span class="nc" id="L304">		return converted;</span>
+	}
+
+	/**
+	 * Build a minimal, deterministic automaton from a sorted list of strings.
+	 */
+	public static dk.brics.automaton.State build(CharSequence[] input) {
+<span class="nc" id="L311">		final StringUnionOperations builder = new StringUnionOperations(); </span>
+
+<span class="nc bnc" id="L313" title="All 2 branches missed.">		for (CharSequence chs : input)</span>
+<span class="nc" id="L314">			builder.add(chs);</span>
+
+<span class="nc" id="L316">		return convert(builder.complete(), new IdentityHashMap&lt;State, dk.brics.automaton.State&gt;());</span>
+	}
+
+	/**
+	 * Copy &lt;code&gt;current&lt;/code&gt; into an internal buffer.
+	 */
+	private boolean setPrevious(CharSequence current) {
+<span class="nc bnc" id="L323" title="All 2 branches missed.">		if (previous == null) </span>
+<span class="nc" id="L324">			previous = new StringBuilder();</span>
+
+<span class="nc" id="L326">		previous.setLength(0);</span>
+<span class="nc" id="L327">		previous.append(current);</span>
+
+<span class="nc" id="L329">		return true;</span>
+	}
+
+	/**
+	 * Replace last child of &lt;code&gt;state&lt;/code&gt; with an already registered
+	 * state or register the last child state.
+	 */
+	private void replaceOrRegister(State state) {
+<span class="nc" id="L337">		final State child = state.lastChild();</span>
+
+<span class="nc bnc" id="L339" title="All 2 branches missed.">		if (child.hasChildren())</span>
+<span class="nc" id="L340">			replaceOrRegister(child);</span>
+
+<span class="nc" id="L342">		final State registered = register.get(child);</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">		if (registered != null) {</span>
+<span class="nc" id="L344">			state.replaceLastChild(registered);</span>
+<span class="nc" id="L345">		} else {</span>
+<span class="nc" id="L346">			register.put(child, child);</span>
+		}
+<span class="nc" id="L348">	}</span>
+
+	/**
+	 * Add a suffix of &lt;code&gt;current&lt;/code&gt; starting at &lt;code&gt;fromIndex&lt;/code&gt;
+	 * (inclusive) to state &lt;code&gt;state&lt;/code&gt;.
+	 */
+	private void addSuffix(State state, CharSequence current, int fromIndex) {
+<span class="nc" id="L355">		final int len = current.length();</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">		for (int i = fromIndex; i &lt; len; i++) {</span>
+<span class="nc" id="L357">			state = state.newState(current.charAt(i));</span>
+		}
+<span class="nc" id="L359">		state.is_final = true;</span>
+<span class="nc" id="L360">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

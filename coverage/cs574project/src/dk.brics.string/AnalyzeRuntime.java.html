@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AnalyzeRuntime.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string</a> &gt; <span class="el_source">AnalyzeRuntime.java</span></div><h1>AnalyzeRuntime.java</h1><pre class="source lang-java linenums">package dk.brics.string;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
+
+import soot.ValueBox;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.annotation.AnnotationAnalyzer;
+import dk.brics.string.annotation.StaticTypeError;
+import dk.brics.string.external.ExternalVisibility;
+import dk.brics.string.external.MainExternalVisibility;
+import dk.brics.string.external.PublicExternalVisibility;
+import dk.brics.string.external.Resolver;
+
+/**
+ * An executable front-end for analyzing programs using the string analysis
+ * runtime library.
+ * &lt;p/&gt;
+ * The given classes are analyzed using the string analysis, and the results
+ * are compared to the expected results as given in all
+ * {@link dk.brics.string.runtime.Strings#analyze Strings.analyze} and
+ * {@link dk.brics.string.runtime.Strings#check Strings.check} calls.
+ * &lt;p/&gt;
+ * For all {@link dk.brics.string.runtime.Strings#analyze Strings.analyze} calls,
+ * there are three cases:
+ * &lt;ul&gt;
+ * &lt;li&gt;The inferred language is identical to the expected language.&lt;br&gt;
+ * The message &amp;quot;&lt;tt&gt;Exact match!&lt;/tt&gt;&amp;quot; is printed.&lt;/li&gt;
+ * &lt;li&gt;The inferred language is a subset of the expected language.&lt;br&gt;
+ * The message &amp;quot;&lt;tt&gt;Always satisfied!&lt;/tt&gt;&amp;quot; is printed.&lt;/li&gt;
+ * &lt;li&gt;There exist one or more strings in the inferred language that
+ * are not in the expected language.&lt;br&gt;
+ * One shortest example of such a string is printed.&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p/&gt;
+ * For all {@link dk.brics.string.runtime.Strings#check Strings.check} calls,
+ * there are also three cases:
+ * &lt;ul&gt;
+ * &lt;li&gt;The inferred language is a subset of the expected language, indicating
+ * that the check always succeeds.&lt;br&gt;
+ * The message &amp;quot;&lt;tt&gt;Always satisfied!&lt;/tt&gt;&amp;quot; is printed.&lt;/li&gt;
+ * &lt;li&gt;The inferred language is disjoint from the expected language, indicating
+ * that the check always fails.&lt;br&gt;
+ * The message &amp;quot;&lt;tt&gt;Never satisfied!&lt;/tt&gt;&amp;quot; is printed.&lt;/li&gt;
+ * &lt;li&gt;Otherwise, nothing is printed.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public class AnalyzeRuntime {
+<span class="nc" id="L57">    private static Logger log = Logger.getLogger(AnalyzeRuntime.class);</span>
+    
+    /**
+     * Initializes the log4j system to print all messages from {@link AnalyzeRuntime}
+     * in &lt;tt&gt;System.out&lt;/tt&gt;, and suppress all other non-error messages.
+     */
+    public static void setupLogger() {
+<span class="nc" id="L64">        log.addAppender(new AppenderSkeleton() {</span>
+            @Override
+            protected void append(LoggingEvent e) {
+<span class="nc bnc" id="L67" title="All 2 branches missed.">                if (e.getLevel() == Level.ERROR)</span>
+<span class="nc" id="L68">                    System.err.println(&quot;ERROR &quot; + e.getRenderedMessage());</span>
+                else
+<span class="nc" id="L70">                    System.out.println(e.getRenderedMessage());</span>
+<span class="nc" id="L71">            }</span>
+            @Override
+            public void close() {
+<span class="nc" id="L74">            }</span>
+            @Override
+            public boolean requiresLayout() {
+<span class="nc" id="L77">                return false;</span>
+            }
+        });
+<span class="nc" id="L80">        log.setLevel(Level.ALL);</span>
+<span class="nc" id="L81">        Logger.getRootLogger().setLevel(Level.ERROR);</span>
+<span class="nc" id="L82">    }</span>
+
+    // Not instantiable
+    private AnalyzeRuntime() {
+    }
+    
+    private static String parseClassname(String classname) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (classname.endsWith(&quot;.class&quot;)) {</span>
+<span class="nc" id="L90">            return classname.substring(0, classname.length() - 6).replace('/', '.');</span>
+        } else {
+<span class="nc" id="L92">            return classname;</span>
+        }
+    }
+    
+    /**
+     * Main method for the runtime system.
+     * &lt;p/&gt;
+     * Any number of arguments may be given. The types of arguments are:
+     * &lt;ul&gt;
+     *  &lt;li&gt;&lt;tt&gt;-dir=&lt;/tt&gt;&lt;i&gt;directory or jar&lt;/i&gt;&lt;br&gt;
+           Use all class files found in the specified jar file or directory 
+           (and its subdirectories, recursively) as application classes. 
+           The directory must refer to the root package.
+           The directory or jar file does not have to be on the classpath.
+     *  &lt;li&gt;&lt;i&gt;classname&lt;/i&gt;&lt;br&gt;
+     *     Use the class with the specified fully qualified name or filename as an application class. 
+     *     The class must be on the classpath.
+     *  &lt;li&gt;&lt;tt&gt;-lib=&lt;/tt&gt;&lt;i&gt;directory or jar&lt;/i&gt;&lt;br&gt;
+           Add every jar file in the specified directory to the classpath, or just the specified 
+           file if a jar file was specified. This will typically point to the analyzed project's &lt;tt&gt;lib&lt;/tt&gt;
+           directory. 
+     *  &lt;li&gt;&lt;tt&gt;-resolver=&lt;/tt&gt;&lt;i&gt;classname&lt;/i&gt;&lt;br&gt;
+     *          Use the class with the specified fully qualified name or filename as a resolver 
+     *          in the analysis. The class must be on the classpath. 
+     *          It must have a constructor taking no arguments and it must implement the {@link Resolver} 
+     *          interface.
+     *  &lt;li&gt;&lt;tt&gt;-externalvisibility=&lt;/tt&gt;&lt;i&gt;classname or a special identifier&lt;/i&gt;&lt;br&gt;
+     *          Use the class with the specified fully qualified name or filename as a resolver 
+     *          in the analysis. The class must be on the classpath. 
+     *          It must have a constructor taking no arguments and it must implement the {@link Resolver} 
+     *          interface.
+     *          Instead of a classname, one may specify one of the predefined strategies using the
+     *          identifier &lt;tt&gt;public&lt;/tt&gt; or &lt;tt&gt;main&lt;/tt&gt;, which are shorthands for
+     *          {@link PublicExternalVisibility} and {@link MainExternalVisibility}, respectively.
+     * &lt;/ul&gt;
+     * 
+     * @param args a list of arguments, as described above
+     */
+    public static void main(String[] args) throws IOException, IllegalAccessException, InstantiationException {
+<span class="nc" id="L131">        setupLogger();</span>
+        
+<span class="nc" id="L133">        log.info(&quot;JSA 2.0 -- Runtime System Analyzer&quot;);</span>
+        
+<span class="nc" id="L135">        Debug.init();</span>
+<span class="nc" id="L136">        long time0 = System.currentTimeMillis();</span>
+        
+<span class="nc" id="L138">        boolean foundClasses = false;</span>
+<span class="nc" id="L139">        List&lt;Class&lt;?&gt;&gt; customResolvers = new LinkedList&lt;Class&lt;?&gt;&gt;();</span>
+<span class="nc" id="L140">        Class&lt;?&gt; external = null;</span>
+<span class="nc" id="L141">        log.info(&quot;Loading classes...&quot;);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        for (int i = 0; i &lt; args.length; i++) {</span>
+            // load directory
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (args[i].startsWith(&quot;-dir=&quot;)) {</span>
+<span class="nc" id="L145">                String dir = args[i].substring(5);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                if (dir.startsWith(&quot;\&quot;&quot;)) // remove quotes</span>
+<span class="nc" id="L147">                    dir = dir.substring(1, dir.length()-1);</span>
+<span class="nc" id="L148">                int count = StringAnalysis.loadDirectory(dir);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                if (count == 0) {</span>
+<span class="nc" id="L150">                    log.info(&quot;No classes were found in &quot; + dir);</span>
+<span class="nc" id="L151">                } else {</span>
+<span class="nc" id="L152">                    foundClasses = true;</span>
+                }
+            
+            // resolver
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            } else if (args[i].startsWith(&quot;-resolver=&quot;)) {</span>
+<span class="nc" id="L157">                String classname = parseClassname(args[i].substring(10));</span>
+                try {
+<span class="nc" id="L159">                    customResolvers.add(Class.forName(classname));</span>
+<span class="nc" id="L160">                } catch (ClassNotFoundException ex) {</span>
+<span class="nc" id="L161">                    throw new RuntimeException(&quot;Could not find resolver class &quot; + classname);</span>
+                }
+                
+            // external visiblity
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            } else if (args[i].startsWith(&quot;-externalvisibility=&quot;)) {</span>
+<span class="nc" id="L166">                String classname = parseClassname(args[i].substring(20));</span>
+                
+                // only one external visiblity may be set
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                if (external != null) {</span>
+<span class="nc" id="L170">                    throw new RuntimeException(&quot;At most one external visibility class may be specified&quot;);</span>
+                }
+                
+                // check the predefined identifiers, for convenience
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                if (classname.equals(&quot;main&quot;)) {</span>
+<span class="nc" id="L175">                    external = MainExternalVisibility.class;</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                } else if (classname.equals(&quot;public&quot;)) {</span>
+<span class="nc" id="L177">                    external = PublicExternalVisibility.class;</span>
+<span class="nc" id="L178">                } else {</span>
+                    // otherwise try to load it as a classname
+                    try {
+<span class="nc" id="L181">                        external = Class.forName(classname);</span>
+<span class="nc" id="L182">                    } catch (ClassNotFoundException ex) {</span>
+<span class="nc" id="L183">                        throw new RuntimeException(&quot;Could not find external visibility class &quot; + classname);</span>
+                    }
+                }
+            
+            // library classpath
+<span class="nc bnc" id="L188" title="All 2 branches missed.">            } else if (args[i].startsWith(&quot;-lib=&quot;)) {</span>
+<span class="nc" id="L189">                String dir = args[i].substring(&quot;-lib=&quot;.length());</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">                if (dir.toLowerCase().endsWith(&quot;.jar&quot;)) {</span>
+                    // add as single jar file
+<span class="nc" id="L192">                    StringAnalysis.addDirectoryToClassPath(dir);</span>
+<span class="nc" id="L193">                } else {</span>
+                    // add every jar file in the specified directory
+<span class="nc" id="L195">                    boolean found = StringAnalysis.addJarsToClassPath(dir);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                    if (!found) {</span>
+<span class="nc" id="L197">                        log.warn(&quot;No jar files found in &quot; + dir);</span>
+                    }
+                }
+                
+            // load class
+<span class="nc" id="L202">            }  else {</span>
+<span class="nc" id="L203">                String classname = parseClassname(args[i]);</span>
+<span class="nc" id="L204">                StringAnalysis.loadClass(classname);</span>
+<span class="nc" id="L205">                foundClasses = true;</span>
+            }
+        }
+        
+        // if no classes were found, print a help file
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (!foundClasses) {</span>
+<span class="nc" id="L211">            printHelp();</span>
+<span class="nc" id="L212">            return;</span>
+        }
+        
+<span class="nc" id="L215">        long time1 = System.currentTimeMillis();</span>
+        
+        // collect hotspots
+<span class="nc" id="L218">        BindingAutomatonProvider bindings = new BindingAutomatonProvider();</span>
+        
+<span class="nc" id="L220">        RuntimeResolver rr = new RuntimeResolver(bindings);</span>
+<span class="nc" id="L221">        List&lt;RuntimeHotspot&gt; runtimeHotspots = rr.getHotspots();</span>
+        
+<span class="nc" id="L223">        AnnotationAnalyzer aa = new AnnotationAnalyzer(bindings);</span>
+<span class="nc" id="L224">        Set&lt;ValueBox&gt; annotationHotspots = aa.getHotspots();</span>
+        
+        // if there were static type errors in the @Type annotations then report those and abort
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (aa.getErrors().size() &gt; 0) {</span>
+<span class="nc" id="L228">            log.error(&quot;STATIC TYPE ERRORS&quot;);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            for (StaticTypeError error : aa.getErrors()) {</span>
+<span class="nc" id="L230">                log.error(error.getMessage());</span>
+            }
+<span class="nc" id="L232">            return;</span>
+        }
+        
+<span class="nc" id="L235">        int numHotspots = runtimeHotspots.size() + annotationHotspots.size();</span>
+<span class="nc" id="L236">        log.info(&quot;HOTSPOTS&quot;);</span>
+<span class="nc" id="L237">        log.info(&quot;From runtime system: &quot; + runtimeHotspots.size());</span>
+<span class="nc" id="L238">        log.info(&quot;From annotations:    &quot; + annotationHotspots.size());</span>
+<span class="nc" id="L239">        log.info(&quot;Total:               &quot; + numHotspots);</span>
+        
+<span class="nc" id="L241">        List&lt;ValueBox&gt; allHotspots = new ArrayList&lt;ValueBox&gt;();</span>
+<span class="nc" id="L242">        allHotspots.addAll(rr.getHotspotExps());</span>
+<span class="nc" id="L243">        allHotspots.addAll(annotationHotspots);</span>
+        
+        // add resolvers
+<span class="nc" id="L246">        StringAnalysis.addResolver(rr);</span>
+        
+        // add custom resolvers
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        for (Class&lt;?&gt; clazz : customResolvers) {</span>
+<span class="nc" id="L250">            Object o = clazz.newInstance();</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            if (!(o instanceof Resolver)) {</span>
+<span class="nc" id="L252">                throw new RuntimeException(clazz.getCanonicalName() + &quot; does not implement &quot; + Resolver.class.getCanonicalName());</span>
+            }
+<span class="nc" id="L254">            Resolver resolver = (Resolver)o;</span>
+<span class="nc" id="L255">            StringAnalysis.addResolver(resolver);</span>
+        }
+        
+        // create external visibility
+<span class="nc" id="L259">        ExternalVisibility ext = null;</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (external != null) {</span>
+<span class="nc" id="L261">            Object o = external.newInstance();</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">            if (!(o instanceof ExternalVisibility)) {</span>
+<span class="nc" id="L263">                throw new RuntimeException(external.getCanonicalName() + &quot; does not implement &quot; + ExternalVisibility.class.getCanonicalName());</span>
+            }
+<span class="nc" id="L265">            ext = (ExternalVisibility) o;</span>
+        }
+        
+<span class="nc" id="L268">        StringAnalysis sa = new StringAnalysis(allHotspots, ext);</span>
+        
+<span class="nc" id="L270">        long time2 = System.currentTimeMillis();</span>
+        
+        // report results for runtime hotspots
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        for (RuntimeHotspot rh : runtimeHotspots) {</span>
+<span class="nc" id="L274">            ValueBox e = rh.spot;</span>
+<span class="nc" id="L275">            String sf = sa.getSourceFile(e);</span>
+<span class="nc" id="L276">            int line = sa.getLineNumber(e);</span>
+<span class="nc" id="L277">            String kind = &quot;&quot;;</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">            if (rh.kind == HotspotKind.ANALYZE) {</span>
+<span class="nc" id="L279">                kind = &quot;Strings.analyze()&quot;;</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            } else if (rh.kind == HotspotKind.CHECK) {</span>
+<span class="nc" id="L281">                kind = &quot;Strings.check()&quot;;</span>
+<span class="nc" id="L282">            } else {</span>
+<span class="nc" id="L283">                log.fatal(&quot;unrecognized runtime method!&quot;);</span>
+<span class="nc" id="L284">                System.exit(1);</span>
+            }
+<span class="nc" id="L286">            log.info(&quot;Checking &quot; + kind + &quot; at line &quot; + line + &quot; in &quot; + sf + &quot;...&quot;);</span>
+<span class="nc" id="L287">            Automaton a = sa.getAutomaton(e);</span>
+<span class="nc" id="L288">            Automaton expected_neg = rh.expected.complement();</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">            if (rh.kind == HotspotKind.ANALYZE) {</span>
+<span class="nc" id="L290">                Automaton diff = a.intersection(expected_neg);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">                if (diff.isEmpty()) {</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">                    if (a.equals(rh.expected)) {</span>
+<span class="nc" id="L293">                        log.info(&quot;Exact match!&quot;);</span>
+<span class="nc" id="L294">                    } else {</span>
+<span class="nc" id="L295">                        log.info(&quot;Always satisfied!&quot;);</span>
+                    }
+<span class="nc" id="L297">                } else {</span>
+<span class="nc" id="L298">                    log.info(&quot;Dissatisfied by:&quot;);</span>
+<span class="nc" id="L299">                    log.info(&quot;\&quot;&quot; + Misc.escape(diff.getShortestExample(true)) + &quot;\&quot;&quot;);</span>
+                }
+<span class="nc bnc" id="L301" title="All 2 branches missed.">            } else if (rh.kind == HotspotKind.CHECK) {</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">                if (a.intersection(expected_neg).isEmpty()) {</span>
+<span class="nc" id="L303">                    log.info(&quot;Always satisfied!&quot;);</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">                } else if (a.intersection(rh.expected).isEmpty()) {</span>
+<span class="nc" id="L305">                    log.info(&quot;Never satisfied!&quot;);</span>
+                }
+            }
+        }
+        
+        // report results for annotation hotspots
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        for (ValueBox box : annotationHotspots) {</span>
+<span class="nc" id="L312">            String sf = sa.getSourceFile(box);</span>
+<span class="nc" id="L313">            int line = sa.getLineNumber(box);</span>
+<span class="nc" id="L314">            Automaton auto = sa.getAutomaton(box);</span>
+<span class="nc" id="L315">            Automaton expected = aa.getAutomaton(box);</span>
+<span class="nc" id="L316">            System.out.print(sf + &quot;:&quot; + line + &quot; &quot;);</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">            if (!auto.subsetOf(expected)) {</span>
+<span class="nc" id="L318">                Automaton violating = auto.minus(expected);</span>
+<span class="nc" id="L319">                String example = Misc.escape(violating.getShortestExample(true));</span>
+<span class="nc" id="L320">                String type = aa.getDescription(expected);</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">                if (type.length() &gt; 25) // 25 is completely arbitrary</span>
+<span class="nc" id="L322">                    type = type.substring(0, 21) + &quot;...&quot;;</span>
+<span class="nc" id="L323">                log.info(&quot;ERROR: The type \&quot;&quot; + type + &quot;\&quot; is violated by:&quot;);</span>
+<span class="nc" id="L324">                log.info(&quot;    \&quot;&quot; + example + &quot;\&quot;&quot;);</span>
+<span class="nc" id="L325">            } else {</span>
+<span class="nc" id="L326">                System.out.println(&quot;OK&quot;);</span>
+            }
+        }
+        
+<span class="nc" id="L330">        long time3 = System.currentTimeMillis();</span>
+
+<span class="nc" id="L332">        log.info(&quot;Loading time: &quot; + time(time1 - time0));</span>
+<span class="nc" id="L333">        log.info(&quot;Analysis time: &quot; + time(time2 - time1));</span>
+<span class="nc" id="L334">        log.info(&quot;Extraction time: &quot; + time(time3 - time2));</span>
+<span class="nc" id="L335">    }</span>
+
+    private static String time(long t) {
+<span class="nc" id="L338">        return t / 1000 + &quot;.&quot; + String.valueOf(1000 + (t % 1000)).substring(1);</span>
+    }
+    
+    private static void printHelp() {
+<span class="nc" id="L342">        log.info(&quot;No classes to analyze were found.&quot;);</span>
+<span class="nc" id="L343">        log.info(&quot;Any number of the following arguments may be specified:&quot;);</span>
+<span class="nc" id="L344">        log.info(&quot;&lt;classname&gt;&quot;);</span>
+<span class="nc" id="L345">        log.info(&quot;\t Analyzes the specified class. Must be on the classpath.&quot;);</span>
+<span class="nc" id="L346">        log.info(&quot;-dir=&lt;directory or jar file&gt;&quot;);</span>
+<span class="nc" id="L347">        log.info(&quot;\t Analyzes all classes in the specified directory or jar file.&quot;);</span>
+<span class="nc" id="L348">        log.info(&quot;\t If a directory is specified, it must be the root package.&quot;);</span>
+<span class="nc" id="L349">        log.info(&quot;-resolver=&lt;classname&gt;&quot;);</span>
+<span class="nc" id="L350">        log.info(&quot;\t Includes an instance of the specified class as a resolver in the analysis.&quot;);</span>
+<span class="nc" id="L351">        log.info(&quot;\t The class must be on the classpath.&quot;);</span>
+<span class="nc" id="L352">        log.info(&quot;-externalvisibility=&lt;classname&gt;&quot;);</span>
+<span class="nc" id="L353">        log.info(&quot;\t Uses the specified class as the external visibility in the analysis.&quot;);</span>
+<span class="nc" id="L354">        log.info(&quot;\t The class must be on the classpath.&quot;);</span>
+<span class="nc" id="L355">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

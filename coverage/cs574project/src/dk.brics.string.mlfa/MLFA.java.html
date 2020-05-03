@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MLFA.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.mlfa</a> &gt; <span class="el_source">MLFA.java</span></div><h1>MLFA.java</h1><pre class="source lang-java linenums">package dk.brics.string.mlfa;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.stringoperations.BinaryOperation;
+import dk.brics.string.stringoperations.UnaryOperation;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * MLFA.
+ *
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class MLFA {
+
+    private List&lt;MLFAState&gt; states;
+
+    /**
+     * Constructs new empty MLFA.
+     */
+<span class="nc" id="L23">    public MLFA() {</span>
+<span class="nc" id="L24">        states = new ArrayList&lt;MLFAState&gt;();</span>
+<span class="nc" id="L25">    }</span>
+
+    /**
+     * Adds a new state to this MLFA.
+     *
+     * @return new state
+     */
+    public MLFAState addState() {
+<span class="nc" id="L33">        MLFAState s = new MLFAState(states.size());</span>
+<span class="nc" id="L34">        states.add(s);</span>
+<span class="nc" id="L35">        return s;</span>
+    }
+
+    /**
+     * Adds new identity transition to this MLFA.
+     *
+     * @param p source state
+     * @param q target state
+     * @param r pair of initial and final state at lower level
+     */
+    public void addIdentityTransition(MLFAState p, MLFAState q, MLFAStatePair r) {
+<span class="nc" id="L46">        p.addEdge(new IdentityTransition(r.getFirstState(), r.getSecondState()), q);</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Adds new automaton transition to this MLFA.
+     *
+     * @param p source state
+     * @param q target state
+     * @param a (minimized) automaton at lower level
+     */
+    public void addAutomatonTransition(MLFAState p, MLFAState q, Automaton a) {
+<span class="nc" id="L57">        p.addEdge(new AutomatonTransition(a), q);</span>
+<span class="nc" id="L58">    }</span>
+
+    /**
+     * Adds new unary operation transition to this MLFA.
+     *
+     * @param p  source state
+     * @param q  target state
+     * @param op operation to perform on lower level
+     * @param r  pair of initial and final state at lower level
+     */
+    public void addUnaryTransition(MLFAState p, MLFAState q, UnaryOperation op, MLFAStatePair r) {
+<span class="nc" id="L69">        p.addEdge(new UnaryTransition(op, r.getFirstState(), r.getSecondState()), q);</span>
+<span class="nc" id="L70">    }</span>
+
+    /**
+     * Adds new binary operation transition to this MLFA.
+     *
+     * @param p  source state
+     * @param q  target state
+     * @param op operation to perform on lower level
+     * @param r  first pair of initial and final state at lower level
+     * @param s  second pair of initial and final state at lower level
+     */
+    public void addBinaryTransition(MLFAState p, MLFAState q, BinaryOperation op, MLFAStatePair r, MLFAStatePair s) {
+<span class="nc" id="L82">        p.addEdge(new BinaryTransition(op, r.getFirstState(), r.getSecondState(),</span>
+<span class="nc" id="L83">                s.getFirstState(), s.getSecondState()), q);</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * Adds new epsilon transition to this MLFA.
+     *
+     * @param p source state
+     * @param q target state
+     */
+    public void addEpsilonTransition(MLFAState p, MLFAState q) {
+<span class="nc" id="L93">        p.addEdge(new EpsilonTransition(), q);</span>
+<span class="nc" id="L94">    }</span>
+
+    /**
+     * Returns number of states in this MLFA.
+     */
+    public int getNumberOfStates() {
+<span class="nc" id="L100">        return states.size();</span>
+    }
+
+    /**
+     * Returns the (unmodifiable) list of states in this MLFA.
+     */
+    public List&lt;MLFAState&gt; getStates() {
+<span class="nc" id="L107">        return Collections.unmodifiableList(states);</span>
+    }
+
+    /**
+     * Returns string representation of this MLFA.
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L115">        StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        for (MLFAState s : states) {</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            for (MLFAEdge e : s.getEdges()) {</span>
+<span class="nc" id="L118">                b.append(s).append(&quot;--&quot;).append(e.getTransition()).append(&quot;--&gt;&quot;).append(e.getDestination()).append(&quot;\n&quot;);</span>
+            }
+        }
+<span class="nc" id="L121">        return b.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Interval.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.charset</a> &gt; <span class="el_source">Interval.java</span></div><h1>Interval.java</h1><pre class="source lang-java linenums">package dk.brics.string.charset;
+
+/**
+ * Character interval.
+ */
+public class Interval implements Comparable&lt;Interval&gt; {
+
+    private char min, max;
+
+    /**
+     * Constructs a new singleton character interval.
+     */
+<span class="fc" id="L13">    public Interval(char c) {</span>
+<span class="fc" id="L14">        min = max = c;</span>
+<span class="fc" id="L15">    }</span>
+
+    /**
+     * Constructs a new character interval.
+     */
+<span class="fc" id="L20">    public Interval(char min, char max) {</span>
+<span class="pc bpc" id="L21" title="1 of 2 branches missed.">        if (max &lt; min) {</span>
+<span class="nc" id="L22">            char t = max;</span>
+<span class="nc" id="L23">            max = min;</span>
+<span class="nc" id="L24">            min = t;</span>
+        }
+<span class="fc" id="L26">        this.min = min;</span>
+<span class="fc" id="L27">        this.max = max;</span>
+<span class="fc" id="L28">    }</span>
+
+    /**
+     * Returns the start character of this interval.
+     */
+    public char getMin() {
+<span class="fc" id="L34">        return min;</span>
+    }
+
+    /**
+     * Returns the end character of this interval.
+     */
+    public char getMax() {
+<span class="fc" id="L41">        return max;</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (obj instanceof Interval) {</span>
+<span class="nc" id="L47">            Interval t = (Interval) obj;</span>
+<span class="nc bnc" id="L48" title="All 4 branches missed.">            return t.min == min &amp;&amp; t.max == max;</span>
+        } else {
+<span class="nc" id="L50">            return false;</span>
+        }
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L56">        return min * 2 + max * 3;</span>
+    }
+    
+    private char max(char a, char b) {
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (a &gt; b)</span>
+<span class="nc" id="L61">            return a;</span>
+        else
+<span class="nc" id="L63">            return b;</span>
+    }
+    private char min(char a, char b) {
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (a &gt; b)</span>
+<span class="nc" id="L67">            return b;</span>
+        else
+<span class="nc" id="L69">            return a;</span>
+    }
+    
+    /**
+     * Returns the intersection of two intervals, or &lt;tt&gt;null&lt;/tt&gt; if the
+     * two interval do not intersect.
+     * @param other an interval. May be the same as &lt;tt&gt;this&lt;/tt&gt;.
+     * @return a new interval or &lt;tt&gt;null&lt;/tt&gt;
+     */
+    public Interval intersection(Interval other) {
+<span class="nc" id="L79">        char minimum = max(min, other.min);</span>
+<span class="nc" id="L80">        char maximum = min(max, other.max);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (minimum &gt; maximum)</span>
+<span class="nc" id="L82">            return null;</span>
+<span class="nc" id="L83">        return new Interval(minimum, maximum);</span>
+    }
+
+    /**
+     * Compares two intervals with start character as primary key
+     * and end character as secondary key.
+     */
+    public int compareTo(Interval v) {
+<span class="pc bpc" id="L91" title="3 of 6 branches missed.">        if (min &lt; v.min || (min == v.min &amp;&amp; max &lt; v.max)) {</span>
+<span class="nc" id="L92">            return -1;</span>
+        }
+<span class="pc bpc" id="L94" title="3 of 6 branches missed.">        if (v.min &lt; min || (v.min == min &amp;&amp; v.max &lt; max)) {</span>
+<span class="nc" id="L95">            return 1;</span>
+        }
+<span class="fc" id="L97">        return 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

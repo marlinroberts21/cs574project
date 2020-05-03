@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>OpsWrapper.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">test</a> &gt; <span class="el_source">OpsWrapper.java</span></div><h1>OpsWrapper.java</h1><pre class="source lang-java linenums">package test;
+
+import static org.junit.Assert.*;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.stringoperations.*;
+
+<span class="nc" id="L7">public class OpsWrapper {</span>
+	
+	static Automaton a1,b1,c1;
+
+	public static void main(String[] args) {
+
+
+<span class="nc" id="L14">		System.out.println(&quot;String:&quot;);</span>
+<span class="nc" id="L15">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc bnc" id="L16" title="All 2 branches missed.">		for (String s : a1.getFiniteStrings()) {</span>
+<span class="nc" id="L17">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L20">		System.out.println(&quot;\nwReplace1:&quot;);</span>
+<span class="nc" id="L21">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L22">		a1 = OpsWrapper.wReplace1(a1, 'B', 'C');</span>
+		//a1 = tlc.op(a1);
+<span class="nc bnc" id="L24" title="All 2 branches missed.">		for (String s : a1.getFiniteStrings()) {</span>
+<span class="nc" id="L25">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L28">		System.out.println(&quot;\nToLowerCase:&quot;);</span>
+<span class="nc" id="L29">		UnaryOperation tlc  = new ToLowerCase();</span>
+		//a1 = tlc.op(a1);
+<span class="nc bnc" id="L31" title="All 2 branches missed.">		for (String s : tlc.op(a1).getFiniteStrings()) {</span>
+<span class="nc" id="L32">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L35">		System.out.println(&quot;\nReverse:&quot;);</span>
+<span class="nc" id="L36">		UnaryOperation rev  = new Reverse();</span>
+		//a1 = rev.op(a1);
+<span class="nc bnc" id="L38" title="All 2 branches missed.">		for (String s : rev.op(a1).getFiniteStrings()) {</span>
+<span class="nc" id="L39">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L42">		System.out.println(&quot;\nSubstrings:&quot;);</span>
+<span class="nc" id="L43">		UnaryOperation sub  = new Substring();</span>
+		//a1 = sub.op(a1);
+<span class="nc bnc" id="L45" title="All 2 branches missed.">		for (String s : sub.op(a1).getFiniteStrings()) {</span>
+<span class="nc" id="L46">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L49">		System.out.println(&quot;\nInsert:&quot;);</span>
+<span class="nc" id="L50">		b1 = Automaton.makeString(&quot;Z&quot;);</span>
+<span class="nc" id="L51">		BinaryOperation ins  = new Insert();</span>
+		//a1 = sub.op(a1);
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		for (String s : ins.op(a1,b1).getFiniteStrings()) {</span>
+<span class="nc" id="L54">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L57">		System.out.println(&quot;\nPrefix:&quot;);</span>
+<span class="nc" id="L58">		UnaryOperation pre  = new Prefix();</span>
+		//a1 = tlc.op(a1);
+<span class="nc bnc" id="L60" title="All 2 branches missed.">		for (String s : pre.op(a1).getFiniteStrings()) {</span>
+<span class="nc" id="L61">			System.out.println(s);</span>
+			}
+		
+<span class="nc" id="L64">		System.out.println(&quot;\nPostfix:&quot;);</span>
+<span class="nc" id="L65">		UnaryOperation post  = new Postfix();</span>
+		//a1 = tlc.op(a1);
+<span class="nc bnc" id="L67" title="All 2 branches missed.">		for (String s : post.op(a1).getFiniteStrings()) {</span>
+<span class="nc" id="L68">			System.out.println(s);</span>
+			}
+		
+		//wReplace1(a1,'A','Z');
+		
+<span class="nc" id="L73">	}</span>
+
+	
+	static Automaton wCharAt1(Automaton a, int index) {
+		//System.out.println(&quot;\nCharAt1:&quot;);
+<span class="nc" id="L78">		UnaryOperation operation = new CharAt1(index);</span>
+
+<span class="nc" id="L80">		return operation.op(a);</span>
+	}
+
+	static Automaton wCharAt2(Automaton a) {
+		//System.out.println(&quot;\nCharAt2:&quot;);
+<span class="nc" id="L85">		UnaryOperation operation = new CharAt2();</span>
+
+<span class="nc" id="L87">		return operation.op(a);</span>
+	}
+	
+	static Automaton wContains(Automaton a1, Automaton a2) {
+		//System.out.println(&quot;\nContains:&quot;);
+<span class="nc" id="L92">		BinaryOperation operation = new Contains();</span>
+
+<span class="nc" id="L94">		return operation.op(a1,a2);</span>
+	}
+	
+	static Automaton wDelete(Automaton a) {
+		//System.out.println(&quot;\nDelete:&quot;);
+<span class="nc" id="L99">		UnaryOperation operation = new Delete();</span>
+
+<span class="nc" id="L101">		return operation.op(a);</span>
+	}
+	
+	static Automaton wDeleteCharAt(Automaton a) {
+		//System.out.println(&quot;\nDeleteCharAt:&quot;);
+<span class="nc" id="L106">		UnaryOperation del = new DeleteCharAt();</span>
+
+<span class="nc" id="L108">		return del.op(a);</span>
+	}
+	
+	static Automaton wInsert(Automaton a1, Automaton a2) {
+		//System.out.println(&quot;\nInsert:&quot;);
+<span class="nc" id="L113">		BinaryOperation operation = new Insert();</span>
+
+<span class="nc" id="L115">		return operation.op(a1,a2);</span>
+	}
+	
+	static Automaton wPostfix(Automaton a) {
+		//System.out.println(&quot;\nPostfix:&quot;);
+<span class="nc" id="L120">		UnaryOperation operation = new Postfix();</span>
+
+<span class="nc" id="L122">		return operation.op(a);</span>
+	}
+	
+	static Automaton wPrefix(Automaton a) {
+		//System.out.println(&quot;\nPrefix:&quot;);
+<span class="nc" id="L127">		UnaryOperation operation = new Prefix();</span>
+
+<span class="nc" id="L129">		return operation.op(a);</span>
+	}
+	
+	static Automaton wReplace1(Automaton a, char t, char r) {
+		//System.out.println(&quot;\nReplace(A,Z):&quot;);
+<span class="nc" id="L134">		UnaryOperation operation  = new Replace1(t,r);</span>
+		
+<span class="nc" id="L136">		return operation.op(a);</span>
+	}
+	
+	static Automaton wReplace2(Automaton a, char t) {
+		//System.out.println(&quot;\nReplace(A,?):&quot;);
+<span class="nc" id="L141">		UnaryOperation operation  = new Replace2(t);</span>
+
+<span class="nc" id="L143">		return operation.op(a);</span>
+	}
+	
+	static Automaton wReplace3(Automaton a, char t) {
+		//System.out.println(&quot;\nReplace(?,A):&quot;);
+<span class="nc" id="L148">		UnaryOperation operation  = new Replace3(t);</span>
+
+<span class="nc" id="L150">		return operation.op(a);</span>
+	}
+	
+	static Automaton wReplace4(Automaton a) {
+		//System.out.println(&quot;\nReplace(?,?):&quot;);
+<span class="nc" id="L155">		UnaryOperation operation  = new Replace4();</span>
+
+<span class="nc" id="L157">		return operation.op(a);</span>
+	}
+	
+	static Automaton wReplace5(Automaton a1, Automaton a2) {
+		//System.out.println(&quot;\nReplace(int,int,String):&quot;);
+<span class="nc" id="L162">		BinaryOperation operation  = new Replace5();</span>
+
+<span class="nc" id="L164">		return operation.op(a1,a2);</span>
+	}
+	
+	static Automaton wReplace6(Automaton a, String s1, String s2) {
+		//System.out.println(&quot;\nReplace(String,String):&quot;);
+<span class="nc" id="L169">		UnaryOperation operation  = new Replace6(s1,s2);</span>
+
+<span class="nc" id="L171">		return operation.op(a);</span>
+	}
+	
+//	static Automaton wPreciseDelete(Automaton a, int start, int end) {
+//		//System.out.println(&quot;\nPreciseDelete(start,end):&quot;);
+//		UnaryOperation operation  = new PreciseDelete(start,end);
+//
+//		return operation.op(a);
+//	}
+//	
+//	static Automaton wPrecisePrefix(Automaton a, int end) {
+//		//System.out.println(&quot;\nPrecisePrefix(end):&quot;);
+//		UnaryOperation operation  = new PrecisePrefix(end);
+//
+//		return operation.op(a);
+//	}
+//	
+//	static Automaton wPreciseSetCharAt(Automaton a1, Automaton a2, int offset) {
+//		//System.out.println(&quot;\nPreciseSetCharAt(offset):&quot;);
+//		BinaryOperation operation  = new PreciseSetCharAt(offset);
+//
+//		return operation.op(a1,a2);
+//	}
+//	
+//	static Automaton wPreciseSetLength(Automaton a, int length) {
+//		//System.out.println(&quot;\nPreciseSetLength(length):&quot;);
+//		UnaryOperation operation  = new PreciseSetLength(length);
+//
+//		return operation.op(a);
+//	}
+//	
+//	static Automaton wPreciseInsert(Automaton a1, Automaton a2, int offset) {
+//		//System.out.println(&quot;\nPreciseInsert(offset,string):&quot;);
+//		BinaryOperation operation  = new PreciseInsert(offset);
+//
+//		return operation.op(a1,a2);
+//	}
+//	
+//	static Automaton wPreciseSubstring(Automaton a, int start, int end) {
+//		
+//		c1 = a.clone();
+//		
+//		//System.out.println(&quot;\nSubstring(start,end):&quot;);
+//		UnaryOperation operation  = new PreciseSubstring(start,end);
+//		b1 = operation.op(a);
+//		
+//		assertTrue(&quot;ASSERT FAIL: -automatonMutated&quot;, a.equals(c1));	
+//		assertTrue(&quot;ASSERT FAIL: -returned non-deterministic&quot;, b1.isDeterministic());	
+//		
+//		return b1;
+//	}
+//	
+//	static Automaton wPreciseSuffix(Automaton a, int start) {
+//		//System.out.println(&quot;\nPrecisePrefix(start):&quot;);
+//		UnaryOperation operation  = new PreciseSuffix(start);
+//
+//		return operation.op(a);
+//	}
+//	
+//	static Automaton wPreciseTrim(Automaton a) {
+//		//System.out.println(&quot;\nPreciseTrim:&quot;);
+//		UnaryOperation operation  = new PreciseTrim();
+//
+//		return operation.op(a);
+//	}
+	
+	static Automaton wReverse(Automaton a) {
+		//System.out.println(&quot;\nReverse:&quot;);
+<span class="nc" id="L239">		UnaryOperation operation  = new Reverse();</span>
+
+<span class="nc" id="L241">		return operation.op(a);</span>
+	}
+	
+	static Automaton wToLowerCase(Automaton a) {
+		//System.out.println(&quot;\nToLowerCase:&quot;);
+<span class="nc" id="L246">		UnaryOperation operation  = new ToLowerCase();</span>
+
+<span class="nc" id="L248">		return operation.op(a);</span>
+	}
+	
+	static Automaton wToUpperCase(Automaton a) {
+		//System.out.println(&quot;\nToUpperCase:&quot;);
+<span class="nc" id="L253">		UnaryOperation operation  = new ToUpperCase();</span>
+
+<span class="nc" id="L255">		return operation.op(a);</span>
+	}
+	
+	static Automaton wSubstring(Automaton a) {
+		//System.out.println(&quot;\nSubstring:&quot;);
+<span class="nc" id="L260">		UnaryOperation operation  = new Substring();</span>
+
+<span class="nc" id="L262">		return operation.op(a);</span>
+	}
+
+	static Automaton wTrim(Automaton a) {
+		//System.out.println(&quot;\nTrim:&quot;);
+<span class="nc" id="L267">		UnaryOperation operation  = new Trim();</span>
+
+<span class="nc" id="L269">		return operation.op(a);</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

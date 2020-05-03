@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AssertionCycleApproximation.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar.operations</a> &gt; <span class="el_source">AssertionCycleApproximation.java</span></div><h1>AssertionCycleApproximation.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar.operations;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import dk.brics.string.directedgraph.StronglyConnectedComponents;
+import dk.brics.string.grammar.BinaryProduction;
+import dk.brics.string.grammar.Grammar;
+import dk.brics.string.grammar.Nonterminal;
+import dk.brics.string.grammar.Production;
+import dk.brics.string.grammar.UnaryProduction;
+import dk.brics.string.grammar.UnitProduction;
+
+/**
+ * Assertions involved in operation cycles are replaced by unit productions to
+ * prevent them from provoking a character set approximation that would not otherwise occur.
+ * &lt;p/&gt;
+ * That is, a production of form &lt;tt&gt;X -&amp;gt; assertOp(Y,Z)&lt;/tt&gt; can be replaced with &lt;tt&gt;X -&amp;gt Y&lt;/tt&gt;.
+ * &lt;p/&gt;
+ * Strongly connected components are found independently of {@link OperationCycleApproximation}, so any
+ * components that might be broken by this approximation will not be subject to character set approximation afterwards.
+ * @author Asger
+ */
+public class AssertionCycleApproximation {
+    
+    private Grammar g;
+    private StronglyConnectedComponents&lt;Nonterminal, Component&gt; comp;
+
+<span class="nc" id="L29">    public AssertionCycleApproximation(Grammar g) {</span>
+<span class="nc" id="L30">        this.g = g;</span>
+<span class="nc" id="L31">    }</span>
+    
+    public void approximate() {
+<span class="nc" id="L34">        comp = g.getComponents(false);</span>
+        
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        for (Component c : comp.getComponents()) {</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">            for (Nonterminal nt : c.getNodes()) {</span>
+<span class="nc" id="L38">                List&lt;Production&gt; removedProductions = new LinkedList&lt;Production&gt;();</span>
+<span class="nc" id="L39">                List&lt;Production&gt; addedProductions = new LinkedList&lt;Production&gt;();</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">                for (Production prod : nt.getProductions()) {</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">                    if (prod instanceof BinaryProduction) {</span>
+<span class="nc" id="L42">                        BinaryProduction bp = (BinaryProduction)prod;</span>
+                        
+                        // only consider assertions
+<span class="nc bnc" id="L45" title="All 2 branches missed.">                        if (!bp.getOperation().isAssertion())</span>
+<span class="nc" id="L46">                            continue;</span>
+                        
+                        // if the destination node is also in a cycle
+<span class="nc bnc" id="L49" title="All 4 branches missed.">                        if (c.contains(bp.getNonterminal1()) || c.contains(bp.getNonterminal2())) {</span>
+<span class="nc" id="L50">                            removedProductions.add(prod);</span>
+<span class="nc" id="L51">                            addedProductions.add(new UnitProduction(bp.getNonterminal1()));</span>
+                        }
+<span class="nc" id="L53">                    }</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                    else if (prod instanceof UnaryProduction) {</span>
+<span class="nc" id="L55">                        UnaryProduction up = (UnaryProduction)prod;</span>
+                        
+                        // only consider assertions
+<span class="nc bnc" id="L58" title="All 2 branches missed.">                        if (!up.getOperation().isAssertion())</span>
+<span class="nc" id="L59">                            continue;</span>
+                        
+                        // if the destination node is also in a cycle
+<span class="nc bnc" id="L62" title="All 2 branches missed.">                        if (c.contains(up.getNonterminal())) {</span>
+<span class="nc" id="L63">                            removedProductions.add(prod);</span>
+<span class="nc" id="L64">                            addedProductions.add(new UnitProduction(up.getNonterminal()));</span>
+                        }
+                    }
+                }
+<span class="nc" id="L68">                nt.getProductions().removeAll(removedProductions);</span>
+<span class="nc" id="L69">                nt.getProductions().addAll(addedProductions);</span>
+            }
+        }
+<span class="nc" id="L72">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

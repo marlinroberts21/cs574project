@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Delete.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Delete.java</span></div><h1>Delete.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.automaton.Transition;
+import dk.brics.string.charset.CharSet;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Automaton operation for {@link StringBuffer#delete(int,int)}.
+ */
+public class Delete extends UnaryOperation {
+
+    /**
+     * Constructs new operation object.
+     */
+<span class="fc" id="L22">    public Delete() {</span>
+<span class="fc" id="L23">    }</span>
+
+    /**
+     * Automaton operation.
+     * Constructs new automaton from two copies, &lt;i&gt;a1&lt;/i&gt; and &lt;i&gt;a2&lt;/i&gt;, of &lt;tt&gt;a&lt;/tt&gt;.
+     * The initial state is the one from &lt;i&gt;a1&lt;/i&gt;, and the accept states are those from &lt;i&gt;a2&lt;/i&gt;.
+     * From each state &lt;i&gt;q&lt;/i&gt; in &lt;i&gt;a1&lt;/i&gt;, epsilon transitions are added from &lt;i&gt;q&lt;/i&gt; to all states
+     * in &lt;i&gt;a2&lt;/i&gt; that are reachable from the one corresponding to &lt;i&gt;q&lt;/i&gt;.
+     *
+     * @param a input automaton
+     * @return resulting automaton
+     */
+    @Override
+    public Automaton op(Automaton a) {
+<span class="fc" id="L37">        Automaton a1 = a.clone();</span>
+<span class="fc" id="L38">        Map&lt;State, State&gt; map = new HashMap&lt;State, State&gt;();</span>
+<span class="fc" id="L39">        Set&lt;State&gt; a1s = a1.getStates();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (State s : a1s) {</span>
+<span class="fc" id="L41">            State p = new State();</span>
+<span class="fc" id="L42">            map.put(s, p);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">            if (s.isAccept()) {</span>
+<span class="fc" id="L44">                p.setAccept(true);</span>
+<span class="fc" id="L45">                s.setAccept(false);</span>
+            }
+        }
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (State s : a1s) {</span>
+<span class="fc" id="L49">            State p = map.get(s);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            for (Transition t : s.getTransitions()) {</span>
+<span class="fc" id="L51">                p.addTransition(new Transition(t.getMin(), t.getMax(), map.get(t.getDest())));</span>
+            }
+        }
+<span class="fc" id="L54">        a1.setDeterministic(false);</span>
+<span class="fc" id="L55">        Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (State s : a1s) {</span>
+<span class="fc" id="L57">            Set&lt;State&gt; reachable = Basic.findReachableStates(map.get(s));</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            for (State p : reachable) {</span>
+<span class="fc" id="L59">                epsilons.add(new StatePair(s, p));</span>
+            }
+        }
+<span class="fc" id="L62">        a1.addEpsilons(epsilons);</span>
+<span class="pc" id="L63">        a1.minimize();</span>
+<span class="fc" id="L64">        return a1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L69">        return &quot;delete&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L74">        return 4;</span>
+    }
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L79">        return a;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L84">        return getClass().hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L89">        return obj instanceof Delete;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

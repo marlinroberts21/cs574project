@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Split.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Split.java</span></div><h1>Split.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.charset.CharSet;
+
+/**
+ * Automaton operation used for &lt;tt&gt;String.split(String)&lt;/tt&gt;. It produces an automaton
+ * accepting every substring of the strings accepted by the input automaton.
+ * 
+ * @author Asger
+ *
+ */
+<span class="fc" id="L13">public class Split extends UnaryOperation {</span>
+    
+    /* XXX split precision
+     * A more precise solution may be possible by analyzing the regular expression given.
+     * However, the syntax used by split may differ from that of the automaton package we use,
+     * so some rewriting would be necessary.
+     */
+    
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L23">        return a;</span>
+    }
+    
+    @Override
+    public Automaton op(Automaton a) {
+<span class="fc" id="L28">        return Basic.getSubstringsOf(a);</span>
+    }
+    
+    @Override
+    public int getPriority() {
+<span class="nc" id="L33">        return 1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L38">        return &quot;split&quot;;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

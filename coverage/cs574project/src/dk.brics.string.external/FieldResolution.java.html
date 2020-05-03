@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FieldResolution.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.external</a> &gt; <span class="el_source">FieldResolution.java</span></div><h1>FieldResolution.java</h1><pre class="source lang-java linenums">package dk.brics.string.external;
+
+import dk.brics.automaton.Automaton;
+
+/**
+ * Description of a non-application &lt;tt&gt;String&lt;/tt&gt; field.
+ * &lt;p/&gt;
+ * It is allowed for the same field to yield different resolutions at various program
+ * points. Because only immutable fields can be resolved, it is legal to change the
+ * field in non-application code, as long as all resolutions of the field remain valid
+ * at each reference to that field.
+ * &lt;p/&gt;
+ * Note that it is better for a resolver to return &lt;tt&gt;null&lt;/tt&gt; instead of creating
+ * a field resolution accepting &lt;em&gt;any string&lt;/em&gt;, since another resolver might
+ * produce a more accurate answer. The outcomes of an unresolved field, and the &lt;em&gt;any string&lt;/em&gt;
+ * resolution, are identical.
+ * 
+ * @author Asger
+ *
+ */
+public class FieldResolution {
+    private Automaton automaton;
+    
+    /**
+     * Creates a field resolution specifying the possible values of the field,
+     * at the place it was read.
+     * @param automaton automaton accepting all possible values of the field.
+     */
+<span class="nc" id="L29">    public FieldResolution(Automaton automaton) {</span>
+<span class="nc" id="L30">        setAutomaton(automaton);</span>
+<span class="nc" id="L31">    }</span>
+    
+    /**
+     * Returns an automaton accepting all the possible values of the field, at
+     * the place it was read.
+     * @return an automaton; never &lt;tt&gt;null&lt;/tt&gt;.
+     */
+    public Automaton getAutomaton() {
+<span class="nc" id="L39">        return automaton;</span>
+    }
+    
+    /**
+     * Sets the automaton accepting all the possible values of the field, at
+     * the place it was read.
+     * @param automaton an automaton. Must not be &lt;tt&gt;null&lt;/tt&gt;.
+     */
+    public void setAutomaton(Automaton automaton) {
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (automaton == null)</span>
+<span class="nc" id="L49">            throw new IllegalArgumentException(&quot;Automaton must not be null&quot;);</span>
+<span class="nc" id="L50">        this.automaton = automaton;</span>
+<span class="nc" id="L51">    }</span>
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

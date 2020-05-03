@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Transformer.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.annotation</a> &gt; <span class="el_source">Transformer.java</span></div><h1>Transformer.java</h1><pre class="source lang-java linenums">package dk.brics.string.annotation;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import soot.Body;
+import soot.BodyTransformer;
+import soot.Value;
+import soot.ValueBox;
+import soot.jimple.IdentityStmt;
+import soot.jimple.InvokeExpr;
+import soot.jimple.ParameterRef;
+import soot.jimple.Stmt;
+import soot.tagkit.StringTag;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.HotspotKind;
+import dk.brics.string.RuntimeHotspot;
+import dk.brics.string.RuntimeResolver;
+import dk.brics.string.StringAnalysis;
+
+public class Transformer extends BodyTransformer {
+
+<span class="nc" id="L25">	public StringAnalysis sa = null;</span>
+<span class="nc" id="L26">	public AnnotationAnalyzer analyzer = null;</span>
+<span class="nc" id="L27">	public HotspotTagger tagger = null;</span>
+	public static final String PHASE_NAME = &quot;jsatagger&quot;;
+	public static final String TAG_TYPE = &quot;Annotation Checker&quot;;
+	
+	// NOTE: According to SOOT coding rules, this is not the correct way of
+	// providing a singleton. Instead one should add the class name to
+	// %SOOTHOME/src/singletons.list and then run:
+	// %SOOTHOME/src/make_singletons &gt; soot/src/soot/Singletons.java
+	// and then provide:
+	// 1. public JSATransformer(Singletons.G.global g) {}
+	// 2. public static JSATransformer v() {return G.v().&lt;singleton_name&gt;}
+	// This is so that when resetting soot by calling G.v().reset() this
+	// class will also be reset.
+<span class="nc" id="L40">	private static Transformer instance = new Transformer();	</span>
+<span class="nc" id="L41">	private Transformer() {}	</span>
+<span class="nc" id="L42">	public static Transformer v() {return instance;}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	@Override
+	protected void internalTransform(Body body, String arg1, Map arg2) {
+		//This method is called several times, but we only need to do
+		//some work the first time the method is called. Therefore we
+		//check if the sa field is null
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (sa == null) {</span>
+<span class="nc" id="L51">			RuntimeResolver rr = new RuntimeResolver();</span>
+<span class="nc" id="L52">			StringAnalysis.addResolver(rr);</span>
+			
+<span class="nc" id="L54">			analyzer = new AnnotationAnalyzer();</span>
+<span class="nc" id="L55">			tagger = new HotspotTagger();</span>
+			
+<span class="nc" id="L57">			Set&lt;ValueBox&gt; hotspots = new HashSet&lt;ValueBox&gt;();</span>
+<span class="nc" id="L58">			hotspots.addAll(analyzer.getHotspots());</span>
+<span class="nc" id="L59">			hotspots.addAll(rr.getHotspotExps());</span>
+			
+<span class="nc" id="L61">			sa = new StringAnalysis(hotspots);</span>
+			
+<span class="nc" id="L63">			handleAnnotationHotspots();</span>
+<span class="nc" id="L64">			handleAnalyzeRuntimeHotspots(rr);</span>
+		}
+<span class="nc" id="L66">	}</span>
+	
+	private void handleAnnotationHotspots() {
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		for (ValueBox box : analyzer.getHotspots()) {</span>
+			//Stmt stmt = analyzer.getStmt(box);
+<span class="nc" id="L71">			Stmt stmt = tagger.getStmt(box);</span>
+<span class="nc" id="L72">			Automaton a = analyzer.getAutomaton(box);</span>
+<span class="nc" id="L73">			Automaton b = sa.getAutomaton(box);</span>
+<span class="nc" id="L74">			Automaton diff = a.complement().intersection(b);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">			if (!diff.isEmpty()) {</span>
+				String from;
+<span class="nc bnc" id="L77" title="All 2 branches missed.">				if (b.isTotal()) {</span>
+<span class="nc" id="L78">					from = &quot;anystring&quot;;</span>
+<span class="nc" id="L79">				}</span>
+				else {
+<span class="nc" id="L81">					from = quoteString(diff.getShortestExample(true));</span>
+				}
+<span class="nc bnc" id="L83" title="All 2 branches missed.">				if (stmt.containsInvokeExpr()) {</span>
+<span class="nc" id="L84">					InvokeExpr invoke = stmt.getInvokeExpr();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">					for (int i=0; i&lt;invoke.getArgCount(); i++) {</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">						if (box == invoke.getArgBox(i)) {</span>
+<span class="nc" id="L87">							stmt.addTag(new StringTag(&quot;Type mismatch: cannot convert argument number &quot; + (i+1) + &quot; from &quot; + from + &quot; to &quot; + analyzer.getDescription(a)));</span>
+						}
+					}
+<span class="nc" id="L90">				}</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">				else if (stmt instanceof IdentityStmt) {</span>
+<span class="nc" id="L92">					IdentityStmt iStmt = (IdentityStmt)stmt;</span>
+<span class="nc" id="L93">					Value rvalue = iStmt.getRightOp();</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">					if (rvalue instanceof ParameterRef) {</span>
+<span class="nc" id="L95">						ParameterRef parameter = (ParameterRef)rvalue;</span>
+<span class="nc" id="L96">						int index = parameter.getIndex();</span>
+<span class="nc" id="L97">						stmt.addTag(new StringTag(&quot;Type mismatch: cannot convert parameter number &quot; + (index + 1) + &quot; from &quot; + from + &quot; to &quot; + analyzer.getDescription(a)));</span>
+					}
+<span class="nc" id="L99">				}</span>
+				else {
+<span class="nc" id="L101">					stmt.addTag(new StringTag(&quot;Type mismatch: cannot convert from &quot; + from + &quot; to &quot; + analyzer.getDescription(a)));</span>
+				}
+			}
+		}
+<span class="nc" id="L105">	}</span>
+	
+	private void handleAnalyzeRuntimeHotspots(RuntimeResolver rr) {
+<span class="nc" id="L108">		List&lt;RuntimeHotspot&gt; runtime_hotspots = rr.getHotspots();</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		for (RuntimeHotspot rh : runtime_hotspots) {</span>
+<span class="nc" id="L110">			ValueBox e = rh.spot;</span>
+<span class="nc" id="L111">			String sf = sa.getSourceFile(e);</span>
+<span class="nc" id="L112">			int line = sa.getLineNumber(e);</span>
+<span class="nc" id="L113">			String kind = &quot;&quot;;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">			if (rh.kind==HotspotKind.ANALYZE)</span>
+<span class="nc" id="L115">				kind = &quot;RegExp.analyze()&quot;;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">			else if (rh.kind==HotspotKind.CHECK)</span>
+<span class="nc" id="L117">				kind = &quot;RegExp.check()&quot;;</span>
+			else {
+<span class="nc" id="L119">				System.err.println(&quot;unrecognized runtime method!&quot;);</span>
+<span class="nc" id="L120">				System.exit(1);</span>
+			}
+<span class="nc" id="L122">			System.err.println(&quot;Checking &quot;+kind+&quot; at line &quot;+line+&quot; in &quot;+sf+&quot;...&quot;);</span>
+<span class="nc" id="L123">			Automaton a = sa.getAutomaton(e);</span>
+<span class="nc" id="L124">			Automaton expected_neg = rh.expected.complement();</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">			if (rh.kind==HotspotKind.ANALYZE) {</span>
+<span class="nc" id="L126">				Automaton diff = a.intersection(expected_neg);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">				if (diff.isEmpty())</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">					if (a.equals(rh.expected))</span>
+<span class="nc" id="L129">						System.err.println(&quot;Exact match!&quot;);</span>
+					else
+<span class="nc" id="L131">						System.err.println(&quot;Always satified!&quot;);</span>
+				else {
+<span class="nc" id="L133">					System.err.println(&quot;Dissatisfied by:&quot;);</span>
+<span class="nc" id="L134">					System.err.println(quoteString(diff.getShortestExample(true)));</span>
+<span class="nc" id="L135">					tagger.tag(e, &quot;Dissatisfied by: &quot; + quoteString(diff.getShortestExample(true)));</span>
+				}
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			} else if (rh.kind==HotspotKind.CHECK) {</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">				if (a.intersection(expected_neg).isEmpty()) </span>
+<span class="nc" id="L139">					System.err.println(&quot;Always satified!&quot;);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">				else if (a.intersection(rh.expected).isEmpty()) {</span>
+<span class="nc" id="L141">					System.err.println(&quot;Never satified!&quot;);</span>
+<span class="nc" id="L142">					tagger.tag(e, &quot;Never satified!&quot;);</span>
+				}
+			}
+		}
+<span class="nc" id="L146">	}</span>
+	
+	private static String quoteString(String s) {
+<span class="nc" id="L149">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L150">		sb.append(&quot;\&quot;&quot;);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		for (int i = 0 ; i &lt; s.length() ; i++) {</span>
+<span class="nc" id="L152">			char c = s.charAt(i);</span>
+<span class="nc bnc" id="L153" title="All 6 branches missed.">			switch (c) {</span>
+<span class="nc" id="L154">			case '\t': sb.append(&quot;\\t&quot;); break;</span>
+<span class="nc" id="L155">			case '\n': sb.append(&quot;\\n&quot;); break;</span>
+<span class="nc" id="L156">			case '\r': sb.append(&quot;\\r&quot;); break;</span>
+<span class="nc" id="L157">			case '\&quot;': sb.append(&quot;\\\&quot;&quot;); break;</span>
+<span class="nc" id="L158">			case '\\': sb.append(&quot;\\\\&quot;); break;</span>
+			default:
+<span class="nc bnc" id="L160" title="All 4 branches missed.">				if (c &gt;= 32 &amp;&amp; c &lt;= 126)</span>
+<span class="nc" id="L161">					sb.append(c);</span>
+				else {
+<span class="nc" id="L163">					String digits = Integer.toHexString(0x10000+c);</span>
+<span class="nc" id="L164">					sb.append(&quot;\\u&quot;).append(digits.substring(1));</span>
+				}
+			}
+		}
+<span class="nc" id="L168">		sb.append(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L169">		return sb.toString();</span>
+	}
+	
+	public void reset() {
+<span class="nc" id="L173">		sa = null;</span>
+<span class="nc" id="L174">		analyzer = null;</span>
+<span class="nc" id="L175">		tagger = null;</span>
+<span class="nc" id="L176">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

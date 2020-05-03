@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MethodTranslatorImpl.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">MethodTranslatorImpl.java</span></div><h1>MethodTranslatorImpl.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import soot.Body;
+import soot.SootMethod;
+import soot.Trap;
+import soot.Unit;
+import soot.ValueBox;
+import soot.jimple.IfStmt;
+import soot.jimple.LookupSwitchStmt;
+import soot.jimple.Stmt;
+import soot.jimple.toolkits.annotation.nullcheck.NullnessAnalysis;
+import soot.tagkit.LineNumberTag;
+import soot.tagkit.Tag;
+import soot.toolkits.graph.BriefUnitGraph;
+import soot.toolkits.graph.ExceptionalUnitGraph;
+import soot.toolkits.scalar.LiveLocals;
+import soot.toolkits.scalar.LocalDefs;
+import soot.toolkits.scalar.SimpleLiveLocals;
+import soot.toolkits.scalar.SmartLocalDefs;
+import dk.brics.string.intermediate.Call;
+import dk.brics.string.intermediate.Catch;
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+
+public class MethodTranslatorImpl implements MethodTranslator { 
+	
+	private TranslationContext jt;
+	private StatementTranslatorFacade statementTranslator;
+	private SootMethod sootMethod;
+	private NullnessAnalysis nullAnalysis;
+	private String currentSourceFile;
+<span class="nc" id="L42">	private Map&lt;Trap, Catch&gt; catchers = new HashMap&lt;Trap, Catch&gt;();</span>
+	
+	// TODO: Put assertionCreator into the constructor and abstract factory
+<span class="nc" id="L45">	private AssertionCreator assertionCreator = new AssertionCreatorImpl();</span>
+	
+	private int currentLine;
+	
+	private List&lt;HotspotInfo&gt; currentHotspots;
+	
+<span class="nc" id="L51">	private Map&lt;Stmt, TranslatedStatement&gt; translations = new HashMap&lt;Stmt, TranslatedStatement&gt;();</span>
+	
+<span class="nc" id="L53">	public MethodTranslatorImpl(StatementTranslatorFacade facade) {</span>
+<span class="nc" id="L54">		this.statementTranslator = facade;</span>
+<span class="nc" id="L55">	}</span>
+	
+	private void findSourceFile() {
+<span class="nc" id="L58">		Tag tag = sootMethod.getDeclaringClass().getTag(&quot;SourceFileTag&quot;);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (tag != null) {</span>
+<span class="nc" id="L60">			currentSourceFile = tag.toString();</span>
+<span class="nc" id="L61">		} else {</span>
+<span class="nc" id="L62">			currentSourceFile = &quot;&quot;;</span>
+		}
+<span class="nc" id="L64">	}</span>
+	
+	public List&lt;HotspotInfo&gt; translateMethod(SootMethod sootMethod, TranslationContext jt) {
+		// set state
+<span class="nc" id="L68">		this.jt = jt;</span>
+<span class="nc" id="L69">		this.sootMethod = sootMethod;</span>
+<span class="nc" id="L70">		this.translations.clear();</span>
+<span class="nc" id="L71">		this.catchers.clear();</span>
+<span class="nc" id="L72">		this.currentHotspots = new LinkedList&lt;HotspotInfo&gt;();</span>
+<span class="nc" id="L73">		findSourceFile();</span>
+		
+<span class="nc" id="L75">		Method method = jt.getMethod(sootMethod);</span>
+<span class="nc" id="L76">		Body body = sootMethod.retrieveActiveBody();</span>
+		
+		// use an exceptional unit graph for the nullness analysis
+<span class="nc" id="L79">        ExceptionalUnitGraph exceptionalFlow = new ExceptionalUnitGraph(body);</span>
+<span class="nc" id="L80">        nullAnalysis = new NullnessAnalysis(exceptionalFlow);</span>
+        
+        // prepare the reaching definitions analysis for the assertion creator
+<span class="nc" id="L83">        LiveLocals liveness = new SimpleLiveLocals(exceptionalFlow);</span>
+<span class="nc" id="L84">        LocalDefs definitions = new SmartLocalDefs(exceptionalFlow, liveness);</span>
+        
+        // translate each statement in isolation
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (Unit unit : body.getUnits()) {</span>
+<span class="nc" id="L88">        	Stmt stmt = (Stmt) unit;</span>
+<span class="nc" id="L89">        	translateStmt(stmt);</span>
+        }
+		
+		// create intermediate Catch statements for every catch block
+<span class="nc bnc" id="L93" title="All 2 branches missed.">		for (Trap trap : body.getTraps()) {</span>
+<span class="nc" id="L94">			Catch ct = new Catch();</span>
+<span class="nc" id="L95">			method.addStatement(ct);</span>
+			
+			// remember the Catch statement associated with the trap
+<span class="nc" id="L98">			catchers.put(trap, ct);</span>
+			
+			// add the catch block as successor
+<span class="nc" id="L101">			ct.addSucc(translations.get(trap.getHandlerUnit()).getFirst());</span>
+		}
+        
+        // connect according to normal flow
+<span class="nc" id="L105">        AssertionContext assertionContext = new AssertionContext(jt, definitions, translations, sootMethod);</span>
+<span class="nc" id="L106">        BriefUnitGraph normalFlow = new BriefUnitGraph(body);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        for (Unit stmt : body.getUnits()) {</span>
+<span class="nc" id="L108">            Statement tail = translations.get(stmt).getLast();</span>
+            
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (stmt instanceof IfStmt) {</span>
+                // branching statement: link assertion in-between its successors
+<span class="nc" id="L112">                IfStmt ifstmt = (IfStmt)stmt;</span>
+                
+<span class="nc" id="L114">                Stmt trueSuccessor = ifstmt.getTarget();</span>
+<span class="nc" id="L115">                Stmt falseSuccessor = (Stmt)body.getUnits().getSuccOf(ifstmt);</span>
+<span class="nc" id="L116">                AssertionBranches assertions = assertionCreator.createAssertions(ifstmt, assertionContext);</span>
+                
+<span class="nc" id="L118">                tail.addSucc(assertions.getWhenFalse().getFirst());</span>
+<span class="nc" id="L119">                tail.addSucc(assertions.getWhenTrue().getFirst());</span>
+                
+<span class="nc" id="L121">                assertions.getWhenFalse().getLast().addSucc(translations.get(falseSuccessor).getFirst());</span>
+<span class="nc" id="L122">                assertions.getWhenTrue().getLast().addSucc(translations.get(trueSuccessor).getFirst());</span>
+<span class="nc" id="L123">            } </span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            else if (stmt instanceof LookupSwitchStmt) {</span>
+<span class="nc" id="L125">            	LookupSwitchStmt sw = (LookupSwitchStmt)stmt;</span>
+            	
+            	// add cases
+<span class="nc" id="L128">            	List&lt;Integer&gt; values = new ArrayList&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">            	for (int i=0; i&lt;sw.getTargetCount(); i++) {</span>
+<span class="nc" id="L130">            		Stmt succ = (Stmt)sw.getTarget(i);</span>
+<span class="nc" id="L131">            		AssertionBranch assertion = assertionCreator.createSwitchAssertions(sw.getKeyBox(), sw.getLookupValue(i), sw, assertionContext);</span>
+            		
+<span class="nc" id="L133">            		tail.addSucc(assertion.getFirst());</span>
+<span class="nc" id="L134">            		assertion.getLast().addSucc(translations.get(succ).getFirst());</span>
+            		
+<span class="nc" id="L136">            		values.add(sw.getLookupValue(i));</span>
+            	}
+            	
+            	// add default case
+<span class="nc" id="L140">            	AssertionBranch assertion = assertionCreator.createSwitchDefaultAssertions(sw.getKeyBox(), values, sw, assertionContext);</span>
+<span class="nc" id="L141">            	tail.addSucc(assertion.getFirst());</span>
+<span class="nc" id="L142">            	assertion.getLast().addSucc(translations.get(sw.getDefaultTarget()).getFirst());</span>
+<span class="nc" id="L143">            }</span>
+            else {
+                // normal statement
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            	for (Unit succ : normalFlow.getSuccsOf(stmt)) {</span>
+<span class="nc" id="L147">            	    tail.addSucc(translations.get(succ).getFirst());</span>
+            	}
+            }
+        }
+        
+        // connect first statements to the head
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        for (Unit stmt : normalFlow.getHeads()) {</span>
+<span class="nc" id="L154">        	method.getEntry().addSucc(translations.get(stmt).getFirst());</span>
+        }
+        
+        // connect according to exceptional flow
+<span class="nc" id="L158">        List&lt;Catch&gt; activeCatchers = new LinkedList&lt;Catch&gt;();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        for (Unit stmt : body.getUnits()) {</span>
+        	// open and close catchers
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        	for (Trap trap : body.getTraps()) {</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        		if (trap.getBeginUnit() == stmt) {</span>
+<span class="nc" id="L163">        			activeCatchers.add(catchers.get(trap));</span>
+        		}
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        		if (trap.getEndUnit() == stmt) {</span>
+<span class="nc" id="L166">        			activeCatchers.remove(catchers.get(trap));</span>
+        		}
+        	}
+        	
+        	// if statement S might throw an exception, an edge from its 
+        	// predecessors must go to the exceptional return and/or catcher.
+        	
+        	// set exceptional flow inside the translation (but not after)
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        	for (Statement stm : translations.get(stmt).getStatements()) {</span>
+        		// return statements have no successors
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        		if (stm instanceof Return)</span>
+<span class="nc" id="L177">        			continue;</span>
+        		
+        		// exceptions don't get thrown if the statement completed
+        		// Call statements, however, may always throw an exception
+<span class="nc bnc" id="L181" title="All 4 branches missed.">        		if (stm == translations.get(stmt).getLast() &amp;&amp; !(stm instanceof Call))</span>
+<span class="nc" id="L182">        			continue;</span>
+        		
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        		for (Catch catcher : activeCatchers) {</span>
+<span class="nc" id="L185">        			stm.addSuccIfAbsent(catcher);</span>
+        		}
+<span class="nc" id="L187">        		stm.addSuccIfAbsent(method.getExceptionalReturn());</span>
+        	}
+        	
+        	// set exceptional flow if the block fails immediately (before the first)
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        	for (Statement stm : translations.get(stmt).getFirst().getPreds()) {</span>
+        		// avoid adding duplicate edges, so check if the exceptional edge is already there
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        		for (Catch catcher : activeCatchers) {</span>
+<span class="nc" id="L194">        			stm.addSuccIfAbsent(catcher);</span>
+        		}
+<span class="nc" id="L196">        		stm.addSuccIfAbsent(method.getExceptionalReturn());</span>
+        	}
+        }
+        
+<span class="nc" id="L200">        return currentHotspots;</span>
+	}
+	
+	private void translateStmt(Stmt stmt) {
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        for (Tag tag : stmt.getTags()) {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            if (tag instanceof LineNumberTag) {</span>
+<span class="nc" id="L206">            	currentLine = Integer.parseInt(tag.toString());</span>
+            }
+        }
+        
+<span class="nc" id="L210">        TranslatedStatement translation = statementTranslator.translateStatement(stmt, sootMethod, nullAnalysis, jt);</span>
+        
+        // add all the hotspots we found
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        for (HotspotValueBoxPair hotspot : translation.getHotspots()) {</span>
+<span class="nc" id="L214">        	addHotspot(hotspot.getHotspot(), hotspot.getBox());</span>
+        }
+        
+        // validate the translation object
+        //validateTranslation(translation); // only for debugging
+        
+        // remember the entry- and exit points
+<span class="nc" id="L221">        translations.put(stmt, translation);</span>
+<span class="nc" id="L222">    }</span>
+	
+	private void addHotspot(Hotspot hotspot, ValueBox box) {
+<span class="nc" id="L225">		HotspotInfo info = new HotspotInfo(hotspot, box);</span>
+<span class="nc" id="L226">		info.setLineNumber(currentLine);</span>
+<span class="nc" id="L227">		info.setMethodName(sootMethod.getName());</span>
+<span class="nc" id="L228">		info.setClassName(sootMethod.getDeclaringClass().getName());</span>
+<span class="nc" id="L229">		info.setSourcefile(currentSourceFile);</span>
+<span class="nc" id="L230">		currentHotspots.add(info);</span>
+<span class="nc" id="L231">	}</span>
+	
+	
+	/**
+	 * This method is here for debugging. It is not used, but we keep it here
+	 * because it is useful to enable sometimes.
+	 * @author Asger
+	 */
+	@SuppressWarnings(&quot;unused&quot;)
+    private void validateTranslation(TranslatedStatement translation) {
+		// ensure every path from the first statement reaches the last statement
+<span class="nc" id="L242">		LinkedList&lt;Statement&gt; queue = new LinkedList&lt;Statement&gt;();</span>
+<span class="nc" id="L243">		Set&lt;Statement&gt; reaching = new HashSet&lt;Statement&gt;(); // statements that will definitely reach the end</span>
+<span class="nc" id="L244">		reaching.add(translation.getLast());</span>
+<span class="nc" id="L245">		queue.add(translation.getLast());</span>
+		
+		// color all nodes reachable using predecessor edges from the last statement
+<span class="nc bnc" id="L248" title="All 2 branches missed.">		while (!queue.isEmpty()) {</span>
+<span class="nc" id="L249">			Statement stm = queue.removeFirst();</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">			for (Statement pred : stm.getPreds()) {</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">				if (reaching.contains(pred))</span>
+<span class="nc" id="L252">					continue;</span>
+<span class="nc" id="L253">				reaching.add(pred);</span>
+<span class="nc" id="L254">				queue.add(pred);</span>
+			}
+		}
+		// see if we can find a non-colored node
+<span class="nc" id="L258">		Set&lt;Statement&gt; seen = new HashSet&lt;Statement&gt;();</span>
+<span class="nc" id="L259">		queue.add(translation.getFirst());</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">		while (!queue.isEmpty()) {</span>
+<span class="nc" id="L261">			Statement stm = queue.removeFirst();</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">			if (!reaching.contains(stm))</span>
+<span class="nc" id="L263">				throw new RuntimeException(&quot;Invalid statement translation. This statement cannot not reach the end: &quot; + stm);</span>
+<span class="nc" id="L264">			seen.add(stm);</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">			for (Statement succ : stm.getSuccs()) {</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">				if (seen.contains(succ))</span>
+<span class="nc" id="L267">					continue;</span>
+<span class="nc" id="L268">				queue.add(succ);</span>
+			}
+		}
+<span class="nc" id="L271">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Statement.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate</a> &gt; <span class="el_source">Statement.java</span></div><h1>Statement.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate;
+
+import dk.brics.string.intermediate.operations.ToStringVisitor;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+
+/**
+ * Superclass of all statements.
+ * &lt;p/&gt;
+ * A statements belongs to the body of some method.
+ * It has control flow edges to and from other statements.
+ */
+<span class="nc bnc" id="L15" title="All 2 branches missed.">public abstract class Statement implements Comparable&lt;Statement&gt; {</span>
+
+    private Collection&lt;Statement&gt; succs;
+    private Collection&lt;Statement&gt; preds;
+    private Method method;
+    private int index;
+    private int key;
+
+<span class="nc" id="L23">    public Statement() {</span>
+<span class="nc" id="L24">        succs = new HashSet&lt;Statement&gt;();</span>
+<span class="nc" id="L25">        preds = new HashSet&lt;Statement&gt;();</span>
+<span class="nc" id="L26">        key = -1;</span>
+<span class="nc" id="L27">    }</span>
+
+    void setKey(int key) {
+<span class="nc" id="L30">        this.key = key;</span>
+<span class="nc" id="L31">    }</span>
+
+    /**
+     * Adds a control flow edge from this statement to the given.
+     * The specified statement must not already be a successor.
+     * If the statement might already be a successor, use {@link #addSuccIfAbsent(Statement)}
+     * to add it only if it is not already there.
+     *
+     * @param s the target statement of the edge.
+     */
+    public void addSucc(Statement s) {
+<span class="nc bnc" id="L42" title="All 4 branches missed.">        if (method == null || s.method != method)</span>
+<span class="nc" id="L43">            throw new IllegalStateException(&quot;Statements must be in the same method before they can be attached with edges&quot;);</span>
+<span class="nc bnc" id="L44" title="All 4 branches missed.">        assert !succs.contains(s) : &quot;This statement is already a successor&quot;;</span>
+<span class="nc" id="L45">        succs.add(s);</span>
+<span class="nc" id="L46">        s.addPred(this);</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * Adds a control flow edge from this statement to the given, if it was not
+     * already there.
+     *
+     * @param s the target statement of the edge.
+     * @return true if a control flow edge was created; false if it was already there.
+     */
+    public boolean addSuccIfAbsent(Statement s) {
+<span class="nc bnc" id="L57" title="All 4 branches missed.">    	if (method == null || s.method != method)</span>
+<span class="nc" id="L58">            throw new IllegalStateException(&quot;Statements must be in the same method before they can be attached with edges&quot;);</span>
+    	
+<span class="nc bnc" id="L60" title="All 2 branches missed.">    	if (succs.contains(s))</span>
+<span class="nc" id="L61">    		return false;</span>
+        
+<span class="nc" id="L63">    	succs.add(s);</span>
+<span class="nc" id="L64">        s.addPred(this);</span>
+        
+<span class="nc" id="L66">        return true;</span>
+    }
+
+    void addPred(Statement s) {
+<span class="nc" id="L70">        preds.add(s);</span>
+<span class="nc" id="L71">    }</span>
+
+    void removePred(Statement s) {
+<span class="nc" id="L74">        preds.remove(s);</span>
+<span class="nc" id="L75">    }</span>
+
+    void removeSucc(Statement s) {
+<span class="nc" id="L78">        succs.remove(s);</span>
+<span class="nc" id="L79">    }</span>
+
+    void addPreds(Collection&lt;Statement&gt; ss) {
+<span class="nc" id="L82">        preds.addAll(ss);</span>
+<span class="nc" id="L83">    }</span>
+
+    void addSuccs(Collection&lt;Statement&gt; ss) {
+<span class="nc" id="L86">        succs.addAll(ss);</span>
+<span class="nc" id="L87">    }</span>
+
+    /**
+     * Returns (unmodifiable) collection of all targets of control flow edges originating from this node.
+     *
+     * @return a collection of {@link dk.brics.string.intermediate.Statement} objects.
+     */
+    public Collection&lt;Statement&gt; getSuccs() {
+<span class="nc" id="L95">        return Collections.unmodifiableCollection(succs);</span>
+    }
+
+    /**
+     * Returns (unmodifiable) collection of all origins of control flow edges going to this node.
+     *
+     * @return a collection of {@link dk.brics.string.intermediate.Statement} objects.
+     */
+    public Collection&lt;Statement&gt; getPreds() {
+<span class="nc" id="L104">        return Collections.unmodifiableCollection(preds);</span>
+    }
+    
+    /**
+     * Sets a reference to the method containing this statement.
+     * &lt;p/&gt;
+     * This is package-private to enforce the integrity invariant on the intermediate representation.
+     * @param m the method containing this statement
+     */
+    void setMethod(Method m) {
+<span class="nc" id="L114">        method = m;</span>
+<span class="nc" id="L115">    }</span>
+    
+    /**
+     * Returns the method whose body contains this statement.
+     *
+     * @return the method.
+     */
+    public Method getMethod() {
+<span class="nc" id="L123">        return method;</span>
+    }
+    
+    /**
+     * Sets the statement's index.
+     * &lt;p/&gt;
+     * This is package-private to enforce the integrity invariant on the intermediate representation.
+     * @param index integer unique for this statement within the body of its method.
+     */
+    void setIndex(int index) {
+<span class="nc" id="L133">        this.index = index;</span>
+<span class="nc" id="L134">    }</span>
+
+    /**
+     * Returns the index of this statement, indicating the sequence
+     * number in which the statement was added to its method.
+     *
+     * @return the index.
+     */
+    public int getIndex() {
+<span class="nc" id="L143">        return index;</span>
+    }
+
+    /**
+     * Returns a string representation of this statement.
+     * This is handled by a {@link dk.brics.string.intermediate.operations.ToStringVisitor}.
+     *
+     * @return the statement as a string.
+     */
+    @Override
+    public String toString() {
+<span class="nc" id="L154">        ToStringVisitor tsv = new ToStringVisitor();</span>
+<span class="nc" id="L155">        visitBy(tsv);</span>
+<span class="nc" id="L156">        return tsv.result;</span>
+    }
+
+    /**
+     * Visit this statement by the given statement visitor.
+     * This will invoke the corresponding method in the visitor.
+     *
+     * @param v the visitor.
+     */
+    public abstract void visitBy(StatementVisitor v);
+
+    public int compareTo(Statement v) {
+<span class="nc bnc" id="L168" title="All 4 branches missed.">        if (key == -1 || v.key == -1) {</span>
+<span class="nc" id="L169">            throw new IllegalStateException(&quot;statement key not set&quot;);</span>
+        }
+<span class="nc" id="L171">        return key - v.key;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

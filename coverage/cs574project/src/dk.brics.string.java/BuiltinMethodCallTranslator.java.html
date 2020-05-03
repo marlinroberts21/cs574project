@@ -1,0 +1,1199 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BuiltinMethodCallTranslator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">BuiltinMethodCallTranslator.java</span></div><h1>BuiltinMethodCallTranslator.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import soot.ArrayType;
+import soot.BooleanType;
+import soot.CharType;
+import soot.IntType;
+import soot.Local;
+import soot.RefLikeType;
+import soot.RefType;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Type;
+import soot.Value;
+import soot.ValueBox;
+import soot.jimple.Constant;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.IntConstant;
+import soot.jimple.InvokeExpr;
+import soot.jimple.StringConstant;
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.RegExp;
+import dk.brics.string.intermediate.ArrayAddAll;
+import dk.brics.string.intermediate.ArrayAssignment;
+import dk.brics.string.intermediate.ArrayNew;
+import dk.brics.string.intermediate.ArrayWriteArray;
+import dk.brics.string.intermediate.ArrayWriteElement;
+import dk.brics.string.intermediate.BasicBinaryOp;
+import dk.brics.string.intermediate.BasicUnaryOp;
+import dk.brics.string.intermediate.Call;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.PrimitiveInit;
+import dk.brics.string.intermediate.StringAssignment;
+import dk.brics.string.intermediate.StringBufferAppend;
+import dk.brics.string.intermediate.StringBufferAppendChar;
+import dk.brics.string.intermediate.StringBufferBinaryOp;
+import dk.brics.string.intermediate.StringBufferInit;
+import dk.brics.string.intermediate.StringBufferPrepend;
+import dk.brics.string.intermediate.StringBufferUnaryOp;
+import dk.brics.string.intermediate.StringConcat;
+import dk.brics.string.intermediate.StringFromArray;
+import dk.brics.string.intermediate.StringFromStringBuffer;
+import dk.brics.string.intermediate.StringInit;
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.intermediate.VariableType;
+import dk.brics.string.stringoperations.Basic;
+import dk.brics.string.stringoperations.BinaryOperation;
+import dk.brics.string.stringoperations.BooleanToString;
+import dk.brics.string.stringoperations.CharAt1;
+import dk.brics.string.stringoperations.CharAt2;
+import dk.brics.string.stringoperations.Contains;
+import dk.brics.string.stringoperations.Delete;
+import dk.brics.string.stringoperations.DeleteCharAt;
+import dk.brics.string.stringoperations.Insert;
+import dk.brics.string.stringoperations.Postfix;
+import dk.brics.string.stringoperations.Prefix;
+import dk.brics.string.stringoperations.Replace1;
+import dk.brics.string.stringoperations.Replace2;
+import dk.brics.string.stringoperations.Replace3;
+import dk.brics.string.stringoperations.Replace4;
+import dk.brics.string.stringoperations.Replace5;
+import dk.brics.string.stringoperations.Replace6;
+import dk.brics.string.stringoperations.Reverse;
+import dk.brics.string.stringoperations.SetCharAt1;
+import dk.brics.string.stringoperations.SetCharAt2;
+import dk.brics.string.stringoperations.SetLength;
+import dk.brics.string.stringoperations.Split;
+import dk.brics.string.stringoperations.Substring;
+import dk.brics.string.stringoperations.ToLowerCase;
+import dk.brics.string.stringoperations.ToUpperCase;
+import dk.brics.string.stringoperations.Trim;
+import dk.brics.string.stringoperations.UnaryOperation;
+
+/**
+ * Translates calls to methods declared in {@link String}, {@link StringBuffer}, {@link StringBuilder}, and {@link Object} into
+ * statements, modelling them as precisely as possible.
+ */
+<span class="nc" id="L83">public class BuiltinMethodCallTranslator implements MethodCallTranslator {</span>
+
+<span class="nc" id="L85">	private static final Automaton ARRAY_OBJECT_AUTOMATON = new RegExp(&quot;\&quot;[Ljava.lang.String;@\&quot;[0-9a-f]+&quot;).toAutomaton();</span>
+<span class="nc" id="L86">	private static final Automaton UNSIGNED_HEX_AUTOMATON = new RegExp(&quot;0|[1-9a-f][0-9a-f]*&quot;).toAutomaton();</span>
+<span class="nc" id="L87">	private static final Automaton UNSIGNED_OCTAL_AUTOMATON = new RegExp(&quot;0|[1-7][0-7]*&quot;).toAutomaton();</span>
+<span class="nc" id="L88">	private static final Automaton UNSIGNED_BINARY_AUTOMATON = new RegExp(&quot;0|1[01]*&quot;).toAutomaton();</span>
+	
+	/**
+	 * List of collection types we trust. Invoking a constructor on a
+	 * collection-type not in this list will produce a corrupt collection.
+	 * &lt;p/&gt;
+	 * Note that this ONLY affects constructor call! Collections returned by
+	 * eg. Collections.unmodifiableList() may be considered valid even though
+	 * its type is not in this list.
+	 */
+<span class="nc" id="L98">	private static final String[] TRUSTED_COLLECTIONS = {</span>
+<span class="nc" id="L99">		&quot;java.util.ArrayList&quot;,</span>
+<span class="nc" id="L100">		&quot;java.util.Vector&quot;,</span>
+<span class="nc" id="L101">		&quot;java.util.LinkedList&quot;,</span>
+<span class="nc" id="L102">		&quot;java.util.HashSet&quot;,</span>
+<span class="nc" id="L103">		&quot;java.util.LinkedHashSet&quot;,</span>
+<span class="nc" id="L104">		&quot;java.util.TreeSet&quot;</span>
+	};
+	private static final Set&lt;String&gt; trustedCollections;
+	static {
+<span class="nc" id="L108">		Set&lt;String&gt; set = new HashSet&lt;String&gt;();</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		for (String s : TRUSTED_COLLECTIONS) {</span>
+<span class="nc" id="L110">			set.add(s);</span>
+		}
+<span class="nc" id="L112">		trustedCollections = Collections.unmodifiableSet(set);</span>
+	}
+	
+	/**
+	 * List of StringBuffer methods that have no side-effects and return uninteresting objects. This technique only works
+	 * because all overloads of a pure method in StringBuffer are pure.
+	 * &lt;p/&gt;
+	 * Does *not* include those declared in Object, but does include those inherited from interfaces.
+	 */
+	private static final String STRING_BUFFER_IGNORED_METHODS = 
+		&quot;capacity|charAt|codePointAt|codePointBefore|codePointCount|ensureCapacity|getChars|indexOf|&quot;
+	+	&quot;lastIndexOf|length|offsetByCodePoints|subSequence|trimToSize&quot;
+	;
+	
+	/**
+	 * Accepts names of StringBuffer methods that have no side-effects and return uninteresting objects.
+	 */
+<span class="nc" id="L129">	private static final Automaton STRING_BUFFER_IGNORED_METHODS_AUTO = new RegExp(STRING_BUFFER_IGNORED_METHODS).toAutomaton();</span>
+	
+	public Variable translateMethodCall(InstanceInvokeExpr expr, SootMethod target, Variable callee, List&lt;Variable&gt; arguments, IntermediateFactory factory) {
+<span class="nc" id="L132">		String methodName = target.getName();</span>
+<span class="nc" id="L133">		int numArgs = arguments.size();</span>
+<span class="nc" id="L134">		SootClass declaringClass = target.getDeclaringClass();</span>
+		
+		//
+		//	STRING
+		//
+<span class="nc bnc" id="L139" title="All 2 branches missed.">		if (isString(declaringClass)) {</span>
+			// String.toString()
+<span class="nc bnc" id="L141" title="All 4 branches missed.">            if (methodName.equals(&quot;toString&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L142">                return callee;</span>
+                
+            // String.intern()
+<span class="nc bnc" id="L145" title="All 4 branches missed.">            } else if (methodName.equals(&quot;intern&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L146">                return callee;</span>
+                
+            // String.concat(String)	[explicit, not invoked by + operator]
+<span class="nc bnc" id="L149" title="All 6 branches missed.">            } else if (methodName.equals(&quot;concat&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isString(target.getParameterType(0))) {</span>
+                // translate the argument
+<span class="nc" id="L151">                Variable rvar = arguments.get(0);</span>
+<span class="nc" id="L152">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L153">                factory.addStatement(new StringConcat(result, callee, rvar));</span>
+<span class="nc" id="L154">                return result;</span>
+                
+            // String.replace(char,char)
+<span class="nc bnc" id="L157" title="All 4 branches missed.">            } else if (methodName.equals(&quot;replace&quot;) &amp;&amp; numArgs == 2 &amp;&amp;</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                    isChar(target.getParameterType(0)) &amp;&amp;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">                    isChar(target.getParameterType(1))) {</span>
+<span class="nc" id="L160">                Integer arg1 = trackInteger(expr.getArg(0));</span>
+<span class="nc" id="L161">                Integer arg2 = trackInteger(expr.getArg(1));</span>
+                UnaryOperation op;
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                if (arg1 != null) {</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                    if (arg2 != null) {</span>
+<span class="nc" id="L165">                        op = new Replace1((char) arg1.intValue(), (char) arg2.intValue());</span>
+<span class="nc" id="L166">                    } else {</span>
+<span class="nc" id="L167">                        op = new Replace2((char) arg1.intValue());</span>
+                    }
+<span class="nc" id="L169">                } else {</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">                    if (arg2 != null) {</span>
+<span class="nc" id="L171">                        op = new Replace3((char) arg2.intValue());</span>
+<span class="nc" id="L172">                    } else {</span>
+<span class="nc" id="L173">                        op = new Replace4();</span>
+                    }
+                }
+                
+<span class="nc" id="L177">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L178">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L179">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L180">                factory.addStatement(new StringBufferUnaryOp(temp, op));</span>
+<span class="nc" id="L181">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L182">                return result;</span>
+                
+            // String.replace(CharSequence, CharSequence)
+<span class="nc bnc" id="L185" title="All 4 branches missed.">            } else if (methodName.equals(&quot;replace&quot;) &amp;&amp; numArgs == 2 &amp;&amp;</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                    isCharSequence(target.getParameterType(0)) &amp;&amp;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                    isCharSequence(target.getParameterType(1))) {</span>
+<span class="nc" id="L188">                String arg1 = trackString(expr.getArg(0));</span>
+<span class="nc" id="L189">                String arg2 = trackString(expr.getArg(1));</span>
+<span class="nc" id="L190">                Variable result = factory.createVariable(VariableType.STRING);</span>
+                
+                // if either argument is unknown, give up.	[TODO make this better]
+<span class="nc bnc" id="L193" title="All 4 branches missed.">                if (arg1 == null || arg2 == null) {</span>
+<span class="nc" id="L194">                	factory.addStatement(new StringInit(result, Basic.makeAnyString()));</span>
+<span class="nc" id="L195">                	return result;</span>
+                }
+                
+<span class="nc" id="L198">                Replace6 rep = new Replace6(arg1, arg2);</span>
+<span class="nc" id="L199">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L200">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L201">                factory.addStatement(new StringBufferUnaryOp(temp, rep));</span>
+<span class="nc" id="L202">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L203">                return result;</span>
+                
+            // String.trim()
+<span class="nc bnc" id="L206" title="All 4 branches missed.">            } else if (methodName.equals(&quot;trim&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L207">                UnaryOperation op = new Trim();</span>
+<span class="nc" id="L208">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L209">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L210">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L211">                factory.addStatement(new StringBufferUnaryOp(temp, op));</span>
+<span class="nc" id="L212">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L213">                return result;</span>
+            
+            // String.substring(int)		[this method returns a suffix of the string, starting at the specified index]
+<span class="nc bnc" id="L216" title="All 4 branches missed.">            } else if (methodName.equals(&quot;substring&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L217">                UnaryOperation op = new Postfix();</span>
+<span class="nc" id="L218">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L219">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L220">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L221">                factory.addStatement(new StringBufferUnaryOp(temp, op));</span>
+<span class="nc" id="L222">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L223">                return result;</span>
+            
+            // String.substring(int,int)
+<span class="nc bnc" id="L226" title="All 4 branches missed.">            } else if (methodName.equals(&quot;substring&quot;) &amp;&amp; numArgs == 2) {</span>
+                UnaryOperation op;
+<span class="nc" id="L228">                Integer arg1 = trackInteger(expr.getArg(0));</span>
+<span class="nc bnc" id="L229" title="All 4 branches missed.">                if (arg1 != null &amp;&amp; arg1.intValue() == 0) {</span>
+<span class="nc" id="L230">                    op = new Prefix();</span>
+<span class="nc" id="L231">                } else {</span>
+<span class="nc" id="L232">                    op = new Substring();</span>
+                }
+<span class="nc" id="L234">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L235">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L236">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L237">                factory.addStatement(new StringBufferUnaryOp(temp, op));</span>
+<span class="nc" id="L238">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L239">                return result;</span>
+            
+            // String.toLowerCase()
+<span class="nc bnc" id="L242" title="All 4 branches missed.">            } else if (methodName.equals(&quot;toLowerCase&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L243">                UnaryOperation op = new ToLowerCase();</span>
+<span class="nc" id="L244">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L245">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L246">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L247">                factory.addStatement(new StringBufferUnaryOp(temp, op));</span>
+<span class="nc" id="L248">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L249">                return result;</span>
+            
+            // String.toUpperCase()
+<span class="nc bnc" id="L252" title="All 4 branches missed.">            } else if (methodName.equals(&quot;toUpperCase&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L253">                UnaryOperation op = new ToUpperCase();</span>
+<span class="nc" id="L254">                Variable temp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L255">                Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L256">                factory.addStatement(new StringBufferInit(temp, callee));</span>
+<span class="nc" id="L257">                factory.addStatement(new StringBufferUnaryOp(temp, op));</span>
+<span class="nc" id="L258">                factory.addStatement(new StringFromStringBuffer(result, temp));</span>
+<span class="nc" id="L259">                return result;</span>
+            
+            // String.split(String)
+<span class="nc bnc" id="L262" title="All 4 branches missed.">            } else if (methodName.equals(&quot;split&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L263">                Variable result = factory.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L264">                factory.addStatement(new BasicUnaryOp(result, callee, new Split()));</span>
+<span class="nc" id="L265">                return result;</span>
+            
+            // String.charAt(int)
+<span class="nc bnc" id="L268" title="All 4 branches missed.">            } else if (methodName.equals(&quot;charAt&quot;) &amp;&amp; numArgs == 1) {</span>
+                UnaryOperation op;
+<span class="nc" id="L270">                Integer arg = trackInteger(expr.getArg(0));</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">                if (arg != null) {</span>
+<span class="nc" id="L272">                    op = new CharAt1(arg);</span>
+<span class="nc" id="L273">                } else {</span>
+<span class="nc" id="L274">                    op = new CharAt2();</span>
+                }
+<span class="nc" id="L276">                Variable result = factory.createVariable(VariableType.PRIMITIVE);</span>
+<span class="nc" id="L277">                factory.addStatement(new BasicUnaryOp(result, callee, op));</span>
+<span class="nc" id="L278">                return result;</span>
+                
+            // String.contains(CharSequence)
+<span class="nc bnc" id="L281" title="All 4 branches missed.">            } else if (methodName.equals(&quot;contains&quot;) &amp;&amp; numArgs == 1) {</span>
+                // this is experimental stuff. it is working, but probably not that useful
+<span class="nc" id="L283">                Variable result = factory.createVariable(VariableType.PRIMITIVE);</span>
+<span class="nc" id="L284">                factory.addStatement(new BasicBinaryOp(result, callee, arguments.get(0), new Contains()));</span>
+<span class="nc" id="L285">                return result;</span>
+            
+            
+            // String.contentEquals(CharSequence) and String.contentEquals(StringBuffer)
+<span class="nc bnc" id="L289" title="All 4 branches missed.">            } else if (methodName.equals(&quot;contentEquals&quot;) &amp;&amp; numArgs == 1) {</span>
+                // we can't say anything meaningful except the argument is NOT corrupted
+                // (the argument will be considered corrupted if we do not handle it here)
+<span class="nc" id="L292">                Variable result = factory.createVariable(VariableType.PRIMITIVE);</span>
+<span class="nc" id="L293">                factory.addStatement(new PrimitiveInit(result, Basic.getBinaryBooleans()));</span>
+<span class="nc" id="L294">                return result;</span>
+            }
+            
+            // String.toCharArray()
+<span class="nc bnc" id="L298" title="All 4 branches missed.">            else if (methodName.equals(&quot;toCharArray&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L299">                Variable result = factory.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L300">                factory.addStatement(new ArrayNew(result));</span>
+<span class="nc" id="L301">                Variable charAt = factory.createVariable(VariableType.PRIMITIVE);</span>
+<span class="nc" id="L302">                factory.addStatement(new BasicUnaryOp(charAt, callee, new CharAt2()));</span>
+<span class="nc" id="L303">                factory.addStatement(new ArrayWriteElement(result, charAt));</span>
+<span class="nc" id="L304">                return result;</span>
+            }
+            
+			
+<span class="nc" id="L308">        	return null;</span>
+			
+		}
+		
+		//
+		//		STRINGBUFFER
+		//
+<span class="nc bnc" id="L315" title="All 2 branches missed.">		else if (isBufferOrBuilder(declaringClass)) {</span>
+<span class="nc bnc" id="L316" title="All 4 branches missed.">			if (methodName.equals(&quot;toString&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L317">				Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L318">                factory.addStatement(new StringFromStringBuffer(result, callee));</span>
+<span class="nc" id="L319">                return result;</span>
+            } 
+            // StringBuffer.append(&lt;any type&gt;)
+<span class="nc bnc" id="L322" title="All 4 branches missed.">            else if (methodName.equals(&quot;append&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L323">                Variable rvar = valueOf(expr.getArgBox(0), arguments.get(0), 10, target.getParameterType(0), factory);</span>
+<span class="nc" id="L324">                factory.addStatement(new StringBufferAppend(callee, rvar));</span>
+<span class="nc" id="L325">                return callee;</span>
+            } 
+            // StringBuffer.insert(int, &lt;any type&gt;)
+<span class="nc bnc" id="L328" title="All 4 branches missed.">            else if (methodName.equals(&quot;insert&quot;) &amp;&amp; numArgs == 2 &amp;&amp;</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">                    isInt(target.getParameterType(0))) {</span>
+<span class="nc" id="L330">                Integer pos = trackInteger(expr.getArg(0));</span>
+<span class="nc" id="L331">                Variable rvar = valueOf(expr.getArgBox(1), arguments.get(1), 10, target.getParameterType(0), factory);</span>
+<span class="nc bnc" id="L332" title="All 4 branches missed.">                if (pos != null &amp;&amp; pos.intValue() == 0) {</span>
+<span class="nc" id="L333">                	factory.addStatement(new StringBufferPrepend(callee, rvar));</span>
+<span class="nc" id="L334">                } else {</span>
+<span class="nc" id="L335">                	factory.addStatement(new StringBufferBinaryOp(callee, new Insert(), rvar));</span>
+                }
+<span class="nc" id="L337">                return callee;</span>
+            } 
+            // StringBuffer.delete(int,int)
+<span class="nc bnc" id="L340" title="All 4 branches missed.">            else if (methodName.equals(&quot;delete&quot;) &amp;&amp; numArgs == 2) {</span>
+<span class="nc" id="L341">                UnaryOperation op = new Delete();</span>
+<span class="nc" id="L342">                factory.addStatement(new StringBufferUnaryOp(callee, op));</span>
+<span class="nc" id="L343">                return callee;</span>
+            } 
+            // StringBuffer.deleteCharAt(int)
+<span class="nc bnc" id="L346" title="All 4 branches missed.">            else if (methodName.equals(&quot;deleteCharAt&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L347">                UnaryOperation op = new DeleteCharAt();</span>
+<span class="nc" id="L348">                factory.addStatement(new StringBufferUnaryOp(callee, op));</span>
+<span class="nc" id="L349">                return callee;</span>
+            } 
+            // StringBuffer.replace(int start, int end, String replacement)
+<span class="nc bnc" id="L352" title="All 4 branches missed.">            else if (methodName.equals(&quot;replace&quot;) &amp;&amp; numArgs == 3) {</span>
+<span class="nc" id="L353">                BinaryOperation op = new Replace5();</span>
+<span class="nc" id="L354">                Variable rvar = valueOf(expr.getArgBox(2), arguments.get(2), 10, target.getParameterType(2), factory);</span>
+<span class="nc" id="L355">                factory.addStatement(new StringBufferBinaryOp(callee, op, rvar));</span>
+<span class="nc" id="L356">                return callee;</span>
+            } 
+            // StringBuffer.reverse()
+<span class="nc bnc" id="L359" title="All 4 branches missed.">            else if (methodName.equals(&quot;reverse&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L360">                UnaryOperation op = new Reverse();</span>
+<span class="nc" id="L361">                factory.addStatement(new StringBufferUnaryOp(callee, op));</span>
+<span class="nc" id="L362">                return callee;</span>
+            } 
+            // StringBuffer.setCharAt(int, char)	[NOTE: This method returns void]
+<span class="nc bnc" id="L365" title="All 4 branches missed.">            else if (methodName.equals(&quot;setCharAt&quot;) &amp;&amp; numArgs == 2) {</span>
+<span class="nc" id="L366">                Integer c = trackInteger(expr.getArg(1));</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">                if (c == null) {</span>
+<span class="nc" id="L368">                    UnaryOperation op = new SetCharAt2();</span>
+<span class="nc" id="L369">                    factory.addStatement(new StringBufferUnaryOp(callee, op));</span>
+<span class="nc" id="L370">                } else {</span>
+<span class="nc" id="L371">                    UnaryOperation op = new SetCharAt1((char) c.intValue());</span>
+<span class="nc" id="L372">                    factory.addStatement(new StringBufferUnaryOp(callee, op));</span>
+                }
+<span class="nc" id="L374">                return factory.getNothing();</span>
+            } 
+            // StringBuffer.setLength(int)			[NOTE: This method returns void]
+<span class="nc bnc" id="L377" title="All 4 branches missed.">            else if (methodName.equals(&quot;setLength&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L378">                UnaryOperation op = new SetLength();</span>
+<span class="nc" id="L379">                factory.addStatement(new StringBufferUnaryOp(callee, op));</span>
+<span class="nc" id="L380">                return factory.getNothing();// returns void</span>
+            } 
+            // StringBuffer.substring(int)			[NOTE: Returns a string]
+<span class="nc bnc" id="L383" title="All 4 branches missed.">            else if (methodName.equals(&quot;substring&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L384">                UnaryOperation op = new Postfix();</span>
+
+<span class="nc" id="L386">                Variable result = factory.createVariable(VariableType.STRING);</span>
+                
+                // clone the stringbuffer
+<span class="nc" id="L389">                Variable clone = makeStringBufferClone(callee, factory);</span>
+                
+                // perform the substring operation on the clone
+<span class="nc" id="L392">                factory.addStatement(new StringBufferUnaryOp(clone, op));</span>
+                
+                // now put the clone's value back into the result variable
+<span class="nc" id="L395">                factory.addStatement(new StringFromStringBuffer(result, clone));</span>
+                
+<span class="nc" id="L397">                return result;</span>
+            }  
+            // StringBuffer.substring(int,int)		[NOTE: Returns a string]
+<span class="nc bnc" id="L400" title="All 4 branches missed.">            else if (methodName.equals(&quot;substring&quot;) &amp;&amp; numArgs == 2) {</span>
+                UnaryOperation op;
+<span class="nc" id="L402">                Integer arg1 = trackInteger(expr.getArg(0));</span>
+<span class="nc bnc" id="L403" title="All 4 branches missed.">                if (arg1 != null &amp;&amp; arg1.intValue() == 0) {</span>
+<span class="nc" id="L404">                    op = new Prefix();</span>
+<span class="nc" id="L405">                } else {</span>
+<span class="nc" id="L406">                    op = new Substring();</span>
+                }
+                
+<span class="nc" id="L409">                Variable result = factory.createVariable(VariableType.STRING);</span>
+                
+                // clone the stringbuffer
+<span class="nc" id="L412">                Variable clone = makeStringBufferClone(callee, factory);</span>
+                
+                // perform the substring operation on the clone
+<span class="nc" id="L415">                factory.addStatement(new StringBufferUnaryOp(clone, op));</span>
+                
+                // now put the clone's value back into the result variable
+<span class="nc" id="L418">                factory.addStatement(new StringFromStringBuffer(result, clone));</span>
+                
+<span class="nc" id="L420">                return result;</span>
+            }
+			
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            else if (STRING_BUFFER_IGNORED_METHODS_AUTO.run(methodName)) {</span>
+            	// A method without side-effects. Just return something.
+<span class="nc" id="L425">            	return factory.createVariable(factory.fromSootType(target.getReturnType()));</span>
+            }
+			
+<span class="nc" id="L428">			System.err.println(&quot;Unknown StringBuffer method: &quot; + target.getSignature());</span>
+<span class="nc" id="L429">		}</span>
+		
+		//
+		//	WRAPPERS
+		//
+<span class="nc bnc" id="L434" title="All 2 branches missed.">		else if (isWrapperClass(declaringClass)) {</span>
+<span class="nc bnc" id="L435" title="All 4 branches missed.">			if (methodName.equals(&quot;toString&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L436">				Automaton typeAuto = Automatons.fromType(declaringClass.getName());</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">				if (typeAuto == null)</span>
+<span class="nc" id="L438">					throw new RuntimeException(&quot;Unknown wrapper class &quot; + declaringClass.getName());</span>
+				
+<span class="nc" id="L440">				Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L441">				factory.addStatement(new StringInit(result, typeAuto));</span>
+<span class="nc" id="L442">				return result;</span>
+			}
+			
+			//System.err.println(&quot;Unknown wrapper method: &quot; + target.getSignature());
+		}
+		
+		//
+		//	OBJECT
+		//
+<span class="nc bnc" id="L451" title="All 2 branches missed.">		else if (isObjectClass(declaringClass)) {</span>
+<span class="nc bnc" id="L452" title="All 6 branches missed.">			if (methodName.equals(&quot;equals&quot;) || methodName.equals(&quot;hashCode&quot;) || methodName.equals(&quot;getClass&quot;)) {</span>
+				// no side-effects
+<span class="nc" id="L454">				return factory.createVariable(factory.fromSootType(target.getReturnType()));</span>
+			}
+		}
+		
+<span class="nc" id="L458">		return null;</span>
+	}
+	
+	public Variable translateAbstractMethodCall(InstanceInvokeExpr expr,
+			SootMethod target, Variable callee, List&lt;Variable&gt; arguments,
+			IntermediateFactory factory) {
+<span class="nc" id="L464">		SootClass declaringClass = target.getDeclaringClass();</span>
+<span class="nc" id="L465">		String methodName = target.getName();</span>
+<span class="nc" id="L466">		int numArgs = expr.getArgCount();</span>
+		
+		//
+		//	COLLECTIONS
+		//
+<span class="nc bnc" id="L471" title="All 2 branches missed.">		if (factory.isSubtypeOf(declaringClass, Scene.v().getSootClass(&quot;java.util.Collection&quot;))) {</span>
+			// add(String)
+<span class="nc bnc" id="L473" title="All 6 branches missed.">			if (methodName.equals(&quot;add&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isString(expr.getArg(0).getType())) {</span>
+<span class="nc" id="L474">				factory.addStatement(new ArrayWriteElement(callee, arguments.get(0)));</span>
+<span class="nc" id="L475">				return anybool(factory);</span>
+				// note: if a non-string object was inserted, this method returns null
+				// so the collection gets corrupted as it should
+			}
+			// add(int,String)
+<span class="nc bnc" id="L480" title="All 8 branches missed.">			else if (methodName.equals(&quot;add&quot;) &amp;&amp; numArgs == 2 &amp;&amp; isInt(expr.getArg(0).getType()) &amp;&amp; isString(expr.getArg(1).getType())) {</span>
+<span class="nc" id="L481">				factory.addStatement(new ArrayWriteElement(callee, arguments.get(1)));</span>
+<span class="nc" id="L482">				return anybool(factory);</span>
+			}
+			// addAll(&lt;known collection&gt;)
+<span class="nc bnc" id="L485" title="All 6 branches missed.">			else if (methodName.equals(&quot;addAll&quot;) &amp;&amp; numArgs == 1 &amp;&amp; factory.fromSootType(expr.getArg(0).getType()) == VariableType.ARRAY) {</span>
+<span class="nc" id="L486">				factory.addStatement(new ArrayWriteArray(callee, arguments.get(0)));</span>
+<span class="nc" id="L487">				return anybool(factory);</span>
+			}
+			// addAll(int,&lt;known collection&gt;)
+<span class="nc bnc" id="L490" title="All 8 branches missed.">			else if (methodName.equals(&quot;addAll&quot;) &amp;&amp; numArgs == 2 &amp;&amp; isInt(expr.getArg(0).getType()) &amp;&amp; factory.fromSootType(expr.getArg(1).getType()) == VariableType.ARRAY) {</span>
+<span class="nc" id="L491">				factory.addStatement(new ArrayWriteArray(callee, arguments.get(1)));</span>
+<span class="nc" id="L492">				return anybool(factory);</span>
+			}
+			// clear()
+<span class="nc bnc" id="L495" title="All 4 branches missed.">			else if (methodName.equals(&quot;clear&quot;) &amp;&amp; numArgs == 0) {</span>
+				// TODO Collection.clear()
+				// for now just say no side-effects. this is sound.
+<span class="nc" id="L498">				return factory.getNothing();</span>
+			}
+			// set(int,String)
+<span class="nc bnc" id="L501" title="All 8 branches missed.">			else if (methodName.equals(&quot;set&quot;) &amp;&amp; numArgs == 2 &amp;&amp; isInt(expr.getArg(0).getType()) &amp;&amp; isString(expr.getArg(1).getType())) {</span>
+				// note: List.set returns the element previously at the position
+				
+				// get the old element
+<span class="nc" id="L505">				Variable old = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L506">				factory.addStatement(new StringFromArray(old, callee));</span>
+				
+				// insert the new element
+<span class="nc" id="L509">				factory.addStatement(new ArrayWriteElement(callee, arguments.get(1)));</span>
+				
+<span class="nc" id="L511">				return old;</span>
+			}
+			// get(int)
+<span class="nc bnc" id="L514" title="All 6 branches missed.">			else if (methodName.equals(&quot;get&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isInt(expr.getArg(0).getType())) {</span>
+<span class="nc" id="L515">				Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L516">				factory.addStatement(new StringFromArray(result, callee));</span>
+<span class="nc" id="L517">				return result;</span>
+			}
+			// iterator()
+<span class="nc bnc" id="L520" title="All 4 branches missed.">			else if (methodName.equals(&quot;iterator&quot;) &amp;&amp; numArgs == 0) {</span>
+				// changes to the collection might reflect on the iterator
+				// and vice versa (eg using ListIterator.add)
+<span class="nc" id="L523">				return callee;</span>
+			}
+			// listIterator()
+<span class="nc bnc" id="L526" title="All 4 branches missed.">			else if (methodName.equals(&quot;listIterator&quot;) &amp;&amp; numArgs == 0) {</span>
+				// changes to the collection might reflect on the iterator
+				// and vice versa (eg using ListIterator.add)
+<span class="nc" id="L529">				return callee;</span>
+			}
+			// methods without side-effects returning booleans
+<span class="nc bnc" id="L532" title="All 2 branches missed.">			else if (methodName.equals(&quot;contains&quot;)</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">					|| methodName.equals(&quot;containsAll&quot;)</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">					|| methodName.equals(&quot;isEmpty&quot;)) {</span>
+<span class="nc" id="L535">				return anybool(factory);</span>
+			}
+			// remove() and removeAll() are just identity operations for now
+<span class="nc bnc" id="L538" title="All 2 branches missed.">			else if (methodName.equals(&quot;remove&quot;)</span>
+<span class="nc bnc" id="L539" title="All 2 branches missed.">					|| methodName.equals(&quot;removeAll&quot;)) {</span>
+<span class="nc" id="L540">				return anybool(factory);</span>
+			}
+			// size() 
+<span class="nc bnc" id="L543" title="All 2 branches missed.">			else if (methodName.equals(&quot;size&quot;)) {</span>
+<span class="nc" id="L544">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L546" title="All 4 branches missed.">			else if (methodName.equals(&quot;toArray&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L547">				Variable result = factory.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L548">				factory.addStatement(new ArrayNew(result));</span>
+<span class="nc" id="L549">				factory.addStatement(new ArrayAddAll(result, callee));</span>
+<span class="nc" id="L550">				return result;</span>
+			}
+<span class="nc bnc" id="L552" title="All 4 branches missed.">			else if (methodName.equals(&quot;toArray&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L553">				Variable result = factory.createVariable(VariableType.ARRAY);</span>
+				
+				// the elements MIGHT be stored into the argument
+<span class="nc" id="L556">				factory.startBranch();</span>
+				// 1) not stored in argument
+				{
+<span class="nc" id="L559">					factory.addStatement(new ArrayNew(result));</span>
+<span class="nc" id="L560">					factory.useBranch();</span>
+				}
+				// 2) stored in argument
+				{
+					// note: existing elements in the array may remain
+					// in particular if the array is larger than the collection,
+					// the exceeding elements are unchanged, so do not clear the array here
+<span class="nc" id="L567">					factory.addStatement(new ArrayAssignment(result, arguments.get(0)));</span>
+<span class="nc" id="L568">					factory.useBranch();</span>
+				}
+<span class="nc" id="L570">				factory.endBranch();</span>
+				
+<span class="nc" id="L572">				factory.addStatement(new ArrayAddAll(result, callee));</span>
+				
+<span class="nc" id="L574">				return result;</span>
+			}
+		}
+		
+		//
+		// ITERATORS
+		//
+<span class="nc bnc" id="L581" title="All 2 branches missed.">		else if (factory.isSubtypeOf(declaringClass, Scene.v().getSootClass(&quot;java.util.Iterator&quot;))) {</span>
+<span class="nc bnc" id="L582" title="All 4 branches missed.">			if (methodName.equals(&quot;hasNext&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L583">				return anybool(factory); // no side-effects</span>
+			}
+<span class="nc bnc" id="L585" title="All 4 branches missed.">			else if (methodName.equals(&quot;hasPrevious&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L586">				return anybool(factory); // no side-effects</span>
+			}
+<span class="nc bnc" id="L588" title="All 6 branches missed.">			else if ((methodName.equals(&quot;next&quot;) || methodName.equals(&quot;previous&quot;)) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L589">				Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L590">				factory.addStatement(new StringFromArray(result, callee));</span>
+<span class="nc" id="L591">				return result;</span>
+			}
+<span class="nc bnc" id="L593" title="All 4 branches missed.">			else if (methodName.equals(&quot;remove&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L594">				return anybool(factory); // just prevent corruption</span>
+			}
+<span class="nc bnc" id="L596" title="All 6 branches missed.">			else if (methodName.equals(&quot;add&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isString(expr.getArg(0).getType())) {</span>
+<span class="nc" id="L597">				factory.addStatement(new ArrayWriteElement(callee, arguments.get(0)));</span>
+<span class="nc" id="L598">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L600" title="All 6 branches missed.">			else if (methodName.equals(&quot;set&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isString(expr.getArg(0).getType())) {</span>
+<span class="nc" id="L601">				factory.addStatement(new ArrayWriteElement(callee, arguments.get(0)));</span>
+<span class="nc" id="L602">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L604" title="All 4 branches missed.">			else if (methodName.equals(&quot;nextIndex&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L605">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L607" title="All 4 branches missed.">			else if (methodName.equals(&quot;previousIndex&quot;) &amp;&amp; numArgs == 0) {</span>
+<span class="nc" id="L608">				return factory.getNothing();</span>
+			}
+		}
+		
+<span class="nc" id="L612">		return null;</span>
+	}
+	
+	private Variable anybool(IntermediateFactory factory) {
+<span class="nc" id="L616">		Variable var = factory.createVariable(VariableType.PRIMITIVE);</span>
+<span class="nc" id="L617">		factory.addStatement(new PrimitiveInit(var, Basic.getBinaryBooleans()));</span>
+<span class="nc" id="L618">		return var;</span>
+	}
+	
+	public Variable translateStaticMethodCall(InvokeExpr expr, List&lt;Variable&gt; arguments, IntermediateFactory factory) {
+<span class="nc" id="L622">		SootMethod method = expr.getMethod();</span>
+<span class="nc" id="L623">		SootClass declaringClass = method.getDeclaringClass();</span>
+<span class="nc" id="L624">		String methodName = method.getName();</span>
+<span class="nc" id="L625">		int numArgs = arguments.size();</span>
+<span class="nc" id="L626">		String className = declaringClass.getName();</span>
+		
+<span class="nc bnc" id="L628" title="All 2 branches missed.">		if (isString(declaringClass)) {</span>
+<span class="nc bnc" id="L629" title="All 4 branches missed.">			if (methodName.equals(&quot;valueOf&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L630">				return valueOf(expr.getArgBox(0), arguments.get(0), 10, method.getParameterType(0), factory);</span>
+			}
+		}
+<span class="nc bnc" id="L633" title="All 6 branches missed.">		else if (isWrapperClass(declaringClass) &amp;&amp; methodName.equals(&quot;toString&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L634">			return valueOf(expr.getArgBox(0), arguments.get(0), 10, method.getParameterType(0), factory);</span>
+			// make sure wrapper classes try the remaining else-ifs
+			// do not nest methodName.equals(&quot;toString&quot;) in an inner if here
+		} 
+		
+<span class="nc bnc" id="L639" title="All 2 branches missed.">		else if (className.equals(&quot;java.lang.Integer&quot;)) {</span>
+<span class="nc bnc" id="L640" title="All 4 branches missed.">			if (methodName.equals(&quot;toHexString&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L641">				Integer arg = trackInteger(expr.getArg(0));</span>
+<span class="nc bnc" id="L642" title="All 2 branches missed.">				if (arg != null) {</span>
+<span class="nc" id="L643">					return makeStringConstant(Integer.toHexString(arg), factory);</span>
+				}
+<span class="nc" id="L645">				return makeStringVariable(UNSIGNED_HEX_AUTOMATON, factory);</span>
+			}
+			
+<span class="nc bnc" id="L648" title="All 4 branches missed.">			else if (methodName.equals(&quot;toOctalString&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L649">				Integer arg = trackInteger(expr.getArg(0));</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">				if (arg != null) {</span>
+<span class="nc" id="L651">					return makeStringConstant(Integer.toOctalString(arg), factory);</span>
+				}
+<span class="nc" id="L653">				return makeStringVariable(UNSIGNED_OCTAL_AUTOMATON, factory);</span>
+			}
+			
+<span class="nc bnc" id="L656" title="All 4 branches missed.">			else if (methodName.equals(&quot;toBinaryString&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L657">				Integer arg = trackInteger(expr.getArg(0));</span>
+<span class="nc bnc" id="L658" title="All 2 branches missed.">				if (arg != null) {</span>
+<span class="nc" id="L659">					return makeStringConstant(Integer.toBinaryString(arg), factory);</span>
+				}
+<span class="nc" id="L661">				return makeStringVariable(UNSIGNED_BINARY_AUTOMATON, factory);</span>
+			}
+		}
+		
+<span class="nc bnc" id="L665" title="All 2 branches missed.">		else if (className.equals(&quot;java.util.Arrays&quot;)) {</span>
+<span class="nc bnc" id="L666" title="All 2 branches missed.">			if (methodName.equals(&quot;asList&quot;)) {</span>
+<span class="nc" id="L667">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L669" title="All 2 branches missed.">			else if (methodName.equals(&quot;equals&quot;)) {</span>
+<span class="nc" id="L670">				return anybool(factory);</span>
+			}
+<span class="nc bnc" id="L672" title="All 2 branches missed.">			else if (methodName.equals(&quot;binarySearch&quot;) </span>
+<span class="nc bnc" id="L673" title="All 2 branches missed.">					|| methodName.equals(&quot;deepHashCode&quot;) </span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">					|| methodName.equals(&quot;hashCode&quot;) </span>
+<span class="nc bnc" id="L675" title="All 2 branches missed.">					|| methodName.equals(&quot;sort&quot;)) {</span>
+<span class="nc" id="L676">				return factory.getNothing();</span>
+			}
+		}
+		
+<span class="nc bnc" id="L680" title="All 2 branches missed.">		else if (className.equals(&quot;java.util.Collections&quot;)) {</span>
+<span class="nc bnc" id="L681" title="All 4 branches missed.">			if (methodName.equals(&quot;unmodifiableList&quot;) &amp;&amp; numArgs == 1) {</span>
+				// the returned collection is immutable but right now it can still get corrupt
+				// TODO add immunity to protect immutable collections
+<span class="nc" id="L684">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L686" title="All 4 branches missed.">			else if (methodName.equals(&quot;unmodifiableSet&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L687">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L689" title="All 4 branches missed.">			else if (methodName.equals(&quot;unmodifiableCollection&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L690">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L692" title="All 4 branches missed.">			else if (methodName.equals(&quot;unmodifiableSortedSet&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L693">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L695" title="All 4 branches missed.">			else if (methodName.equals(&quot;synchronizedList&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L696">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L698" title="All 4 branches missed.">			else if (methodName.equals(&quot;synchronizedSet&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L699">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L701" title="All 4 branches missed.">			else if (methodName.equals(&quot;synchronizedCollection&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L702">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L704" title="All 4 branches missed.">			else if (methodName.equals(&quot;synchronizedSortedSet&quot;) &amp;&amp; numArgs == 1) {</span>
+<span class="nc" id="L705">				return arguments.get(0);</span>
+			}
+<span class="nc bnc" id="L707" title="All 4 branches missed.">			else if (methodName.equals(&quot;swap&quot;) &amp;&amp; numArgs == 2) {</span>
+<span class="nc" id="L708">				return factory.getNothing(); // language is unaffected</span>
+			}
+<span class="nc bnc" id="L710" title="All 2 branches missed.">			else if (methodName.equals(&quot;sort&quot;)) {</span>
+<span class="nc" id="L711">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L713" title="All 2 branches missed.">			else if (methodName.equals(&quot;shuffle&quot;)) {</span>
+<span class="nc" id="L714">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L716" title="All 2 branches missed.">			else if (methodName.equals(&quot;rotate&quot;)) {</span>
+<span class="nc" id="L717">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L719" title="All 2 branches missed.">			else if (methodName.equals(&quot;reverse&quot;)) {</span>
+<span class="nc" id="L720">				return factory.getNothing();</span>
+			}
+<span class="nc bnc" id="L722" title="All 6 branches missed.">			else if (methodName.equals(&quot;singleton&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isString(expr.getArg(0).getType())) {</span>
+<span class="nc" id="L723">				Variable v = factory.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L724">				factory.addStatement(new ArrayNew(v));</span>
+<span class="nc" id="L725">				factory.addStatement(new ArrayWriteElement(v, arguments.get(0)));</span>
+<span class="nc" id="L726">				return v;</span>
+			}
+<span class="nc bnc" id="L728" title="All 6 branches missed.">			else if (methodName.equals(&quot;singletonList&quot;) &amp;&amp; numArgs == 1 &amp;&amp; isString(expr.getArg(0).getType())) {</span>
+<span class="nc" id="L729">				Variable v = factory.createVariable(VariableType.ARRAY);</span>
+<span class="nc" id="L730">				factory.addStatement(new ArrayNew(v));</span>
+<span class="nc" id="L731">				factory.addStatement(new ArrayWriteElement(v, arguments.get(0)));</span>
+<span class="nc" id="L732">				return v;</span>
+			}
+		}
+		
+<span class="nc" id="L736">		return null;</span>
+	}
+	
+	public boolean translateConstructorCall(InstanceInvokeExpr expr, Variable callee, List&lt;Variable&gt; arguments, IntermediateFactory factory) {
+<span class="nc" id="L740">		SootMethod method = expr.getMethod();</span>
+<span class="nc" id="L741">		SootClass declaringClass = method.getDeclaringClass();</span>
+<span class="nc" id="L742">		int numArgs = arguments.size();</span>
+		
+<span class="nc bnc" id="L744" title="All 2 branches missed.">		if (isString(declaringClass)) {</span>
+			// new String()
+<span class="nc bnc" id="L746" title="All 2 branches missed.">			if (numArgs == 0) {</span>
+<span class="nc" id="L747">				factory.addStatement(new StringInit(callee, Basic.makeEmptyString()));</span>
+<span class="nc" id="L748">				return true;</span>
+			}
+			
+			// new String(String)
+<span class="nc bnc" id="L752" title="All 4 branches missed.">			if (numArgs == 1 &amp;&amp; isString(method.getParameterType(0))) {</span>
+<span class="nc" id="L753">                factory.addStatement(new StringAssignment(callee, arguments.get(0)));</span>
+<span class="nc" id="L754">                return true;</span>
+			}   
+			
+			// new String(StringBuffer); new String(StringBuilder)
+<span class="nc bnc" id="L758" title="All 4 branches missed.">            if (numArgs == 1 &amp;&amp; isBufferOrBuilder(method.getParameterType(0))) {</span>
+<span class="nc" id="L759">				factory.addStatement(new StringFromStringBuffer(callee, arguments.get(0)));</span>
+<span class="nc" id="L760">                return true;</span>
+            }
+			
+        	// unsupported constructor
+        	// make any string. this is slightly better than returning false,
+        	// because here we can guarantee that the arguments are not corrupted.
+<span class="nc" id="L766">            factory.addStatement(new StringInit(callee, Basic.makeAnyString()));</span>
+<span class="nc" id="L767">		}</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">		else if (isBufferOrBuilder(declaringClass)) {</span>
+			// new StringBuffer(); new StringBuffer(int capacity)
+<span class="nc bnc" id="L770" title="All 6 branches missed.">			if (numArgs == 0 || (numArgs == 1 &amp;&amp; isInt(method.getParameterType(0)))) {</span>
+<span class="nc" id="L771">				Variable empty = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L772">				factory.addStatement(new StringInit(empty, Basic.makeEmptyString()));</span>
+<span class="nc" id="L773">				factory.addStatement(new StringBufferInit(callee, empty));</span>
+<span class="nc" id="L774">				return true;</span>
+			}
+			
+			// new StringBuffer(String)
+<span class="nc bnc" id="L778" title="All 4 branches missed.">			if (numArgs == 1 &amp;&amp; isString(method.getParameterType(0))) {</span>
+<span class="nc" id="L779">				factory.addStatement(new StringBufferInit(callee, arguments.get(0)));</span>
+<span class="nc" id="L780">				return true;</span>
+			}
+			
+			// new StringBuffer(CharSequence)
+<span class="nc bnc" id="L784" title="All 4 branches missed.">			if (numArgs == 1 &amp;&amp; isCharSequence(method.getParameterType(0))) {</span>
+				// use the valueOf of the CharSequence, which will be its ToString-method, or
+				// in case we know the argument is a StringBuffer/String/Array, we can use its language
+				// directly
+<span class="nc" id="L788">				Variable value = valueOf(expr.getArgBox(0), arguments.get(0), 10, method.getParameterType(0), factory);</span>
+<span class="nc" id="L789">				factory.addStatement(new StringBufferInit(callee, value));</span>
+<span class="nc" id="L790">				return true;</span>
+			}
+		}
+		// known collection type
+<span class="nc bnc" id="L794" title="All 2 branches missed.">		else if (trustedCollections.contains(declaringClass.getName())) {</span>
+<span class="nc bnc" id="L795" title="All 2 branches missed.">			if (expr.getArgCount() == 0) {</span>
+<span class="nc" id="L796">				factory.addStatement(new ArrayNew(callee));</span>
+<span class="nc" id="L797">				return true;</span>
+			}
+			//TODO more constructors
+		}
+		
+		
+<span class="nc" id="L803">		return false;</span>
+	}
+	
+	/**
+	 * Returns a variable with the possible strings returned by &lt;tt&gt;valueOf&lt;/tt&gt; with the specified argument.
+	 * @param box the jimple-expression containing the argument.
+	 * @param argument variable holding the argument (it has already been evaluated).
+	 * @param radix for integers, this is the base of the number system. Unused for other types.
+	 * @param type type of the formal parameter. This identifies which overload of &lt;tt&gt;valueOf&lt;/tt&gt; is being called.
+	 * @return a variable holding the possible return values
+	 */
+	private Variable valueOf(ValueBox box, Variable argument, int radix, Type type, IntermediateFactory factory) {
+        // determine whether the value might be null
+<span class="nc" id="L816">        boolean canBeNull = false;</span>
+        
+<span class="nc" id="L818">        Value val = box.getValue();</span>
+        
+        // only referene-types can be null
+        // we only consider locals, because only locals and constants may occur, 
+        // 		and null-constants are treated by valueOfNonNull (ironically)
+        // do not consider strings here, since we assign them to the string &quot;null&quot; instead of null
+        // note: use RefLikeType to include arrays -- RefType only includes declared types
+<span class="nc bnc" id="L825" title="All 6 branches missed.">        if (val instanceof Local &amp;&amp; val.getType() instanceof RefLikeType &amp;&amp; !(isString(val.getType()))) {</span>
+<span class="nc" id="L826">        	canBeNull = factory.canBeNull((Local)val);</span>
+        }
+        
+<span class="nc bnc" id="L829" title="All 2 branches missed.">        if (canBeNull) {</span>
+<span class="nc" id="L830">        	Variable resultVar = factory.createVariable(VariableType.STRING);</span>
+        	
+        	// if the variable might be null, split the graph in two, one for the case
+        	// where it is non-null, and one where it is null.
+        	// both branches should assign to 'resultVar' so we can return a variable
+<span class="nc" id="L835">        	factory.startBranch();</span>
+        	
+        	// not null
+<span class="nc" id="L838">        	Variable notNull = valueOfNonNull(box, argument, radix, type, factory);</span>
+<span class="nc" id="L839">        	factory.addStatement(new StringAssignment(resultVar, notNull));</span>
+<span class="nc" id="L840">        	factory.useBranch();</span>
+        	
+        	// null
+<span class="nc" id="L843">        	factory.addStatement(new StringInit(resultVar, Automatons.getNull()));</span>
+<span class="nc" id="L844">        	factory.useBranch();</span>
+        	
+<span class="nc" id="L846">        	factory.endBranch();</span>
+        	
+<span class="nc" id="L848">        	return resultVar;</span>
+        } else {
+<span class="nc" id="L850">        	return valueOfNonNull(box, argument, radix, type, factory);</span>
+        }
+	}
+	
+	/**
+	 * Like {@link #valueOf}, except this assumes the argument is not a variable with value &lt;tt&gt;null&lt;/tt&gt;, at runtime.
+	 * The argument may, however, be a &lt;tt&gt;null&lt;/tt&gt;-constant.
+	 */
+    private Variable valueOfNonNull(ValueBox box, Variable argument, int radix, Type type, IntermediateFactory factory) {
+        // don't create a new variable if the type is STRING
+<span class="nc bnc" id="L860" title="All 2 branches missed.">        if (argument.getType() == VariableType.STRING)</span>
+<span class="nc" id="L861">        	return argument;</span>
+        
+<span class="nc" id="L863">        Value val = box.getValue();</span>
+<span class="nc" id="L864">        Variable result = factory.createVariable(VariableType.STRING);</span>
+<span class="nc bnc" id="L865" title="All 7 branches missed.">        switch (argument.getType()) {</span>
+        case STRINGBUFFER:
+<span class="nc bnc" id="L867" title="All 4 branches missed.">        	if (isStringBuffer(val.getType()) || isStringBuilder(val.getType())) {</span>
+<span class="nc" id="L868">        		factory.addStatement(new StringFromStringBuffer(result, argument));</span>
+<span class="nc" id="L869">        	} else {</span>
+        		// if the type implements Appendable, we can't really know its value
+<span class="nc" id="L871">        		factory.addStatement(new StringInit(result, Basic.makeAnyString()));</span>
+        	}
+<span class="nc" id="L873">        	break;</span>
+        	
+        case ARRAY:
+<span class="nc bnc" id="L876" title="All 2 branches missed.">        	if (val.getType() instanceof ArrayType) {	// the argument's type only says it *might* be an array</span>
+        		// TODO because of covariant arrays, we might not actually know it is a String array??
+<span class="nc" id="L878">        		factory.addStatement(new StringInit(result, ARRAY_OBJECT_AUTOMATON));</span>
+<span class="nc" id="L879">        	} else {</span>
+<span class="nc" id="L880">        		factory.addStatement(new StringInit(result, Basic.makeAnyString()));</span>
+        	}
+<span class="nc" id="L882">        	break;</span>
+        	
+        case OBJECT:
+<span class="nc" id="L885">        	factory.addStatement(new StringInit(result, Basic.makeAnyString()));</span>
+<span class="nc" id="L886">        	break;</span>
+        	
+        case NULL:
+<span class="nc" id="L889">        	factory.addStatement(new StringInit(result, Automatons.getNull()));</span>
+<span class="nc" id="L890">        	break;</span>
+        	
+        case NONE:
+<span class="nc bnc" id="L893" title="All 2 branches missed.">            if (val instanceof Constant) {</span>
+<span class="nc" id="L894">            	String s = constantToString((Constant) val, radix, type);</span>
+<span class="nc bnc" id="L895" title="All 2 branches missed.">            	if (s != null)</span>
+<span class="nc" id="L896">            		factory.addStatement(new StringInit(result, Basic.makeConstString(s)));</span>
+            	else
+<span class="nc" id="L898">            		factory.addStatement(new StringInit(result, Basic.makeAnyString()));</span>
+                
+<span class="nc bnc" id="L900" title="All 4 branches missed.">            } else if (radix == 10 &amp;&amp; Automatons.fromType(type.toString()) != null) { // TODO: handle radix!=10</span>
+            	
+<span class="nc" id="L902">            	factory.addStatement(new StringInit(result, Automatons.fromType(type.toString())));</span>
+            	
+<span class="nc bnc" id="L904" title="All 2 branches missed.">            } else if (val.getType() instanceof RefType) {</span>
+                // Call the corresponding toString method
+<span class="nc" id="L906">                Method tostring_method = factory.getToStringMethod(((RefType) val.getType()).getSootClass());</span>
+<span class="nc bnc" id="L907" title="All 4 branches missed.">                if (tostring_method != null &amp;&amp; !isInterface(val.getType())) {</span>
+<span class="nc" id="L908">                	factory.addStatement(new Call(result, tostring_method, new Variable[0]));</span>
+<span class="nc" id="L909">                } else {</span>
+<span class="nc" id="L910">                	factory.addStatement(new StringInit(result, Basic.makeAnyString()));</span>
+                }
+<span class="nc" id="L912">            } else { // If all else fails, give any string</span>
+<span class="nc" id="L913">            	factory.addStatement(new StringInit(result, Basic.makeAnyString())); // not currently reachable, but good to have here</span>
+            }
+            
+<span class="nc" id="L916">            break;</span>
+            
+        case PRIMITIVE:
+            // TODO: If type is another primitive type, add a UnaryOp to extract this primitive type as a boolean, int, etc.
+<span class="nc bnc" id="L920" title="All 2 branches missed.">            if (val instanceof Constant) {</span>
+                // NOTE: This for char-variables, this does the same as the if-clause below, but is a bit more efficient
+<span class="nc" id="L922">                factory.addStatement(new StringInit(result, Basic.makeConstString(constantToString((Constant) val, radix, type))));</span>
+                
+<span class="nc bnc" id="L924" title="All 2 branches missed.">            } else if (type.equals(CharType.v())) {</span>
+                // create a string buffer, append the char, convert it to a string and return that
+<span class="nc" id="L926">                Variable tmp = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L927">                factory.addStatement(new StringBufferInit(tmp, makeStringConstant(&quot;&quot;, factory)));</span>
+<span class="nc" id="L928">                factory.addStatement(new StringBufferAppendChar(tmp, argument));</span>
+<span class="nc" id="L929">                factory.addStatement(new StringFromStringBuffer(result, tmp));</span>
+            
+<span class="nc bnc" id="L931" title="All 2 branches missed.">            } else if (type.equals(BooleanType.v())) {</span>
+                // use a BooleanToString operation
+<span class="nc" id="L933">                factory.addStatement(new BasicUnaryOp(result, argument, new BooleanToString()));</span>
+                
+<span class="nc bnc" id="L935" title="All 4 branches missed.">            } else if (radix == 10 &amp;&amp; Automatons.fromType(type.toString()) != null) { // TODO: handle radix!=10</span>
+                // unknown primitive type. use the known automaton for this type
+<span class="nc" id="L937">                factory.addStatement(new StringInit(result, Automatons.fromType(type.toString())));</span>
+                
+<span class="nc" id="L939">            } else {</span>
+<span class="nc" id="L940">                factory.addStatement(new StringInit(result, Basic.makeAnyString())); // not currently reachable, but good to have here</span>
+            }
+<span class="nc" id="L942">            break;</span>
+            
+        default:
+<span class="nc" id="L945">        	throw new RuntimeException(&quot;Unknown variable type: &quot; + argument.getType());</span>
+        } // end switch
+        
+<span class="nc" id="L948">        return result;</span>
+    }
+	
+    /**
+     * Returns whether the specified type is an interface type.
+     */
+    private boolean isInterface(Type type) {
+<span class="nc bnc" id="L955" title="All 2 branches missed.">    	if (type instanceof RefType) {</span>
+<span class="nc" id="L956">    		return ((RefType)type).getSootClass().isInterface();</span>
+    	}
+<span class="nc" id="L958">		return false;</span>
+	}
+    
+    /**
+     * Converts a constant to a string, according to the &lt;tt&gt;toString&lt;/tt&gt; method of
+     * the type's wrapper object. For example, &lt;tt&gt;Integer.toString&lt;/tt&gt; is used to convert
+     * integers.
+     * @param c the constant to convert to a string
+     * @param radix for integers, this is the base of the number system. Unused for other types.
+     * @param type the static type of the constant. This may differ from &lt;tt&gt;c&lt;/tt&gt;'s type; 
+     * 			for example because booleans are treated as integer constants.
+     * @return result of &lt;tt&gt;toString&lt;/tt&gt; of the specified constant.
+     */
+	private String constantToString(Constant c, int radix, Type type) {
+    	String s;
+<span class="nc bnc" id="L973" title="All 2 branches missed.">    	if (c instanceof soot.jimple.NullConstant) {</span>
+<span class="nc" id="L974">            s = &quot;null&quot;;</span>
+            
+<span class="nc bnc" id="L976" title="All 2 branches missed.">        } else if (c instanceof soot.jimple.IntConstant) {</span>
+<span class="nc" id="L977">            int value = ((soot.jimple.IntConstant) c).value;</span>
+            
+            // booleans and chars are treated as integer constants, so we must check
+            // which overload of valueOf was invoked, to see how it is converted to a string
+<span class="nc bnc" id="L981" title="All 2 branches missed.">            if (type instanceof BooleanType)</span>
+<span class="nc bnc" id="L982" title="All 2 branches missed.">            	s = (value == 0) ? &quot;false&quot;:&quot;true&quot;;</span>
+<span class="nc bnc" id="L983" title="All 2 branches missed.">            else if (type instanceof CharType)</span>
+<span class="nc" id="L984">            	s = &quot;&quot; + (char)value;</span>
+            else
+<span class="nc" id="L986">            	s = Integer.toString(value, radix);</span>
+            
+<span class="nc bnc" id="L988" title="All 2 branches missed.">        } else if (c instanceof soot.jimple.LongConstant) {</span>
+<span class="nc" id="L989">            long value = ((soot.jimple.LongConstant) c).value;</span>
+<span class="nc" id="L990">            s = Long.toString(value, radix);</span>
+            
+<span class="nc bnc" id="L992" title="All 2 branches missed.">        } else if (c instanceof soot.jimple.DoubleConstant) {</span>
+<span class="nc" id="L993">            double value = ((soot.jimple.DoubleConstant) c).value;</span>
+<span class="nc" id="L994">            s = Double.toString(value);</span>
+            
+<span class="nc bnc" id="L996" title="All 2 branches missed.">        } else if (c instanceof soot.jimple.FloatConstant) {</span>
+<span class="nc" id="L997">            float value = ((soot.jimple.FloatConstant) c).value;</span>
+<span class="nc" id="L998">            s = Float.toString(value);</span>
+            
+<span class="nc bnc" id="L1000" title="All 2 branches missed.">        } else if (c instanceof soot.jimple.StringConstant) {</span>
+<span class="nc" id="L1001">            s = ((soot.jimple.StringConstant) c).value;</span>
+            
+<span class="nc bnc" id="L1003" title="All 2 branches missed.">        } else if (c instanceof soot.jimple.ClassConstant) {</span>
+<span class="nc" id="L1004">        	return null; // simulating this takes a lot of code</span>
+        	// this currently works, but gives the &lt;any string&gt; language
+        	// TODO class constants
+        } else {
+<span class="nc" id="L1008">            throw new RuntimeException(&quot;unexpected Soot constant kind&quot;);</span>
+        }
+<span class="nc" id="L1010">        return s;</span>
+    }
+
+	/**
+     * Checks whether the given type is &lt;code&gt;java.lang.CharSequence&lt;/code&gt;.
+     */
+    private boolean isCharSequence(Type t) {
+<span class="nc" id="L1017">        return t.equals(RefType.v(&quot;java.lang.CharSequence&quot;));</span>
+    }
+    
+//	/**
+//     * Checks whether the given class is &lt;code&gt;java.lang.CharSequence&lt;/code&gt;.
+//     */
+//    private boolean isCharSequence(SootClass c) {
+//        return c.getName().equals(&quot;java.lang.CharSequence&quot;);
+//    }
+
+    /**
+     * Checks whether the given type is &lt;code&gt;String&lt;/code&gt;.
+     */
+    private boolean isString(Type t) {
+<span class="nc" id="L1031">        return t.equals(RefType.v(&quot;java.lang.String&quot;));</span>
+    }
+
+    /**
+     * Checks whether the given class is &lt;code&gt;String&lt;/code&gt;.
+     */
+    private boolean isString(SootClass c) {
+<span class="nc" id="L1038">        return c.getName().equals(&quot;java.lang.String&quot;);</span>
+    }
+    
+    private boolean isBufferOrBuilder(Type t) {
+<span class="nc bnc" id="L1042" title="All 4 branches missed.">    	return isStringBuffer(t) || isStringBuilder(t);</span>
+    }
+
+    private boolean isBufferOrBuilder(SootClass t) {
+<span class="nc bnc" id="L1046" title="All 4 branches missed.">    	return isStringBuffer(t) || isStringBuilder(t);</span>
+    }
+    
+//    private boolean isObjectClass(Type t) {
+//    	return t.equals(RefType.v(&quot;java.lang.Object&quot;));
+//    }
+
+    private boolean isObjectClass(SootClass c) {
+<span class="nc" id="L1054">    	return c.getName().equals(&quot;java.lang.Object&quot;);</span>
+    }
+    
+//    /**
+//     * Checks whether the given type is &lt;code&gt;Collection&lt;/code&gt;.
+//     */
+//    private boolean isCollection(Type t) {
+//        return t.equals(RefType.v(&quot;java.util.Collection&quot;));
+//    }
+//    
+//    /**
+//     * Checks whether the given type is &lt;code&gt;List&lt;/code&gt;.
+//     */
+//    private boolean isList(Type t) {
+//        return t.equals(RefType.v(&quot;java.util.List&quot;));
+//    }
+//    
+//    /**
+//     * Checks whether the given type is &lt;code&gt;Set&lt;/code&gt;.
+//     */
+//    private boolean isSet(Type t) {
+//        return t.equals(RefType.v(&quot;java.util.Set&quot;));
+//    }
+    
+    /**
+     * Checks whether the given type is &lt;code&gt;StringBuffer&lt;/code&gt;.
+     */
+    private boolean isStringBuffer(Type t) {
+<span class="nc" id="L1082">        return t.equals(RefType.v(&quot;java.lang.StringBuffer&quot;));</span>
+    }
+
+    /**
+     * Checks whether the given class is &lt;code&gt;StringBuffer&lt;/code&gt;.
+     */
+    private boolean isStringBuffer(SootClass c) {
+<span class="nc" id="L1089">        return c.getName().equals(&quot;java.lang.StringBuffer&quot;);</span>
+    }
+
+    /**
+     * Checks whether the given type is &lt;code&gt;StringBuilder&lt;/code&gt;.
+     */
+    private boolean isStringBuilder(Type t) {
+<span class="nc" id="L1096">        return t.equals(RefType.v(&quot;java.lang.StringBuilder&quot;));</span>
+    }
+
+    /**
+     * Checks whether the given class is &lt;code&gt;StringBuilder&lt;/code&gt;.
+     */
+    private boolean isStringBuilder(SootClass c) {
+<span class="nc" id="L1103">        return c.getName().equals(&quot;java.lang.StringBuilder&quot;);</span>
+    }
+    
+//    /**
+//     * Checks whether the given class is &lt;code&gt;Appendable&lt;/code&gt;.
+//     */
+//    private boolean isAppendable(SootClass c) {
+//    	return c.getName().equals(&quot;java.lang.Appendable&quot;);
+//    }
+
+    /**
+     * Checks whether the given type is &lt;code&gt;int&lt;/code&gt;.
+     */
+    private boolean isInt(Type t) {
+<span class="nc" id="L1117">        return t.equals(IntType.v());</span>
+    }
+
+    /**
+     * Checks whether the given type is &lt;code&gt;char&lt;/code&gt;.
+     */
+    private boolean isChar(Type t) {
+<span class="nc" id="L1124">        return t.equals(CharType.v());</span>
+    }
+
+    /**
+     * Checks whether the given class is a standard wrapper class.
+     */
+    private boolean isWrapperClass(SootClass c) {
+<span class="nc bnc" id="L1131" title="All 2 branches missed.">        return c.getName().equals(&quot;java.lang.Boolean&quot;)</span>
+<span class="nc bnc" id="L1132" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Byte&quot;)</span>
+<span class="nc bnc" id="L1133" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Character&quot;)</span>
+<span class="nc bnc" id="L1134" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Double&quot;)</span>
+<span class="nc bnc" id="L1135" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Float&quot;)</span>
+<span class="nc bnc" id="L1136" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Integer&quot;)</span>
+<span class="nc bnc" id="L1137" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Long&quot;)</span>
+<span class="nc bnc" id="L1138" title="All 2 branches missed.">                || c.getName().equals(&quot;java.lang.Short&quot;);</span>
+    }
+	
+
+    /**
+     * Attempts to find a constant string value. Returns null if unable to determine constant
+     */
+    private String trackString(Value val) {
+<span class="nc bnc" id="L1146" title="All 2 branches missed.">        if (val instanceof StringConstant) {</span>
+<span class="nc" id="L1147">            return ((StringConstant) val).value;</span>
+        }
+<span class="nc" id="L1149">        return null;</span>
+    }
+
+    /**
+     * Attempts to find constant integer (or char) value.
+     * Returns null if unable to determine constant.
+     */
+    private Integer trackInteger(Value val) {
+<span class="nc bnc" id="L1157" title="All 2 branches missed.">        if (val instanceof IntConstant) {</span>
+<span class="nc" id="L1158">            return ((IntConstant) val).value;</span>
+        }
+        // TODO: make some more intelligent tracking of integers
+<span class="nc" id="L1161">        return null;</span>
+    }
+	
+
+    /**
+     * Creates a clone of the stringbuffer in the specified variable, such that the
+     * two variables are &lt;i&gt;not&lt;/i&gt; aliases, and the clone may be modified without
+     * polluting the original stringbuffer.
+     * @param buffer variable holding the stringbuffer to clone
+     * @return a new variable holding a new stringbuffer
+     */
+    private Variable makeStringBufferClone(Variable buffer, IntermediateFactory factory) {
+<span class="nc bnc" id="L1173" title="All 4 branches missed.">    	if (buffer == null || buffer.getType() != VariableType.STRINGBUFFER) {</span>
+<span class="nc" id="L1174">    		throw new IllegalArgumentException(&quot;Can only clone STRINGBUFFER variables&quot;);</span>
+    	}
+    	// get the current possible values of the buffer
+<span class="nc" id="L1177">    	Variable currentValue = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L1178">    	factory.addStatement(new StringFromStringBuffer(currentValue, buffer));</span>
+    	
+    	// create a new string buffer with this initial value
+<span class="nc" id="L1181">    	Variable clone = factory.createVariable(VariableType.STRINGBUFFER);</span>
+<span class="nc" id="L1182">    	factory.addStatement(new StringBufferInit(clone, currentValue));</span>
+    	
+<span class="nc" id="L1184">    	return clone;</span>
+    }
+
+    private Variable makeStringVariable(Automaton auto, IntermediateFactory factory) {
+<span class="nc" id="L1188">    	Variable var = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L1189">    	factory.addStatement(new StringInit(var, auto));</span>
+<span class="nc" id="L1190">    	return var;</span>
+    }
+    private Variable makeStringConstant(String value, IntermediateFactory factory) {
+<span class="nc" id="L1193">    	Variable var = factory.createVariable(VariableType.STRING);</span>
+<span class="nc" id="L1194">    	factory.addStatement(new StringInit(var, Automaton.makeString(value)));</span>
+<span class="nc" id="L1195">    	return var;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

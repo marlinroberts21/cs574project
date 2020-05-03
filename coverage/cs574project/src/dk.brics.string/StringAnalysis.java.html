@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StringAnalysis.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string</a> &gt; <span class="el_source">StringAnalysis.java</span></div><h1>StringAnalysis.java</h1><pre class="source lang-java linenums">package dk.brics.string;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
+import org.apache.log4j.Logger;
+
+import soot.ArrayType;
+import soot.G;
+import soot.Hierarchy;
+import soot.RefType;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Type;
+import soot.Unit;
+import soot.ValueBox;
+import soot.jimple.InvokeExpr;
+import soot.jimple.ReturnStmt;
+import soot.jimple.Stmt;
+import soot.toolkits.graph.CompleteUnitGraph;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.diagnostics.DiagnosticsStrategy;
+import dk.brics.string.diagnostics.IntermediateCompletedEvent;
+import dk.brics.string.diagnostics.NullDiagnosticsStrategy;
+import dk.brics.string.external.ExternalVisibility;
+import dk.brics.string.external.PublicExternalVisibility;
+import dk.brics.string.external.Resolver;
+import dk.brics.string.flow.FlowGraph;
+import dk.brics.string.flow.Node;
+import dk.brics.string.flow.operations.FlowGraph2Grammar;
+import dk.brics.string.grammar.AutomatonProduction;
+import dk.brics.string.grammar.BinaryProduction;
+import dk.brics.string.grammar.EpsilonProduction;
+import dk.brics.string.grammar.Grammar;
+import dk.brics.string.grammar.Nonterminal;
+import dk.brics.string.grammar.PairProduction;
+import dk.brics.string.grammar.Production;
+import dk.brics.string.grammar.ProductionVisitor;
+import dk.brics.string.grammar.UnaryProduction;
+import dk.brics.string.grammar.UnitProduction;
+import dk.brics.string.grammar.operations.Grammar2MLFA;
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.StringStatement;
+import dk.brics.string.intermediate.operations.AliasAnalysis;
+import dk.brics.string.intermediate.operations.AliasAssertionAnalysis;
+import dk.brics.string.intermediate.operations.OperationAssertionAnalysis;
+import dk.brics.string.intermediate.operations.FieldUsageAnalysis;
+import dk.brics.string.intermediate.operations.Intermediate2FlowGraph;
+import dk.brics.string.intermediate.operations.LivenessAnalysis;
+import dk.brics.string.intermediate.operations.ReachingDefinitions;
+import dk.brics.string.java.Jimple2Intermediate;
+import dk.brics.string.java.Jimple2IntermediateFactoryImpl;
+import dk.brics.string.java.StaticStringTypes;
+import dk.brics.string.java.StaticStringTypesNull;
+import dk.brics.string.java.TaintAnalysisStrategy;
+import dk.brics.string.mlfa.MLFA;
+import dk.brics.string.mlfa.MLFAStatePair;
+import dk.brics.string.mlfa.operations.MLFA2Automaton;
+import dk.brics.string.stringoperations.Basic;
+
+/**
+ * A &lt;code&gt;StringAnalysis&lt;/code&gt; object encapsulates a string analysis performed
+ * on a collection of classes.
+ * The class also contains some convenience methods for loading and traversing
+ * the classes to be analyzed.&lt;p&gt;
+ */
+@SuppressWarnings(&quot;unchecked&quot;)
+public class StringAnalysis {
+
+<span class="nc" id="L84">    private static List&lt;Resolver&gt; resolvers = new ArrayList&lt;Resolver&gt;();</span>
+
+    private Jimple2Intermediate jt;
+    private MLFA2Automaton mlfa2aut;
+    private Map&lt;ValueBox, MLFAStatePair&gt; map;
+    private Map&lt;SootClass, MLFAStatePair&gt; tostring_map;
+    private Map&lt;ValueBox, String&gt; sourcefile_map;
+    private Map&lt;ValueBox, String&gt; class_map;
+    private Map&lt;ValueBox, String&gt; method_map;
+    private Map&lt;ValueBox, Integer&gt; line_map;
+    private int num_exps;
+
+<span class="nc" id="L96">    private Logger log = Logger.getLogger(StringAnalysis.class);</span>
+
+    /* fields used during the analysis, but not afterwards */
+    private transient DiagnosticsStrategy diagnostics;
+    private transient ExternalVisibility externallyVisible;
+    private transient TaintAnalysisStrategy taintAnalysisStrategy;
+    private transient Collection&lt;ValueBox&gt; hotspots;
+    
+    private StaticStringTypes staticStringTypes;
+
+    static {
+<span class="nc" id="L107">        initializeSoot();</span>
+<span class="nc" id="L108">    }</span>
+
+    // Make sure we get line numbers
+    private static void initializeSoot() { // cannot avoid static methods because of Soot :-(
+<span class="nc" id="L112">        soot.Scene.v().loadBasicClasses();</span>
+<span class="nc" id="L113">        soot.options.Options.v().parse(new String[]{&quot;-keep-line-number&quot;});</span>
+<span class="nc" id="L114">    }</span>
+
+    /**
+     * Resets Soot's globals and the list of resolvers.
+     */
+    public static void reset() {
+<span class="nc" id="L120">        G.reset();</span>
+<span class="nc" id="L121">        initializeSoot();</span>
+<span class="nc" id="L122">        clearResolvers();</span>
+<span class="nc" id="L123">    }</span>
+
+    /**
+     * Adds the given resolver to the list of active resolvers used
+     * during the string analysis.
+     *
+     * @param r the resolver to add.
+     * @see dk.brics.string.external.Resolver
+     */
+    public static void addResolver(Resolver r) {
+<span class="nc" id="L133">        resolvers.add(r);</span>
+<span class="nc" id="L134">    }</span>
+
+    /**
+     * Removes the given resolver from the list of active resolvers used
+     * during the string analysis.
+     *
+     * @param r the resolver to remove.
+     * @see dk.brics.string.external.Resolver
+     */
+    public static void removeResolver(Resolver r) {
+<span class="nc" id="L144">        resolvers.remove(r);</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * Removes all active resolvers.
+     *
+     * @see dk.brics.string.external.Resolver
+     */
+    public static void clearResolvers() {
+<span class="nc" id="L153">        resolvers = new ArrayList&lt;Resolver&gt;();</span>
+<span class="nc" id="L154">    }</span>
+
+    /**
+     * Performs a string analysis on the current application classes.
+     * All expressions are considered hot spots.
+     */
+    public StringAnalysis() {
+<span class="nc" id="L161">        this(null, null, null);</span>
+<span class="nc" id="L162">    }</span>
+
+    /**
+     * Performs a string analysis on the current application classes.
+     * All expressions are considered hot spots.
+     *
+     * @param ext defines which methods are externally visible.
+     */
+    public StringAnalysis(ExternalVisibility ext) {
+<span class="nc" id="L171">        this(null, ext, null);</span>
+<span class="nc" id="L172">    }</span>
+
+    /**
+     * Performs a string analysis on the current application classes.
+     *
+     * @param hotspots a set of {@link soot.ValueBox} objects indicating
+     *                 the desired hot spots
+     */
+    public StringAnalysis(Collection&lt;ValueBox&gt; hotspots) {
+<span class="nc" id="L181">        this(hotspots, null, null);</span>
+<span class="nc" id="L182">    }</span>
+
+    public StringAnalysis(Collection&lt;ValueBox&gt; hotspots, ExternalVisibility ext) {
+<span class="nc" id="L185">        this(hotspots, ext, null);</span>
+<span class="nc" id="L186">    }</span>
+
+    public StringAnalysis(Collection&lt;ValueBox&gt; hotspots, ExternalVisibility ext, TaintAnalysisStrategy taintAnalysisStrategy) {
+<span class="nc" id="L189">        this(hotspots, ext, taintAnalysisStrategy, null);</span>
+<span class="nc" id="L190">    }</span>
+
+    /**
+     * Performs a string analysis on the current application classes.
+     *
+     * @param hotspots          a set of {@link soot.ValueBox} objects indicating
+     *                          the desired hot spots
+     * @param externallyVisible defines which methods are externally visible.
+     */
+    public StringAnalysis(Collection&lt;ValueBox&gt; hotspots, 
+                        ExternalVisibility externallyVisible, 
+                        TaintAnalysisStrategy taintAnalysisStrategy,
+                          DiagnosticsStrategy diagnostics) {
+<span class="nc" id="L203">        this(hotspots, externallyVisible, taintAnalysisStrategy, null, diagnostics);</span>
+<span class="nc" id="L204">    }</span>
+    
+<span class="nc" id="L206">    public StringAnalysis(Collection&lt;ValueBox&gt; hotspots, </span>
+                        ExternalVisibility externallyVisible, 
+                        TaintAnalysisStrategy taintAnalysisStrategy,
+                        StaticStringTypes staticStringTypes,
+                          DiagnosticsStrategy diagnostics) {
+<span class="nc" id="L211">        this.hotspots = hotspots;</span>
+<span class="nc" id="L212">        this.externallyVisible = externallyVisible;</span>
+<span class="nc" id="L213">        this.taintAnalysisStrategy = taintAnalysisStrategy;</span>
+<span class="nc" id="L214">        this.staticStringTypes = staticStringTypes;</span>
+<span class="nc" id="L215">        this.diagnostics = diagnostics;</span>
+<span class="nc" id="L216">        execute();</span>
+<span class="nc" id="L217">    }</span>
+
+    /**
+     * Runs string analysis from the Jimple-stage to the (final) Automaton-stage. Parameters must be stored in fields before running this.
+     */
+    private void execute() {
+<span class="nc" id="L223">        log.info(&quot;Analyzing...&quot;);</span>
+
+        // Assign some default strategies, if none were specified
+<span class="nc bnc" id="L226" title="All 2 branches missed.">        if (externallyVisible == null) {</span>
+<span class="nc" id="L227">            externallyVisible = new PublicExternalVisibility();</span>
+        }
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        if (staticStringTypes == null) {</span>
+<span class="nc" id="L230">            staticStringTypes = new StaticStringTypesNull();</span>
+        }
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        if (diagnostics == null) {</span>
+<span class="nc" id="L233">            diagnostics = new NullDiagnosticsStrategy();</span>
+        }
+
+<span class="nc" id="L236">        diagnostics.analysisStarted();</span>
+
+        //
+        //	Create intermediate code
+        //
+<span class="nc" id="L241">        jt = new Jimple2Intermediate(new Jimple2IntermediateFactoryImpl(externallyVisible, taintAnalysisStrategy, staticStringTypes, resolvers));</span>
+<span class="nc" id="L242">        Application app = jt.translateApplicationClasses(hotspots);</span>
+<span class="nc" id="L243">        Map&lt;ValueBox, Statement&gt; m1 = jt.getTranslationMap();</span>
+<span class="nc" id="L244">        num_exps = m1.size() + jt.getNumberOfExpsSkipped();</span>
+        
+        // release memory
+<span class="nc" id="L247">        G.reset();</span>
+        
+        //
+        //	Analyze the intermediate code
+        //
+<span class="nc" id="L252">        log.info(&quot;Performing field usage analysis...&quot;);</span>
+<span class="nc" id="L253">        FieldUsageAnalysis fieldUsage = new FieldUsageAnalysis(app.getMethods());</span>
+<span class="nc" id="L254">        log.info(&quot;Performing liveness analysis...&quot;);</span>
+<span class="nc" id="L255">        LivenessAnalysis liveness = new LivenessAnalysis(app);</span>
+<span class="nc" id="L256">        log.info(&quot;Performing alias assertion analysis...&quot;);</span>
+<span class="nc" id="L257">        AliasAssertionAnalysis aliasAssertions = new AliasAssertionAnalysis(app);</span>
+<span class="nc" id="L258">        log.info(&quot;Performing alias analysis...&quot;);</span>
+<span class="nc" id="L259">        AliasAnalysis alias = new AliasAnalysis(app, liveness, fieldUsage, aliasAssertions);</span>
+<span class="nc" id="L260">        log.info(&quot;Performing reaching definitions analysis...&quot;);</span>
+<span class="nc" id="L261">        ReachingDefinitions reachingDefinitions = new ReachingDefinitions(app, liveness, alias);</span>
+        
+        // if no hotspots were specified, make every expression a hotspot by default
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (hotspots == null) {</span>
+<span class="nc" id="L265">            hotspots = m1.keySet(); // take everything by default</span>
+        }
+
+        // get the intermediate statements corresponding to each hotspot
+<span class="nc" id="L269">        Set&lt;Statement&gt; hotspot_statements = new HashSet&lt;Statement&gt;();</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        for (ValueBox b : hotspots) {</span>
+<span class="nc" id="L271">            Statement stm = m1.get(b);</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">            if (stm == null) {</span>
+<span class="nc" id="L273">                log.info(&quot;Invalid hotspot&quot;);</span>
+<span class="nc" id="L274">                continue;</span>
+            }
+<span class="nc" id="L276">            hotspot_statements.add(stm);</span>
+        }
+        
+        // find invalid assertion statements
+<span class="nc" id="L280">        OperationAssertionAnalysis assertions = new OperationAssertionAnalysis(app, reachingDefinitions);</span>
+        
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (log.isDebugEnabled()) {</span>
+<span class="nc" id="L283">            log.debug(app.toDot(reachingDefinitions, alias, assertions, hotspot_statements));</span>
+        }
+        
+        // End of intermediate creation. Notify diagnostics.
+<span class="nc" id="L287">        diagnostics.intermediateCompleted(new IntermediateCompletedEvent(app, liveness, alias, reachingDefinitions, assertions,</span>
+<span class="nc" id="L288">				hotspot_statements));</span>
+
+        //
+        //	Create flow graph
+        //
+<span class="nc" id="L293">        log.info(&quot;Generating flow graph...&quot;);</span>
+<span class="nc" id="L294">        Intermediate2FlowGraph tr = new Intermediate2FlowGraph(app);</span>
+<span class="nc" id="L295">        FlowGraph g = tr.convert(alias, reachingDefinitions, assertions);</span>
+        
+        // Notify diagnostics of flow graph
+<span class="nc" id="L298">        diagnostics.flowGraphCompleted(g);</span>
+        
+<span class="nc" id="L300">        Map&lt;Statement, Node&gt; m2 = tr.getTranslationMap();</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (log.isDebugEnabled()) {</span>
+<span class="nc" id="L302">            log.debug(&quot;Statement -&gt; Node:&quot;);</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">            for (Map.Entry&lt;Statement, Node&gt; me : m2.entrySet()) {</span>
+<span class="nc" id="L304">                log.debug(&quot;  &quot; + me.getKey() + &quot; -&gt; &quot; + me.getValue());</span>
+            }
+        }
+<span class="nc" id="L307">        log.info(&quot;Simplifying flow graph...&quot;);</span>
+<span class="nc" id="L308">        Map&lt;Node, Node&gt; m3 = g.simplify();</span>
+<span class="nc" id="L309">        Set&lt;Node&gt; nodes = new HashSet&lt;Node&gt;();</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">        for (Statement ss : hotspot_statements) {</span>
+<span class="nc" id="L311">            Node beforeSimplifyNode = m2.get(ss);</span>
+<span class="nc" id="L312">            Node n = m3.get(beforeSimplifyNode);</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">            if (n != null) {</span>
+<span class="nc" id="L314">                nodes.add(n);</span>
+            }
+        }
+<span class="nc bnc" id="L317" title="All 2 branches missed.">        for (StringStatement ss : jt.getToStringHotspotMap().values()) {</span>
+<span class="nc" id="L318">            Node n = m3.get(m2.get(ss));</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">            if (n != null) {</span>
+<span class="nc" id="L320">                nodes.add(n);</span>
+            }
+        }
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        for (Node n : m3.keySet()) { // TODO: inefficient, use entrySet iterator instead</span>
+<span class="nc" id="L324">            Node n2 = m3.get(n);</span>
+<span class="nc bnc" id="L325" title="All 4 branches missed.">            if (n.isTaint() &amp;&amp; n2 != null) {</span>
+<span class="nc" id="L326">                n2.setTaint(true);</span>
+            }
+        }
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (log.isDebugEnabled()) {</span>
+<span class="nc" id="L330">            log.debug(g.toDot(nodes));</span>
+        }
+<span class="nc" id="L332">        log.info(&quot;Transforming into grammar...&quot;);</span>
+<span class="nc" id="L333">        FlowGraph2Grammar f2g = new FlowGraph2Grammar(g);</span>
+<span class="nc" id="L334">        Grammar r = f2g.convert();</span>
+<span class="nc" id="L335">        Set&lt;Nonterminal&gt; hs_nt = new HashSet&lt;Nonterminal&gt;();</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">        for (Node hn : nodes) {</span>
+<span class="nc" id="L337">            hs_nt.add(f2g.getNonterminal(hn));</span>
+        }
+<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (log.isDebugEnabled()) {</span>
+<span class="nc" id="L340">            log.debug(r.toString() + &quot;Hotspots: &quot; + hs_nt);</span>
+        }
+
+        // Approximate grammar
+<span class="nc" id="L344">        log.info(&quot;Cutting operation cycles...&quot;);</span>
+<span class="nc" id="L345">        r.approximateOperationCycles();</span>
+<span class="nc" id="L346">        log.info(&quot;Performing regular approximation...&quot;);</span>
+<span class="nc" id="L347">        r.approximateNonLinear(hs_nt);</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        if (log.isDebugEnabled()) {</span>
+<span class="nc" id="L349">            log.debug(r.toString() + &quot;Hotspots: &quot; + hs_nt);</span>
+        }
+<span class="nc" id="L351">        log.info(&quot;Converting to MLFA...&quot;);</span>
+
+<span class="nc" id="L353">        Grammar2MLFA gm = new Grammar2MLFA(r);</span>
+<span class="nc" id="L354">        MLFA mlfa = gm.convert();</span>
+
+<span class="nc" id="L356">        propagateTaint(r);</span>
+
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        for (Node n : nodes) {</span>
+<span class="nc" id="L359">            Nonterminal nt = f2g.getNonterminal(n);</span>
+<span class="nc" id="L360">            MLFAStatePair sp = gm.getMLFAStatePair(nt);</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            if (nt.isTaint()) {</span>
+<span class="nc" id="L362">                sp.setTaint(true);</span>
+            }
+        }
+<span class="nc" id="L365">        log.debug(mlfa.toString());</span>
+
+        // Make map
+<span class="nc" id="L368">        map = new HashMap&lt;ValueBox, MLFAStatePair&gt;();</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        for (ValueBox box : hotspots) {</span>
+<span class="nc" id="L370">            Node n = m3.get(m2.get(m1.get(box)));</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">            if (n != null) {</span>
+<span class="nc" id="L372">                Nonterminal nt = f2g.getNonterminal(n);</span>
+<span class="nc" id="L373">                MLFAStatePair sp = gm.getMLFAStatePair(nt);</span>
+<span class="nc" id="L374">                map.put(box, sp);</span>
+            }
+        }
+<span class="nc" id="L377">        tostring_map = new HashMap&lt;SootClass, MLFAStatePair&gt;();</span>
+<span class="nc" id="L378">        Map&lt;SootClass, StringStatement&gt; tostring_hotspot_map = jt.getToStringHotspotMap();</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        for (Map.Entry&lt;SootClass, StringStatement&gt; tse : tostring_hotspot_map.entrySet()) {</span>
+<span class="nc" id="L380">            SootClass tsc = tse.getKey();</span>
+<span class="nc" id="L381">            StringStatement ss = tse.getValue();</span>
+<span class="nc" id="L382">            Node n = m3.get(m2.get(ss));</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">            if (n != null) {</span>
+<span class="nc" id="L384">                Nonterminal nt = f2g.getNonterminal(n);</span>
+<span class="nc" id="L385">                MLFAStatePair sp = gm.getMLFAStatePair(nt);</span>
+<span class="nc" id="L386">                tostring_map.put(tsc, sp);</span>
+            }
+        }
+<span class="nc" id="L389">        sourcefile_map = jt.getSourceFileMap();</span>
+<span class="nc" id="L390">        class_map = jt.getClassNameMap();</span>
+<span class="nc" id="L391">        method_map = jt.getMethodNameMap();</span>
+<span class="nc" id="L392">        line_map = jt.getLineNumberMap();</span>
+
+<span class="nc" id="L394">        mlfa2aut = new MLFA2Automaton(mlfa);</span>
+<span class="nc" id="L395">    }</span>
+
+    private void propagateTaint(Grammar r) {
+<span class="nc" id="L398">        final boolean done[] = {false};</span>
+<span class="nc" id="L399">        ProductionVisitor v = new ProductionVisitor() {</span>
+            public void visitAutomatonProduction(Nonterminal a, AutomatonProduction p) {
+
+<span class="nc" id="L402">            }</span>
+
+            public void visitBinaryProduction(Nonterminal a, BinaryProduction p) {
+<span class="nc bnc" id="L405" title="All 4 branches missed.">                if (p.getNonterminal1().isTaint() || p.getNonterminal2().isTaint()) {</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">                    if (!a.isTaint()) {</span>
+<span class="nc" id="L407">                        done[0] = false;</span>
+                    }
+<span class="nc" id="L409">                    a.setTaint(true);</span>
+                }
+<span class="nc" id="L411">            }</span>
+
+            public void visitEpsilonProduction(Nonterminal a, EpsilonProduction p) {
+<span class="nc" id="L414">            }</span>
+
+            public void visitPairProduction(Nonterminal a, PairProduction p) {
+<span class="nc bnc" id="L417" title="All 4 branches missed.">                if (p.getNonterminal1().isTaint() || p.getNonterminal2().isTaint()) {</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                    if (!a.isTaint()) {</span>
+<span class="nc" id="L419">                        done[0] = false;</span>
+                    }
+<span class="nc" id="L421">                    a.setTaint(true);</span>
+                }
+<span class="nc" id="L423">            }</span>
+
+            public void visitUnaryProduction(Nonterminal a, UnaryProduction p) {
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                if (p.getNonterminal().isTaint()) {</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">                    if (!a.isTaint()) {</span>
+<span class="nc" id="L428">                        done[0] = false;</span>
+                    }
+
+<span class="nc" id="L431">                    a.setTaint(true);</span>
+                }
+
+<span class="nc" id="L434">            }</span>
+
+            public void visitUnitProduction(Nonterminal a, UnitProduction p) {
+<span class="nc bnc" id="L437" title="All 2 branches missed.">                if (p.getNonterminal().isTaint()) {</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                    if (!a.isTaint()) {</span>
+<span class="nc" id="L439">                        done[0] = false;</span>
+                    }
+
+<span class="nc" id="L442">                    a.setTaint(true);</span>
+                }
+<span class="nc" id="L444">            }</span>
+        };
+
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        while (!done[0]) {</span>
+<span class="nc" id="L448">            done[0] = true;</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">            for (Nonterminal n : r.getNonterminals()) {</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">                for (Production p : n.getProductions()) {</span>
+<span class="nc" id="L451">                    p.visitBy(n, v);</span>
+                }
+            }
+        }
+<span class="nc" id="L455">    }</span>
+
+    /**
+     * Returns whether or not the given expression has a type that
+     * the string analysis is able to handle.
+     *
+     * @param box the Soot value box containing the expression.
+     * @return &lt;code&gt;true&lt;/code&gt; if the expression has type {@link java.lang.String},
+     *         {@link java.lang.StringBuffer}, {@link java.lang.StringBuilder},
+     *         or array (of any dimension) of {@link java.lang.String};
+     *         &lt;code&gt;false&lt;/code&gt; otherwise;
+     */
+    public static boolean hasValidType(ValueBox box) {
+<span class="nc" id="L468">        Type t = box.getValue().getType();</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        if (t instanceof RefType) {</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">            if (((RefType) t).getSootClass().getName().equals(&quot;java.lang.String&quot;)) {</span>
+<span class="nc" id="L471">                return true;</span>
+            }
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            if (((RefType) t).getSootClass().getName().equals(&quot;java.lang.StringBuffer&quot;)) {</span>
+<span class="nc" id="L474">                return true;</span>
+            }
+<span class="nc bnc" id="L476" title="All 2 branches missed.">            if (((RefType) t).getSootClass().getName().equals(&quot;java.lang.StringBuilder&quot;)) {</span>
+<span class="nc" id="L477">                return true;</span>
+            }
+        }
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        if (t instanceof ArrayType) {</span>
+<span class="nc" id="L481">            Type bt = ((ArrayType) t).baseType;</span>
+<span class="nc bnc" id="L482" title="All 4 branches missed.">            if (bt instanceof RefType &amp;&amp; ((RefType) bt).getSootClass().getName().equals(&quot;java.lang.String&quot;)) {</span>
+<span class="nc" id="L483">                return true;</span>
+            }
+        }
+<span class="nc" id="L486">        return false;</span>
+    }
+
+    /**
+     * Computes the automaton describing the possible string
+     * values at the given expression.
+     * The expression given can have any type. If the type is
+     * {@link java.lang.String}, {@link java.lang.StringBuffer}, {@link java.lang.StringBuilder}, or
+     * array (of any dimension) of {@link java.lang.String},
+     * the inferred result is returned directly. If it is of a simple type
+     * or a wrapper class, the corresponding type automaton is returned.
+     * Otherwise, the inferred result for the return values of the
+     * relevant &lt;code&gt;toString&lt;/code&gt; methods is returned.
+     * If a specific set of hotspots has been supplied to the analysis,
+     * and the expression is of one of the string types metioned above,
+     * the expression given must be one of these hotspots.
+     *
+     * @param box the Soot value box containing the expression.
+     * @return an automaton whose language contains all possible run-time values
+     *         of the given expression.
+     * @throws IllegalArgumentException if the expression is not a marked hotspot.
+     */
+    public final Automaton getAutomaton(ValueBox box) {
+<span class="nc bnc" id="L509" title="All 2 branches missed.">        if (!hasValidType(box)) {</span>
+<span class="nc" id="L510">            return getTypeAutomaton(box.getValue().getType());</span>
+        }
+<span class="nc bnc" id="L512" title="All 2 branches missed.">        if (!map.containsKey(box)) {</span>
+<span class="nc" id="L513">            throw new IllegalArgumentException(&quot;Expression is not a marked hotspot&quot;);</span>
+        }
+<span class="nc" id="L515">        MLFAStatePair sp = map.get(box);</span>
+<span class="nc" id="L516">        return mlfa2aut.extract(sp);</span>
+    }
+
+    /**
+     * Returns whether the strings that this valuebox contains can be taint.
+     * The strategy is defined by {@link dk.brics.string.java.TaintAnalysisStrategy}.
+     */
+    public boolean isTaint(ValueBox box) {
+<span class="nc" id="L524">        MLFAStatePair sp = map.get(box);</span>
+<span class="nc" id="L525">        return sp.isTaint();</span>
+    }
+
+    /**
+     * Computes the automaton describing the possible string
+     * values that can occur as a result of converting the given
+     * type into a string.
+     * If the type is a simple type or a wrapper class,
+     * the corresponding type automaton is returned.
+     * Otherwise, the result is the union of the inferred results
+     * for the return values of the &lt;code&gt;toString&lt;/code&gt; methods of
+     * the type and all its subclasses.
+     *
+     * @param t the Soot type.
+     * @return an automaton whose language contains all possible values
+     *         of the result of converting this type into a string.
+     */
+    public final Automaton getTypeAutomaton(Type t) {
+<span class="nc" id="L543">        Automaton ta = jt.getTypeAutomaton(t);</span>
+<span class="nc bnc" id="L544" title="All 2 branches missed.">        if (ta != null) {</span>
+<span class="nc" id="L545">            return ta;</span>
+        }
+<span class="nc bnc" id="L547" title="All 2 branches missed.">        if (t instanceof RefType) {</span>
+<span class="nc" id="L548">            SootClass c = ((RefType) t).getSootClass();</span>
+<span class="nc bnc" id="L549" title="All 2 branches missed.">            if (tostring_map.containsKey(c)) {</span>
+<span class="nc" id="L550">                MLFAStatePair sp = tostring_map.get(c);</span>
+<span class="nc" id="L551">                return mlfa2aut.extract(sp);</span>
+            }
+        }
+<span class="nc" id="L554">        return Basic.makeAnyString();</span>
+    }
+
+    /**
+     * Returns the name of the source file containing the given expression.
+     *
+     * @param box the expression.
+     * @return the source file name.
+     */
+    public final String getSourceFile(ValueBox box) {
+<span class="nc" id="L564">        return sourcefile_map.get(box);</span>
+    }
+
+    /**
+     * Returns the name of the class containing the given expression.
+     *
+     * @param box the expression.
+     * @return the fully qualified class name.
+     */
+    public final String getClassName(ValueBox box) {
+<span class="nc" id="L574">        return class_map.get(box);</span>
+    }
+
+    /**
+     * Returns the name of the method containing the given expression.
+     *
+     * @param box the expression.
+     * @return the method name.
+     */
+    public final String getMethodName(ValueBox box) {
+<span class="nc" id="L584">        return method_map.get(box);</span>
+    }
+
+    /**
+     * Returns the source line number of the given expression.
+     *
+     * @param box the expression.
+     * @return the line number.
+     */
+    public final int getLineNumber(ValueBox box) {
+<span class="nc" id="L594">        return line_map.get(box);</span>
+    }
+
+    /**
+     * Loads the named class into the Soot scene,
+     * marks it as an application class, and generates bodies
+     * for all of its concrete methods.
+     *
+     * @param name the fully qualified name of the class to be loaded.
+     * @return soot's representation of the class
+     */
+    public static SootClass loadClass(String name) {
+<span class="nc" id="L606">        SootClass c = Scene.v().loadClassAndSupport(name);</span>
+<span class="nc" id="L607">        c.setApplicationClass();</span>
+<span class="nc" id="L608">        Iterator mi = c.getMethods().iterator();</span>
+<span class="nc bnc" id="L609" title="All 2 branches missed.">        while (mi.hasNext()) {</span>
+<span class="nc" id="L610">            SootMethod sm = (SootMethod) mi.next();</span>
+<span class="nc bnc" id="L611" title="All 2 branches missed.">            if (sm.isConcrete()) {</span>
+<span class="nc" id="L612">                sm.retrieveActiveBody();</span>
+            }
+        }
+<span class="nc" id="L615">        return c;</span>
+    }
+    
+    /**
+     * Adds the specified directory or jar file to the internal classpath, so library classes
+     * can be loaded from there. The classes in the directory or jar file will not be considered
+     * application classes.
+     * @param dir classpath to append. May contain either one directoy or jar file, or several ones separated by {@link File#pathSeparator}.
+     */
+    public static void addDirectoryToClassPath(String dir) {
+<span class="nc" id="L625">        Scene.v().setSootClassPath(Scene.v().getSootClassPath() + File.pathSeparator + dir);</span>
+<span class="nc" id="L626">    }</span>
+    
+    /**
+     * Adds all &lt;tt&gt;jar&lt;/tt&gt; files found in the specified directory to the internal classpath, so
+     * library classes can be loaded from those. The classes in the jar files will not be considered
+     * application classes.
+     * @param libDir path to a directory containing jar files.
+     * @return &lt;tt&gt;true&lt;/tt&gt; if at least one jar file was found.
+     */
+    public static boolean addJarsToClassPath(String libDir) {
+<span class="nc" id="L636">        File lib = new File(libDir);</span>
+<span class="nc" id="L637">        File[] jars = lib.listFiles(new FileFilter() {</span>
+            public boolean accept(File file) {
+<span class="nc bnc" id="L639" title="All 4 branches missed.">                return file.isFile() &amp;&amp; file.getName().toLowerCase().endsWith(&quot;.jar&quot;);</span>
+            }
+        });
+<span class="nc" id="L642">        StringBuilder b = new StringBuilder(Scene.v().getSootClassPath());</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">        for (File jar : jars) {</span>
+<span class="nc" id="L644">            b.append(File.pathSeparator);</span>
+<span class="nc" id="L645">            b.append(jar.getPath());</span>
+        }
+<span class="nc" id="L647">        Scene.v().setSootClassPath(b.toString());</span>
+<span class="nc bnc" id="L648" title="All 2 branches missed.">        return (jars.length &gt; 0);</span>
+    }
+    
+    /**
+     * Loads all classes in the specified directory, where the directory
+     * refers to the root of the package tree.
+     * &lt;p/&gt;
+     * The classes are loaded immediately, so make sure the classpath is set accordingly
+     * using {@link #addJarsToClassPath(String)} or {@link #addDirectoryToClassPath(String)} first.
+     * If classes should be loaded from more than one directory, all directories should first
+     * be added to the classpath and then loaded.
+     * @param dir directory root of the package tree
+     * @return the number of classes loaded
+     */
+    public static int loadDirectory(String dir) throws IOException {
+<span class="nc" id="L663">        File file = new File(dir);</span>
+<span class="nc bnc" id="L664" title="All 4 branches missed.">        if (!file.isDirectory() &amp;&amp; !dir.toLowerCase().endsWith(&quot;.jar&quot;))</span>
+<span class="nc" id="L665">            throw new RuntimeException(dir + &quot; is not a directory or jar file&quot;);</span>
+<span class="nc bnc" id="L666" title="All 2 branches missed.">        if (!Scene.v().getSootClassPath().contains(dir)) {</span>
+<span class="nc" id="L667">            Scene.v().setSootClassPath(Scene.v().getSootClassPath() + File.pathSeparatorChar + dir);</span>
+        }
+<span class="nc bnc" id="L669" title="All 2 branches missed.">        if (file.isDirectory()) {</span>
+<span class="nc" id="L670">            return loadDirectorySub(file, &quot;&quot;);</span>
+        } else {
+<span class="nc" id="L672">            int count = 0;</span>
+<span class="nc" id="L673">            JarFile jar = new JarFile(file);</span>
+<span class="nc" id="L674">            Enumeration&lt;JarEntry&gt; e = jar.entries();</span>
+<span class="nc bnc" id="L675" title="All 2 branches missed.">            while (e.hasMoreElements()) {</span>
+<span class="nc" id="L676">                JarEntry entry = e.nextElement();</span>
+
+<span class="nc bnc" id="L678" title="All 4 branches missed.">                if (entry.isDirectory() || !entry.getName().endsWith(&quot;.class&quot;))</span>
+<span class="nc" id="L679">                    continue;</span>
+                
+<span class="nc" id="L681">                String name = entry.getName().substring(0, entry.getName().length() - 6);</span>
+<span class="nc" id="L682">                name = name.replace('/', '.');</span>
+<span class="nc" id="L683">                loadClass(name);</span>
+<span class="nc" id="L684">                count++;</span>
+            }
+<span class="nc" id="L686">            return count;</span>
+        }
+    }
+    private static int loadDirectorySub(File dir, String prefix) {
+<span class="nc" id="L690">        int count = 0;</span>
+<span class="nc" id="L691">        File[] files = dir.listFiles(new FileFilter() {</span>
+            public boolean accept(File pathname) {
+<span class="nc bnc" id="L693" title="All 6 branches missed.">                return pathname.isDirectory() || (pathname.isFile() &amp;&amp; pathname.getName().endsWith(&quot;.class&quot;));</span>
+            }
+        });
+<span class="nc bnc" id="L696" title="All 2 branches missed.">        for (File file : files) {</span>
+<span class="nc bnc" id="L697" title="All 2 branches missed.">            if (file.isDirectory()) {</span>
+<span class="nc" id="L698">                count += loadDirectorySub(file, prefix + file.getName() + &quot;.&quot;);</span>
+<span class="nc" id="L699">            } else {</span>
+<span class="nc" id="L700">                String classname = file.getName().substring(0, file.getName().length() - 6);</span>
+<span class="nc" id="L701">                loadClass(prefix + classname);</span>
+<span class="nc" id="L702">                count++;</span>
+            }
+        }
+<span class="nc" id="L705">        return count;</span>
+    }
+
+    /**
+     * Returns the total number of analyzable expressions in the program.
+     *
+     * @return the number of expressions in the analyzed program that has
+     *         a type that the string analysis is able to handle.
+     */
+    public final int getNumExps() {
+<span class="nc" id="L715">        return num_exps;</span>
+    }
+
+    /**
+     * Returns a list containing all expressions occurring as
+     * argument to the specified method.
+     *
+     * @param sig    the signature of the method to collect arguments to, e.g.
+     *               &lt;code&gt;&quot;&amp;lt;java.io.PrintStream: void println(java.lang.String)&amp;gt&quot;&lt;/code&gt;.
+     * @param argnum the index of the argument to the call
+     * @return a newly created mutable list of Soot's representation of those expressions.
+     */
+    public static List&lt;ValueBox&gt; getArgumentExpressions(String sig, int argnum) {
+<span class="nc" id="L728">        ArrayList&lt;ValueBox&gt; list = new ArrayList&lt;ValueBox&gt;();</span>
+<span class="nc" id="L729">        Iterator aci = Scene.v().getApplicationClasses().iterator();</span>
+<span class="nc bnc" id="L730" title="All 2 branches missed.">        while (aci.hasNext()) {</span>
+<span class="nc" id="L731">            SootClass ac = (SootClass) aci.next();</span>
+<span class="nc" id="L732">            Iterator mi = ac.getMethods().iterator();</span>
+<span class="nc bnc" id="L733" title="All 2 branches missed.">            while (mi.hasNext()) {</span>
+<span class="nc" id="L734">                SootMethod sm = (SootMethod) mi.next();</span>
+<span class="nc bnc" id="L735" title="All 2 branches missed.">                if (sm.isConcrete()) {</span>
+<span class="nc" id="L736">                    CompleteUnitGraph cug = new CompleteUnitGraph(sm.retrieveActiveBody());</span>
+<span class="nc" id="L737">                    Iterator si = cug.iterator();</span>
+<span class="nc bnc" id="L738" title="All 2 branches missed.">                    while (si.hasNext()) {</span>
+<span class="nc" id="L739">                        Stmt stmt = (Stmt) si.next();</span>
+<span class="nc bnc" id="L740" title="All 2 branches missed.">                        if (stmt.containsInvokeExpr()) {</span>
+<span class="nc" id="L741">                            InvokeExpr expr = stmt.getInvokeExpr();</span>
+<span class="nc bnc" id="L742" title="All 2 branches missed.">                            if (expr.getMethodRef().getSignature().equals(sig)) {</span>
+<span class="nc" id="L743">                                ValueBox box = expr.getArgBox(argnum);</span>
+<span class="nc" id="L744">                                list.add(box);</span>
+                            }
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L751">        return list;</span>
+    }
+    
+    /**
+     * Returns a list of all expressions that occur as the return value from the
+     * specified method or any method that overrides/implements it.
+     * @param sig the signature of the method to collect return expression from, e.g.
+     *               &lt;code&gt;&quot;&amp;lt;com.example.Action: String getSomeURL()&amp;gt&quot;&lt;/code&gt;.
+     * @return a newly created list of Soot's representation of those expressions.
+     */
+    public static List&lt;ValueBox&gt; getReturnExpressions(String sig) {
+<span class="nc" id="L762">        ArrayList&lt;ValueBox&gt; list = new ArrayList&lt;ValueBox&gt;();</span>
+<span class="nc" id="L763">        SootMethod targetMethod = Scene.v().getMethod(sig);</span>
+<span class="nc" id="L764">        Hierarchy h = Scene.v().getActiveHierarchy();</span>
+<span class="nc bnc" id="L765" title="All 2 branches missed.">        if (h == null)</span>
+<span class="nc" id="L766">            h = new Hierarchy();</span>
+<span class="nc" id="L767">        List&lt;SootMethod&gt; methods = h.resolveAbstractDispatch(targetMethod.getDeclaringClass(), targetMethod);</span>
+<span class="nc bnc" id="L768" title="All 2 branches missed.">        for (SootMethod method : methods) {</span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">            if (!method.isConcrete())</span>
+<span class="nc" id="L770">                continue;</span>
+<span class="nc bnc" id="L771" title="All 2 branches missed.">            for (Unit unit : method.retrieveActiveBody().getUnits()) {</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">                if (unit instanceof ReturnStmt) {</span>
+<span class="nc" id="L773">                    ReturnStmt ret = (ReturnStmt)unit;</span>
+<span class="nc" id="L774">                    list.add(ret.getOpBox());</span>
+                }
+            }
+        }
+<span class="nc" id="L778">        return list;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>SeqDiscover.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">test</a> &gt; <span class="el_source">SeqDiscover.java</span></div><h1>SeqDiscover.java</h1><pre class="source lang-java linenums">package test;
+
+import static org.junit.Assert.*;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.stringoperations.*;
+
+<span class="nc" id="L7">public class SeqDiscover {</span>
+	
+	static Automaton a1,b1,c1;
+		
+	public static void main(String[] args) {
+		
+//		System.out.println(&quot;String:&quot;);
+//		a1 = Automaton.makeString(&quot;ABC&quot;);
+//		for (String s : a1.getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+		
+<span class="nc" id="L20">		System.out.println(&quot;\nwReplace1:&quot;);</span>
+<span class="nc" id="L21">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L22">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L23">		a1 = OpsWrapper.wReplace1(a1, 'B', 'C');</span>
+		//a1 = tlc.op(a1);
+//		for (String s : a1.getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+ /*
+*/
+<span class="nc" id="L30">		System.out.println(&quot;\nToLowerCase:&quot;);</span>
+<span class="nc" id="L31">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L32">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L33">		UnaryOperation tlc  = new ToLowerCase();</span>
+<span class="nc" id="L34">		a1 = tlc.op(a1);</span>
+//		for (String s : tlc.op(a1).getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+<span class="nc" id="L39">		System.out.println(&quot;\nReverse:&quot;);</span>
+<span class="nc" id="L40">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L41">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L42">		UnaryOperation rev  = new Reverse();</span>
+<span class="nc" id="L43">		a1 = rev.op(a1);</span>
+//		for (String s : rev.op(a1).getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+<span class="nc" id="L48">		System.out.println(&quot;\nSubstrings:&quot;);</span>
+<span class="nc" id="L49">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L50">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L51">		UnaryOperation sub  = new Substring();</span>
+<span class="nc" id="L52">		a1 = sub.op(a1);</span>
+//		for (String s : sub.op(a1).getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+<span class="nc" id="L57">		System.out.println(&quot;\nInsert:&quot;);</span>
+<span class="nc" id="L58">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L59">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L60">		b1 = Automaton.makeString(&quot;Z&quot;);</span>
+<span class="nc" id="L61">		b1.setInfo(&quot;b1&quot;);</span>
+<span class="nc" id="L62">		BinaryOperation ins  = new Insert();</span>
+<span class="nc" id="L63">		a1 = ins.op(a1,b1);</span>
+//		for (String s : ins.op(a1,b1).getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+<span class="nc" id="L68">		System.out.println(&quot;\nPrefix:&quot;);</span>
+<span class="nc" id="L69">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L70">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L71">		UnaryOperation pre  = new Prefix();</span>
+<span class="nc" id="L72">		a1 = pre.op(a1);</span>
+//		for (String s : pre.op(a1).getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+<span class="nc" id="L77">		System.out.println(&quot;\nPostfix:&quot;);</span>
+<span class="nc" id="L78">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L79">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L80">		UnaryOperation post  = new Postfix();</span>
+<span class="nc" id="L81">		a1 = post.op(a1);</span>
+//		for (String s : post.op(a1).getFiniteStrings()) {
+//			System.out.println(s);
+//			}
+		
+<span class="nc" id="L86">		System.out.println(&quot;\nReplace2(A,?):&quot;);</span>
+<span class="nc" id="L87">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L88">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L89">		UnaryOperation rep2  = new Replace2('A');</span>
+<span class="nc" id="L90">		a1 = rep2.op(a1);</span>
+				
+		
+<span class="nc" id="L93">		System.out.println(&quot;\nReplace3(?,A):&quot;);</span>
+<span class="nc" id="L94">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L95">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L96">		UnaryOperation rep3  = new Replace3('A');</span>
+<span class="nc" id="L97">		a1 = rep3.op(a1);</span>
+		
+<span class="nc" id="L99">		System.out.println(&quot;\nReplace4(?,?):&quot;);</span>
+<span class="nc" id="L100">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L101">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L102">		UnaryOperation rep4  = new Replace4();</span>
+<span class="nc" id="L103">		a1 = rep4.op(a1);</span>
+		
+<span class="nc" id="L105">		System.out.println(&quot;\nReplace5(int,int,String):&quot;);</span>
+<span class="nc" id="L106">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L107">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L108">		b1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L109">		b1.setInfo(&quot;b1&quot;);</span>
+<span class="nc" id="L110">		BinaryOperation rep5  = new Replace5();</span>
+<span class="nc" id="L111">		c1 = rep5.op(a1,b1);</span>
+		
+		
+<span class="nc" id="L114">		System.out.println(&quot;\nReplace6(String,String):&quot;);</span>
+<span class="nc" id="L115">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L116">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L117">		UnaryOperation rep6  = new Replace6(&quot;test&quot;,&quot;string&quot;);</span>
+<span class="nc" id="L118">		a1 = rep6.op(a1);</span>
+		
+<span class="nc" id="L120">		System.out.println(&quot;\nCharAt1:&quot;);</span>
+<span class="nc" id="L121">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L122">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L123">		UnaryOperation ca1 = new CharAt1(2);</span>
+<span class="nc" id="L124">		a1 = ca1.op(a1);</span>
+		
+<span class="nc" id="L126">		System.out.println(&quot;\nCharAt2:&quot;);</span>
+<span class="nc" id="L127">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L128">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L129">		UnaryOperation ca2 = new CharAt2();</span>
+<span class="nc" id="L130">		a1 = ca2.op(a1);</span>
+		//System.out.println(&quot;a1.hash: &quot; + a1.hashCode());
+		
+<span class="nc" id="L133">		System.out.println(&quot;\nContains:&quot;);</span>
+<span class="nc" id="L134">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L135">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L136">		b1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L137">		b1.setInfo(&quot;b1&quot;);</span>
+<span class="nc" id="L138">		BinaryOperation cont = new Contains();</span>
+<span class="nc" id="L139">		c1 = cont.op(a1,b1);</span>
+		
+<span class="nc" id="L141">		System.out.println(&quot;\nDelete:&quot;);</span>
+<span class="nc" id="L142">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L143">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L144">		UnaryOperation del = new Delete();</span>
+<span class="nc" id="L145">		a1 = del.op(a1);</span>
+		
+<span class="nc" id="L147">		System.out.println(&quot;\nDeleteCharAt:&quot;);</span>
+<span class="nc" id="L148">		a1 = Automaton.makeString(&quot;ABC&quot;);</span>
+<span class="nc" id="L149">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L150">		UnaryOperation delca = new DeleteCharAt();</span>
+<span class="nc" id="L151">		a1 = delca.op(a1);</span>
+		
+<span class="nc" id="L153">		System.out.println(&quot;\nToUpperCase:&quot;);</span>
+<span class="nc" id="L154">		a1 = Automaton.makeString(&quot;abc&quot;);</span>
+<span class="nc" id="L155">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L156">		UnaryOperation tuc  = new ToUpperCase();</span>
+<span class="nc" id="L157">		a1 = tuc.op(a1);</span>
+		
+<span class="nc" id="L159">		System.out.println(&quot;\nTrim:&quot;);</span>
+<span class="nc" id="L160">		a1 = Automaton.makeString(&quot;   abc  &quot;);</span>
+<span class="nc" id="L161">		a1.setInfo(&quot;a1&quot;);</span>
+<span class="nc" id="L162">		UnaryOperation trim  = new Trim();</span>
+<span class="nc" id="L163">		a1 = trim.op(a1);</span>
+		
+<span class="nc" id="L165">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

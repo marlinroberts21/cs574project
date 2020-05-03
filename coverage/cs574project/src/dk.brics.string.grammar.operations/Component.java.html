@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Component.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.grammar.operations</a> &gt; <span class="el_source">Component.java</span></div><h1>Component.java</h1><pre class="source lang-java linenums">package dk.brics.string.grammar.operations;
+
+import dk.brics.string.directedgraph.GraphComponent;
+import dk.brics.string.grammar.Nonterminal;
+import dk.brics.string.grammar.PairProduction;
+import dk.brics.string.grammar.Production;
+import dk.brics.string.mlfa.MLFAState;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
+/**
+ * Strongly connected component.
+ */
+public class Component implements GraphComponent&lt;Nonterminal&gt; {
+
+<span class="nc" id="L18">    public enum Recursion {</span>
+<span class="nc" id="L19">        NONE, RIGHT, LEFT, BOTH</span>
+    }
+
+    ;
+
+    private Recursion recursion;
+
+<span class="nc" id="L26">    private Collection&lt;Nonterminal&gt; nonterminals = new ArrayList&lt;Nonterminal&gt;();</span>
+
+    private MLFAState state;
+
+    /**
+     * Constructs a new empty component.
+     */
+<span class="nc" id="L33">    public Component() {</span>
+<span class="nc" id="L34">    }</span>
+
+    public void add(Nonterminal n) {
+<span class="nc" id="L37">        nonterminals.add(n);</span>
+<span class="nc" id="L38">    }</span>
+
+    /**
+     * Returns the (unmodifiable) collection of nonterminals for this component.
+     */
+    public Collection&lt;Nonterminal&gt; getNodes() {
+<span class="nc" id="L44">        return Collections.unmodifiableCollection(nonterminals);</span>
+    }
+
+    /**
+     * Finds recursion kind for this components.
+     */
+    public void findRecursion() {
+<span class="nc" id="L51">        recursion = Recursion.NONE;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (Nonterminal n : nonterminals) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            for (Production p : n.getProductions()) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                if (p instanceof PairProduction) {</span>
+<span class="nc" id="L55">                    PairProduction pp = (PairProduction) p;</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                    if (nonterminals.contains(pp.getNonterminal1())) {</span>
+<span class="nc" id="L57">                        add(Recursion.LEFT);</span>
+                    }
+<span class="nc bnc" id="L59" title="All 2 branches missed.">                    if (nonterminals.contains(pp.getNonterminal2())) {</span>
+<span class="nc" id="L60">                        add(Recursion.RIGHT);</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L65">    }</span>
+
+    private void add(Recursion r) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (recursion == Recursion.NONE) {</span>
+<span class="nc" id="L69">            recursion = r;</span>
+        }
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (recursion != r) {</span>
+<span class="nc" id="L72">            recursion = Recursion.BOTH;</span>
+        }
+<span class="nc" id="L74">    }</span>
+
+    /**
+     * Checks whether the given nonterminal is in this component.
+     */
+    boolean contains(Nonterminal x) {
+<span class="nc" id="L80">        return nonterminals.contains(x);</span>
+    }
+
+    /**
+     * Returns recursion kind for this component.
+     */
+    public Recursion getRecursion() {
+<span class="nc" id="L87">        return recursion;</span>
+    }
+
+    /**
+     * Sets recursion kind for this component.
+     */
+    public void setRecursion(Recursion r) {
+<span class="nc" id="L94">        recursion = r;</span>
+<span class="nc" id="L95">    }</span>
+
+    /**
+     * Sets the MLFA state of this component.
+     */
+    public void setState(MLFAState s) {
+<span class="nc" id="L101">        state = s;</span>
+<span class="nc" id="L102">    }</span>
+
+    /**
+     * Returns the MLFA state of this component.
+     */
+    public MLFAState getState() {
+<span class="nc" id="L108">        return state;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L113">        return nonterminals.toString() + recursion;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

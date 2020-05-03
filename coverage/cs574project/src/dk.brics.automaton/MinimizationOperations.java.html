@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MinimizationOperations.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">MinimizationOperations.java</span></div><h1>MinimizationOperations.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.TreeSet;
+import java.util.SortedSet;
+
+/**
+ * Operations for minimizing automata.
+ */
+final public class MinimizationOperations {
+
+	private MinimizationOperations() {}
+
+	/**
+	 * Minimizes (and determinizes if not already deterministic) the given automaton.
+	 * @see Automaton#setMinimization(int)
+	 */
+	public static void minimize(Automaton a) {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">		if (!a.isSingleton()) {</span>
+<span class="fc bfc" id="L54" title="All 4 branches covered.">			switch (Automaton.minimization) {</span>
+			case Automaton.MINIMIZE_HUFFMAN:
+<span class="fc" id="L56">				minimizeHuffman(a);</span>
+<span class="fc" id="L57">				break;</span>
+			case Automaton.MINIMIZE_BRZOZOWSKI:
+<span class="fc" id="L59">				minimizeBrzozowski(a);</span>
+<span class="fc" id="L60">				break;</span>
+			case Automaton.MINIMIZE_VALMARI:
+<span class="fc" id="L62">				minimizeValmari(a);</span>
+<span class="fc" id="L63">				break;</span>
+			default:
+<span class="fc" id="L65">				minimizeHopcroft(a);</span>
+			}
+		}
+<span class="fc" id="L68">		a.recomputeHashCode();</span>
+<span class="fc" id="L69">	}</span>
+	
+	private static boolean statesAgree(Transition[][] transitions, boolean[][] mark, int n1, int n2) {
+<span class="fc" id="L72">		Transition[] t1 = transitions[n1];</span>
+<span class="fc" id="L73">		Transition[] t2 = transitions[n2];</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">		for (int k1 = 0, k2 = 0; k1 &lt; t1.length &amp;&amp; k2 &lt; t2.length;) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">			if (t1[k1].max &lt; t2[k2].min)</span>
+<span class="fc" id="L76">				k1++;</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			else if (t2[k2].max &lt; t1[k1].min)</span>
+<span class="nc" id="L78">				k2++;</span>
+			else {
+<span class="fc" id="L80">				int m1 = t1[k1].to.number;</span>
+<span class="fc" id="L81">				int m2 = t2[k2].to.number;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">				if (m1 &gt; m2) {</span>
+<span class="fc" id="L83">					int t = m1;</span>
+<span class="fc" id="L84">					m1 = m2;</span>
+<span class="fc" id="L85">					m2 = t;</span>
+				}
+<span class="fc bfc" id="L87" title="All 2 branches covered.">				if (mark[m1][m2])</span>
+<span class="fc" id="L88">					return false;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">				if (t1[k1].max &lt; t2[k2].max)</span>
+<span class="fc" id="L90">					k1++;</span>
+				else
+<span class="fc" id="L92">					k2++;</span>
+			}
+		}
+<span class="fc" id="L95">		return true;</span>
+	}
+
+	private static void addTriggers(Transition[][] transitions, ArrayList&lt;ArrayList&lt;HashSet&lt;IntPair&gt;&gt;&gt; triggers, int n1, int n2) {
+<span class="fc" id="L99">		Transition[] t1 = transitions[n1];</span>
+<span class="fc" id="L100">		Transition[] t2 = transitions[n2];</span>
+<span class="pc bpc" id="L101" title="1 of 4 branches missed.">		for (int k1 = 0, k2 = 0; k1 &lt; t1.length &amp;&amp; k2 &lt; t2.length;) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">			if (t1[k1].max &lt; t2[k2].min)</span>
+<span class="fc" id="L103">				k1++;</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">			else if (t2[k2].max &lt; t1[k1].min)</span>
+<span class="nc" id="L105">				k2++;</span>
+			else {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">				if (t1[k1].to != t2[k2].to) {</span>
+<span class="fc" id="L108">					int m1 = t1[k1].to.number;</span>
+<span class="fc" id="L109">					int m2 = t2[k2].to.number;</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">					if (m1 &gt; m2) {</span>
+<span class="fc" id="L111">						int t = m1;</span>
+<span class="fc" id="L112">						m1 = m2;</span>
+<span class="fc" id="L113">						m2 = t;</span>
+					}
+<span class="fc bfc" id="L115" title="All 2 branches covered.">					if (triggers.get(m1).get(m2) == null)</span>
+<span class="fc" id="L116">						triggers.get(m1).set(m2, new HashSet&lt;IntPair&gt;());</span>
+<span class="fc" id="L117">					triggers.get(m1).get(m2).add(new IntPair(n1, n2));</span>
+				}
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				if (t1[k1].max &lt; t2[k2].max)</span>
+<span class="fc" id="L120">					k1++;</span>
+				else
+<span class="fc" id="L122">					k2++;</span>
+			}
+		}
+<span class="fc" id="L125">	}</span>
+
+	private static void markPair(boolean[][] mark, ArrayList&lt;ArrayList&lt;HashSet&lt;IntPair&gt;&gt;&gt; triggers, int n1, int n2) {
+<span class="fc" id="L128">		mark[n1][n2] = true;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (triggers.get(n1).get(n2) != null) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			for (IntPair p : triggers.get(n1).get(n2)) {</span>
+<span class="fc" id="L131">				int m1 = p.n1;</span>
+<span class="fc" id="L132">				int m2 = p.n2;</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">				if (m1 &gt; m2) {</span>
+<span class="nc" id="L134">					int t = m1;</span>
+<span class="nc" id="L135">					m1 = m2;</span>
+<span class="nc" id="L136">					m2 = t;</span>
+				}
+<span class="fc bfc" id="L138" title="All 2 branches covered.">				if (!mark[m1][m2])</span>
+<span class="fc" id="L139">					markPair(mark, triggers, m1, m2);</span>
+			}
+		}
+<span class="fc" id="L142">	}</span>
+
+	private static &lt;T&gt; void initialize(ArrayList&lt;T&gt; list, int size) {
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (int i = 0; i &lt; size; i++)</span>
+<span class="fc" id="L146">			list.add(null);</span>
+<span class="fc" id="L147">	}</span>
+	
+	/** 
+	 * Minimizes the given automaton using Huffman's algorithm. 
+	 */
+	public static void minimizeHuffman(Automaton a) {
+<span class="fc" id="L153">		a.determinize();</span>
+<span class="fc" id="L154">		a.totalize();</span>
+<span class="fc" id="L155">		Set&lt;State&gt; ss = a.getStates();</span>
+<span class="fc" id="L156">		Transition[][] transitions = new Transition[ss.size()][];</span>
+<span class="fc" id="L157">		State[] states = ss.toArray(new State[ss.size()]);</span>
+<span class="fc" id="L158">		boolean[][] mark = new boolean[states.length][states.length];</span>
+<span class="fc" id="L159">		ArrayList&lt;ArrayList&lt;HashSet&lt;IntPair&gt;&gt;&gt; triggers = new ArrayList&lt;ArrayList&lt;HashSet&lt;IntPair&gt;&gt;&gt;();</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		for (int n1 = 0; n1 &lt; states.length; n1++) {</span>
+<span class="fc" id="L161">			ArrayList&lt;HashSet&lt;IntPair&gt;&gt; v = new ArrayList&lt;HashSet&lt;IntPair&gt;&gt;();</span>
+<span class="fc" id="L162">			initialize(v, states.length);</span>
+<span class="fc" id="L163">			triggers.add(v);</span>
+		}
+		// initialize marks based on acceptance status and find transition arrays
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		for (int n1 = 0; n1 &lt; states.length; n1++) {</span>
+<span class="fc" id="L167">			states[n1].number = n1;</span>
+<span class="fc" id="L168">			transitions[n1] = states[n1].getSortedTransitionArray(false);</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">			for (int n2 = n1 + 1; n2 &lt; states.length; n2++)</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">				if (states[n1].accept != states[n2].accept)</span>
+<span class="fc" id="L171">					mark[n1][n2] = true;</span>
+		}
+		// for all pairs, see if states agree
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		for (int n1 = 0; n1 &lt; states.length; n1++)</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">			for (int n2 = n1 + 1; n2 &lt; states.length; n2++)</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">				if (!mark[n1][n2]) {</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">					if (statesAgree(transitions, mark, n1, n2))</span>
+<span class="fc" id="L178">						addTriggers(transitions, triggers, n1, n2);</span>
+					else
+<span class="fc" id="L180">						markPair(mark, triggers, n1, n2);</span>
+				}
+		// assign equivalence class numbers to states
+<span class="fc" id="L183">		int numclasses = 0;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		for (int n = 0; n &lt; states.length; n++)</span>
+<span class="fc" id="L185">			states[n].number = -1;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		for (int n1 = 0; n1 &lt; states.length; n1++)</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">			if (states[n1].number == -1) {</span>
+<span class="fc" id="L188">				states[n1].number = numclasses;</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				for (int n2 = n1 + 1; n2 &lt; states.length; n2++)</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">					if (!mark[n1][n2])</span>
+<span class="fc" id="L191">						states[n2].number = numclasses;</span>
+<span class="fc" id="L192">				numclasses++;</span>
+			}
+		// make a new state for each equivalence class
+<span class="fc" id="L195">		State[] newstates = new State[numclasses];</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		for (int n = 0; n &lt; numclasses; n++)</span>
+<span class="fc" id="L197">			newstates[n] = new State();</span>
+		// select a class representative for each class and find the new initial
+		// state
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		for (int n = 0; n &lt; states.length; n++) {</span>
+<span class="fc" id="L201">			newstates[states[n].number].number = n;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">			if (states[n] == a.initial)</span>
+<span class="fc" id="L203">				a.initial = newstates[states[n].number];</span>
+		}
+		// build transitions and set acceptance
+<span class="fc bfc" id="L206" title="All 2 branches covered.">		for (int n = 0; n &lt; numclasses; n++) {</span>
+<span class="fc" id="L207">			State s = newstates[n];</span>
+<span class="fc" id="L208">			s.accept = states[s.number].accept;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">			for (Transition t : states[s.number].transitions)</span>
+<span class="fc" id="L210">				s.transitions.add(new Transition(t.min, t.max, newstates[t.to.number]));</span>
+		}
+<span class="fc" id="L212">		a.removeDeadTransitions();</span>
+<span class="fc" id="L213">	}</span>
+	
+	/** 
+	 * Minimizes the given automaton using Brzozowski's algorithm. 
+	 */
+	public static void minimizeBrzozowski(Automaton a) {
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (a.isSingleton())</span>
+<span class="nc" id="L220">			return;</span>
+<span class="fc" id="L221">		BasicOperations.determinize(a, SpecialOperations.reverse(a));</span>
+<span class="fc" id="L222">		BasicOperations.determinize(a, SpecialOperations.reverse(a));</span>
+<span class="fc" id="L223">	}</span>
+	
+	/** 
+	 * Minimizes the given automaton using Hopcroft's algorithm. 
+	 */
+	public static void minimizeHopcroft(Automaton a) {
+<span class="fc" id="L229">		a.determinize();</span>
+<span class="fc" id="L230">		Set&lt;Transition&gt; tr = a.initial.getTransitions();</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">		if (tr.size() == 1) {</span>
+<span class="fc" id="L232">			Transition t = tr.iterator().next();</span>
+<span class="pc bpc" id="L233" title="5 of 6 branches missed.">			if (t.to == a.initial &amp;&amp; t.min == Character.MIN_VALUE &amp;&amp; t.max == Character.MAX_VALUE)</span>
+<span class="nc" id="L234">				return;</span>
+		}
+<span class="fc" id="L236">		a.totalize();</span>
+		// make arrays for numbered states and effective alphabet
+<span class="fc" id="L238">		Set&lt;State&gt; ss = a.getStates();</span>
+<span class="fc" id="L239">		State[] states = new State[ss.size()];</span>
+<span class="fc" id="L240">		int number = 0;</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">		for (State q : ss) {</span>
+<span class="fc" id="L242">			states[number] = q;</span>
+<span class="fc" id="L243">			q.number = number++;</span>
+		}
+<span class="fc" id="L245">		char[] sigma = a.getStartPoints();</span>
+		// initialize data structures
+<span class="fc" id="L247">		ArrayList&lt;ArrayList&lt;LinkedList&lt;State&gt;&gt;&gt; reverse = new ArrayList&lt;ArrayList&lt;LinkedList&lt;State&gt;&gt;&gt;();</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">		for (int q = 0; q &lt; states.length; q++) {</span>
+<span class="fc" id="L249">			ArrayList&lt;LinkedList&lt;State&gt;&gt; v = new ArrayList&lt;LinkedList&lt;State&gt;&gt;();</span>
+<span class="fc" id="L250">			initialize(v, sigma.length);</span>
+<span class="fc" id="L251">			reverse.add(v);</span>
+		}
+<span class="fc" id="L253">		boolean[][] reverse_nonempty = new boolean[states.length][sigma.length];</span>
+<span class="fc" id="L254">		ArrayList&lt;LinkedList&lt;State&gt;&gt; partition = new ArrayList&lt;LinkedList&lt;State&gt;&gt;();</span>
+<span class="fc" id="L255">		initialize(partition, states.length);</span>
+<span class="fc" id="L256">		int[] block = new int[states.length];</span>
+<span class="fc" id="L257">		StateList[][] active = new StateList[states.length][sigma.length];</span>
+<span class="fc" id="L258">		StateListNode[][] active2 = new StateListNode[states.length][sigma.length];</span>
+<span class="fc" id="L259">		LinkedList&lt;IntPair&gt; pending = new LinkedList&lt;IntPair&gt;();</span>
+<span class="fc" id="L260">		boolean[][] pending2 = new boolean[sigma.length][states.length];</span>
+<span class="fc" id="L261">		ArrayList&lt;State&gt; split = new ArrayList&lt;State&gt;();</span>
+<span class="fc" id="L262">		boolean[] split2 = new boolean[states.length];</span>
+<span class="fc" id="L263">		ArrayList&lt;Integer&gt; refine = new ArrayList&lt;Integer&gt;();</span>
+<span class="fc" id="L264">		boolean[] refine2 = new boolean[states.length];</span>
+<span class="fc" id="L265">		ArrayList&lt;ArrayList&lt;State&gt;&gt; splitblock = new ArrayList&lt;ArrayList&lt;State&gt;&gt;();</span>
+<span class="fc" id="L266">		initialize(splitblock, states.length);</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">		for (int q = 0; q &lt; states.length; q++) {</span>
+<span class="fc" id="L268">			splitblock.set(q, new ArrayList&lt;State&gt;());</span>
+<span class="fc" id="L269">			partition.set(q, new LinkedList&lt;State&gt;());</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">			for (int x = 0; x &lt; sigma.length; x++) {</span>
+<span class="fc" id="L271">				reverse.get(q).set(x, new LinkedList&lt;State&gt;());</span>
+<span class="fc" id="L272">				active[q][x] = new StateList();</span>
+			}
+		}
+		// find initial partition and reverse edges
+<span class="fc bfc" id="L276" title="All 2 branches covered.">		for (int q = 0; q &lt; states.length; q++) {</span>
+<span class="fc" id="L277">			State qq = states[q];</span>
+			int j;
+<span class="fc bfc" id="L279" title="All 2 branches covered.">			if (qq.accept)</span>
+<span class="fc" id="L280">				j = 0;</span>
+			else
+<span class="fc" id="L282">				j = 1;</span>
+<span class="fc" id="L283">			partition.get(j).add(qq);</span>
+<span class="fc" id="L284">			block[qq.number] = j;</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">			for (int x = 0; x &lt; sigma.length; x++) {</span>
+<span class="fc" id="L286">				char y = sigma[x];</span>
+<span class="fc" id="L287">				State p = qq.step(y);</span>
+<span class="fc" id="L288">				reverse.get(p.number).get(x).add(qq);</span>
+<span class="fc" id="L289">				reverse_nonempty[p.number][x] = true;</span>
+			}
+		}
+		// initialize active sets
+<span class="fc bfc" id="L293" title="All 2 branches covered.">		for (int j = 0; j &lt;= 1; j++)</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">			for (int x = 0; x &lt; sigma.length; x++)</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">				for (State qq : partition.get(j))</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">					if (reverse_nonempty[qq.number][x])</span>
+<span class="fc" id="L297">						active2[qq.number][x] = active[j][x].add(qq);</span>
+		// initialize pending
+<span class="fc bfc" id="L299" title="All 2 branches covered.">		for (int x = 0; x &lt; sigma.length; x++) {</span>
+<span class="fc" id="L300">			int a0 = active[0][x].size;</span>
+<span class="fc" id="L301">			int a1 = active[1][x].size;</span>
+			int j;
+<span class="fc bfc" id="L303" title="All 2 branches covered.">			if (a0 &lt;= a1)</span>
+<span class="fc" id="L304">				j = 0;</span>
+			else
+<span class="fc" id="L306">				j = 1;</span>
+<span class="fc" id="L307">			pending.add(new IntPair(j, x));</span>
+<span class="fc" id="L308">			pending2[x][j] = true;</span>
+		}
+		// process pending until fixed point
+<span class="fc" id="L311">		int k = 2;</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">		while (!pending.isEmpty()) {</span>
+<span class="fc" id="L313">			IntPair ip = pending.removeFirst();</span>
+<span class="fc" id="L314">			int p = ip.n1;</span>
+<span class="fc" id="L315">			int x = ip.n2;</span>
+<span class="fc" id="L316">			pending2[x][p] = false;</span>
+			// find states that need to be split off their blocks
+<span class="fc bfc" id="L318" title="All 2 branches covered.">			for (StateListNode m = active[p][x].first; m != null; m = m.next)</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">				for (State s : reverse.get(m.q.number).get(x))</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">					if (!split2[s.number]) {</span>
+<span class="fc" id="L321">						split2[s.number] = true;</span>
+<span class="fc" id="L322">						split.add(s);</span>
+<span class="fc" id="L323">						int j = block[s.number];</span>
+<span class="fc" id="L324">						splitblock.get(j).add(s);</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">						if (!refine2[j]) {</span>
+<span class="fc" id="L326">							refine2[j] = true;</span>
+<span class="fc" id="L327">							refine.add(j);</span>
+						}
+					}
+			// refine blocks
+<span class="fc bfc" id="L331" title="All 2 branches covered.">			for (int j : refine) {</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">				if (splitblock.get(j).size() &lt; partition.get(j).size()) {</span>
+<span class="fc" id="L333">					LinkedList&lt;State&gt; b1 = partition.get(j);</span>
+<span class="fc" id="L334">					LinkedList&lt;State&gt; b2 = partition.get(k);</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">					for (State s : splitblock.get(j)) {</span>
+<span class="fc" id="L336">						b1.remove(s);</span>
+<span class="fc" id="L337">						b2.add(s);</span>
+<span class="fc" id="L338">						block[s.number] = k;</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">						for (int c = 0; c &lt; sigma.length; c++) {</span>
+<span class="fc" id="L340">							StateListNode sn = active2[s.number][c];</span>
+<span class="pc bpc" id="L341" title="1 of 4 branches missed.">							if (sn != null &amp;&amp; sn.sl == active[j][c]) {</span>
+<span class="fc" id="L342">								sn.remove();</span>
+<span class="fc" id="L343">								active2[s.number][c] = active[k][c].add(s);</span>
+							}
+						}
+					}
+					// update pending
+<span class="fc bfc" id="L348" title="All 2 branches covered.">					for (int c = 0; c &lt; sigma.length; c++) {</span>
+<span class="fc" id="L349">						int aj = active[j][c].size;</span>
+<span class="fc" id="L350">						int ak = active[k][c].size;</span>
+<span class="fc bfc" id="L351" title="All 6 branches covered.">						if (!pending2[c][j] &amp;&amp; 0 &lt; aj &amp;&amp; aj &lt;= ak) {</span>
+<span class="fc" id="L352">							pending2[c][j] = true;</span>
+<span class="fc" id="L353">							pending.add(new IntPair(j, c));</span>
+<span class="fc" id="L354">						} else {</span>
+<span class="fc" id="L355">							pending2[c][k] = true;</span>
+<span class="fc" id="L356">							pending.add(new IntPair(k, c));</span>
+						}
+					}
+<span class="fc" id="L359">					k++;</span>
+				}
+<span class="fc bfc" id="L361" title="All 2 branches covered.">				for (State s : splitblock.get(j))</span>
+<span class="fc" id="L362">					split2[s.number] = false;</span>
+<span class="fc" id="L363">				refine2[j] = false;</span>
+<span class="fc" id="L364">				splitblock.get(j).clear();</span>
+			}
+<span class="fc" id="L366">			split.clear();</span>
+<span class="fc" id="L367">			refine.clear();</span>
+		}
+		// make a new state for each equivalence class, set initial state
+<span class="fc" id="L370">		State[] newstates = new State[k];</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">		for (int n = 0; n &lt; newstates.length; n++) {</span>
+<span class="fc" id="L372">			State s = new State();</span>
+<span class="fc" id="L373">			newstates[n] = s;</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">			for (State q : partition.get(n)) {</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">				if (q == a.initial)</span>
+<span class="fc" id="L376">					a.initial = s;</span>
+<span class="fc" id="L377">				s.accept = q.accept;</span>
+<span class="fc" id="L378">				s.number = q.number; // select representative</span>
+<span class="fc" id="L379">				q.number = n;</span>
+			}
+		}
+		// build transitions and set acceptance
+<span class="fc bfc" id="L383" title="All 2 branches covered.">		for (int n = 0; n &lt; newstates.length; n++) {</span>
+<span class="fc" id="L384">			State s = newstates[n];</span>
+<span class="fc" id="L385">			s.accept = states[s.number].accept;</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">			for (Transition t : states[s.number].transitions)</span>
+<span class="fc" id="L387">				s.transitions.add(new Transition(t.min, t.max, newstates[t.to.number]));</span>
+		}
+<span class="fc" id="L389">		a.removeDeadTransitions();</span>
+<span class="fc" id="L390">	}</span>
+
+	/**
+	 * Minimizes the given automaton using Valmari's algorithm.
+	 */
+	public static void minimizeValmari(Automaton automaton) {
+<span class="fc" id="L396">		automaton.determinize();</span>
+<span class="fc" id="L397">		Set&lt;State&gt; states = automaton.getStates();</span>
+<span class="fc" id="L398">		splitTransitions(states);</span>
+<span class="fc" id="L399">		int stateCount = states.size();</span>
+<span class="fc" id="L400">		int transitionCount = automaton.getNumberOfTransitions();</span>
+<span class="fc" id="L401">		Set&lt;State&gt; acceptStates = automaton.getAcceptStates();</span>
+<span class="fc" id="L402">		Partition blocks = new Partition(stateCount);</span>
+<span class="fc" id="L403">		Partition cords = new Partition(transitionCount);</span>
+<span class="fc" id="L404">		IntPair[] labels = new IntPair[transitionCount];</span>
+<span class="fc" id="L405">		int[] tails = new int[transitionCount];</span>
+<span class="fc" id="L406">		int[] heads = new int[transitionCount];</span>
+		// split transitions in 'heads', 'labels', and 'tails'
+<span class="fc" id="L408">		Automaton.setStateNumbers(states);</span>
+<span class="fc" id="L409">		int number = 0;</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">		for (State s : automaton.getStates()) {</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">			for (Transition t : s.getTransitions()) {</span>
+<span class="fc" id="L412">				tails[number] = s.number;</span>
+<span class="fc" id="L413">				labels[number] = new IntPair(t.min, t.max);</span>
+<span class="fc" id="L414">				heads[number] = t.getDest().number;</span>
+<span class="fc" id="L415">				number++;</span>
+			}
+		}
+		// make initial block partition
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		for (State s : acceptStates)</span>
+<span class="fc" id="L420">			blocks.mark(s.number);</span>
+<span class="fc" id="L421">		blocks.split();</span>
+		// make initial transition partition
+<span class="fc bfc" id="L423" title="All 2 branches covered.">		if (transitionCount &gt; 0) {</span>
+<span class="fc" id="L424">			Arrays.sort(cords.elements, new LabelComparator(labels));</span>
+<span class="fc" id="L425">			cords.setCount = cords.markedElementCount[0] = 0;</span>
+<span class="fc" id="L426">			IntPair a = labels[cords.elements[0]];</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">			for (int i = 0; i &lt; transitionCount; ++i) {</span>
+<span class="fc" id="L428">				int t = cords.elements[i];</span>
+<span class="pc bpc" id="L429" title="1 of 4 branches missed.">				if (labels[t].n1 != a.n1 || labels[t].n2 != a.n2) {</span>
+<span class="fc" id="L430">					a = labels[t];</span>
+<span class="fc" id="L431">					cords.past[cords.setCount++] = i;</span>
+<span class="fc" id="L432">					cords.first[cords.setCount] = i;</span>
+<span class="fc" id="L433">					cords.markedElementCount[cords.setCount] = 0;</span>
+				}
+<span class="fc" id="L435">				cords.setNo[t] = cords.setCount;</span>
+<span class="fc" id="L436">				cords.locations[t] = i;</span>
+			}
+<span class="fc" id="L438">			cords.past[cords.setCount++] = transitionCount;</span>
+		}
+		// split blocks and cords
+<span class="fc" id="L441">		int[] A = new int[transitionCount];</span>
+<span class="fc" id="L442">		int[] F = new int[stateCount+1];</span>
+<span class="fc" id="L443">		makeAdjacent(A, F, heads, stateCount, transitionCount);</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">		for (int c = 0; c &lt; cords.setCount; ++c) {</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">			for (int i = cords.first[c]; i &lt; cords.past[c]; ++i)</span>
+<span class="fc" id="L446">				blocks.mark(tails[cords.elements[i]]);</span>
+<span class="fc" id="L447">			blocks.split();</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">			for (int b = 1; b &lt; blocks.setCount; ++b) {</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">				for (int i = blocks.first[b]; i &lt; blocks.past[b]; ++i) {</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">					for (int j = F[blocks.elements[i]]; j &lt; F[blocks.elements[i] + 1]; ++j) {</span>
+<span class="fc" id="L451">						cords.mark(A[j]);</span>
+					}
+				}
+<span class="fc" id="L454">				cords.split();</span>
+			}
+		}
+		// build states and acceptance states
+<span class="fc" id="L458">		State[] newStates = new State[blocks.setCount];</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">		for (int bl = 0; bl &lt; blocks.setCount; ++bl) {</span>
+<span class="fc" id="L460">			newStates[bl] = new State();</span>
+<span class="fc bfc" id="L461" title="All 2 branches covered.">			if (blocks.first[bl] &lt; acceptStates.size())</span>
+<span class="fc" id="L462">				newStates[bl].accept = true;</span>
+		}
+		// build transitions
+<span class="fc bfc" id="L465" title="All 2 branches covered.">		for (int t = 0; t &lt; transitionCount; ++t) {</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">			if (blocks.locations[tails[t]] == blocks.first[blocks.setNo[tails[t]]]) {</span>
+<span class="fc" id="L467">				State tail = newStates[blocks.setNo[tails[t]]];</span>
+<span class="fc" id="L468">				State head = newStates[blocks.setNo[heads[t]]];</span>
+<span class="fc" id="L469">				tail.addTransition(new Transition((char)labels[t].n1, (char)labels[t].n2, head));</span>
+			}
+		}
+<span class="fc" id="L472">		automaton.setInitialState(newStates[blocks.setNo[automaton.getInitialState().number]]);</span>
+<span class="fc" id="L473">		automaton.reduce();</span>
+<span class="fc" id="L474">	}</span>
+
+	private static void makeAdjacent(int[] A, int[] F, int[] K, int nn, int mm) {
+<span class="fc bfc" id="L477" title="All 2 branches covered.">		for (int q=0; q &lt;= nn; ++q)</span>
+<span class="fc" id="L478">			F[q] = 0;</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">		for (int t=0; t &lt; mm; ++t)</span>
+<span class="fc" id="L480">			++F[K[t]];</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">		for (int q=0; q &lt; nn; ++q)</span>
+<span class="fc" id="L482">			F[q+1] += F[q];</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">		for (int t = mm; t-- &gt; 0;)</span>
+<span class="fc" id="L484">			A[--F[K[t]]] = t;</span>
+<span class="fc" id="L485">	}</span>
+
+	private static void splitTransitions(Set&lt;State&gt; states) {
+<span class="fc" id="L488">		TreeSet&lt;Character&gt; pointSet = new TreeSet&lt;Character&gt;();</span>
+<span class="fc bfc" id="L489" title="All 2 branches covered.">		for (State s : states) {</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">			for (Transition t : s.getTransitions()) {</span>
+<span class="fc" id="L491">				pointSet.add(t.min);</span>
+<span class="fc" id="L492">				pointSet.add(t.max);</span>
+			}
+		}
+<span class="fc bfc" id="L495" title="All 2 branches covered.">		for (State s : states) {</span>
+<span class="fc" id="L496">			Set&lt;Transition&gt; transitions = s.getTransitions();</span>
+<span class="fc" id="L497">			s.resetTransitions();</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">			for (Transition t : transitions) {</span>
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">				if (t.min == t.max) {</span>
+<span class="nc" id="L500">					s.addTransition(t);</span>
+<span class="nc" id="L501">					continue;</span>
+				}
+<span class="fc" id="L503">				SortedSet&lt;Character&gt; headSet = pointSet.headSet(t.max, true);</span>
+<span class="fc" id="L504">				SortedSet&lt;Character&gt; tailSet = pointSet.tailSet(t.min, false);</span>
+<span class="fc" id="L505">				SortedSet&lt;Character&gt; intersection = new TreeSet&lt;Character&gt;(headSet);</span>
+<span class="fc" id="L506">				intersection.retainAll(tailSet);</span>
+<span class="fc" id="L507">				char start = t.min;</span>
+<span class="fc bfc" id="L508" title="All 2 branches covered.">				for (Character c : intersection) {</span>
+<span class="fc" id="L509">					s.addTransition(new Transition(start, t.to));</span>
+<span class="fc" id="L510">					s.addTransition(new Transition(c, t.to));</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">					if (c - start &gt; 1)</span>
+<span class="fc" id="L512">						s.addTransition(new Transition((char) (start + 1), (char) (c - 1), t.to));</span>
+<span class="fc" id="L513">					start = c;</span>
+				}
+			}
+		}
+<span class="fc" id="L517">	}</span>
+	
+	static class IntPair {
+
+		int n1, n2;
+
+<span class="fc" id="L523">		IntPair(int n1, int n2) {</span>
+<span class="fc" id="L524">			this.n1 = n1;</span>
+<span class="fc" id="L525">			this.n2 = n2;</span>
+<span class="fc" id="L526">		}</span>
+	}
+
+<span class="fc" id="L529">	static class StateList {</span>
+		
+		int size;
+
+		StateListNode first, last;
+
+		StateListNode add(State q) {
+<span class="fc" id="L536">			return new StateListNode(q, this);</span>
+		}
+	}
+
+	static class StateListNode {
+		
+		State q;
+
+		StateListNode next, prev;
+
+		StateList sl;
+
+<span class="fc" id="L548">		StateListNode(State q, StateList sl) {</span>
+<span class="fc" id="L549">			this.q = q;</span>
+<span class="fc" id="L550">			this.sl = sl;</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">			if (sl.size++ == 0)</span>
+<span class="fc" id="L552">				sl.first = sl.last = this;</span>
+			else {
+<span class="fc" id="L554">				sl.last.next = this;</span>
+<span class="fc" id="L555">				prev = sl.last;</span>
+<span class="fc" id="L556">				sl.last = this;</span>
+			}
+<span class="fc" id="L558">		}</span>
+
+		void remove() {
+<span class="fc" id="L561">			sl.size--;</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">			if (sl.first == this)</span>
+<span class="fc" id="L563">				sl.first = next;</span>
+			else
+<span class="fc" id="L565">				prev.next = next;</span>
+<span class="fc bfc" id="L566" title="All 2 branches covered.">			if (sl.last == this)</span>
+<span class="fc" id="L567">				sl.last = prev;</span>
+			else
+<span class="fc" id="L569">				next.prev = prev;</span>
+<span class="fc" id="L570">		}</span>
+	}
+
+	static class Partition {
+
+		int[] markedElementCount; // number of marked elements in set
+		int[] touchedSets; // sets with marked elements
+		int touchedSetCount; // number of sets with marked elements
+
+		int setCount;   // number of sets
+		Integer[] elements; // elements, i.e s = { elements[first[s]], elements[first[s] + 1], ..., elements[past[s]-1] }
+		int[] locations; // location of element i in elements
+		int[] setNo; // the set number element i belongs to
+		int[] first; // &quot;first&quot;: start index of set
+		int[] past; // &quot;past&quot;: end index of set
+
+<span class="fc" id="L586">		Partition (int size) {</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">			setCount = (size == 0) ? 0 : 1;</span>
+<span class="fc" id="L588">			elements = new Integer[size];</span>
+<span class="fc" id="L589">			locations = new int[size];</span>
+<span class="fc" id="L590">			setNo = new int[size];</span>
+<span class="fc" id="L591">			first = new int[size];</span>
+<span class="fc" id="L592">			past = new int[size];</span>
+<span class="fc" id="L593">			markedElementCount = new int[size];</span>
+<span class="fc" id="L594">			touchedSets = new int[size];</span>
+<span class="fc bfc" id="L595" title="All 2 branches covered.">			for (int i = 0; i &lt; size; ++i) {</span>
+<span class="fc" id="L596">				elements[i] = locations[i] = i;</span>
+<span class="fc" id="L597">				setNo[i] = 0;</span>
+			}
+<span class="fc bfc" id="L599" title="All 2 branches covered.">			if (setCount != 0) {</span>
+<span class="fc" id="L600">				first[0] = 0;</span>
+<span class="fc" id="L601">				past[0] = size;</span>
+			}
+<span class="fc" id="L603">		}</span>
+
+		void mark(int e) {
+<span class="fc" id="L606">			int s = setNo[e];</span>
+<span class="fc" id="L607">			int i = locations[e];</span>
+<span class="fc" id="L608">			int j = first[s] + markedElementCount[s];</span>
+<span class="fc" id="L609">			elements[i] = elements[j];</span>
+<span class="fc" id="L610">			locations[elements[i]] = i;</span>
+<span class="fc" id="L611">			elements[j] = e;</span>
+<span class="fc" id="L612">			locations[e] = j;</span>
+<span class="fc bfc" id="L613" title="All 2 branches covered.">			if (markedElementCount[s]++ == 0)</span>
+<span class="fc" id="L614">				touchedSets[touchedSetCount++] = s;</span>
+<span class="fc" id="L615">		}</span>
+
+		void split() {
+<span class="fc bfc" id="L618" title="All 2 branches covered.">			while (touchedSetCount &gt; 0) {</span>
+<span class="fc" id="L619">				int s = touchedSets[--touchedSetCount];</span>
+<span class="fc" id="L620">				int j = first[s] + markedElementCount[s];</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">				if (j == past[s]) {</span>
+<span class="fc" id="L622">					markedElementCount[s] = 0;</span>
+<span class="fc" id="L623">					continue;</span>
+				}
+				// choose the smaller of the marked and unmarked part, and make it a new set
+<span class="fc bfc" id="L626" title="All 2 branches covered.">				if (markedElementCount[s] &lt;= past[s]-j) {</span>
+<span class="fc" id="L627">					first[setCount] = first[s];</span>
+<span class="fc" id="L628">					past[setCount] = first[s] = j;</span>
+<span class="fc" id="L629">				} else {</span>
+<span class="fc" id="L630">					past[setCount] = past[s];</span>
+<span class="fc" id="L631">					first[setCount] = past[s] = j;</span>
+				}
+<span class="fc bfc" id="L633" title="All 2 branches covered.">				for (int i = first[setCount]; i &lt; past[setCount]; ++i)</span>
+<span class="fc" id="L634">					setNo[elements[i]] = setCount;</span>
+<span class="fc" id="L635">				markedElementCount[s] = markedElementCount[setCount++] = 0;</span>
+			}
+<span class="fc" id="L637">		}</span>
+	}
+
+	static class LabelComparator implements Comparator&lt;Integer&gt; {
+
+		private IntPair[] labels;
+
+<span class="fc" id="L644">		LabelComparator(IntPair[] labels) {</span>
+<span class="fc" id="L645">			this.labels = labels;</span>
+<span class="fc" id="L646">		}</span>
+
+		public int compare(Integer i, Integer j) {
+<span class="fc" id="L649">			IntPair p1 = labels[i];</span>
+<span class="fc" id="L650">			IntPair p2 = labels[j];</span>
+<span class="fc bfc" id="L651" title="All 2 branches covered.">			if (p1.n1 &lt; p2.n1)</span>
+<span class="fc" id="L652">				return -1;</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">			if (p1.n1 &gt; p2.n1)</span>
+<span class="fc" id="L654">				return 1;</span>
+<span class="pc bpc" id="L655" title="1 of 2 branches missed.">			if (p1.n2 &lt; p2.n2)</span>
+<span class="nc" id="L656">				return -1;</span>
+<span class="pc bpc" id="L657" title="1 of 2 branches missed.">			if (p1.n2 &gt; p2.n2)</span>
+<span class="nc" id="L658">				return 1;</span>
+<span class="fc" id="L659">			return 0;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

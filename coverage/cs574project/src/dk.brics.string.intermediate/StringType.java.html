@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>StringType.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate</a> &gt; <span class="el_source">StringType.java</span></div><h1>StringType.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate;
+
+/**
+ * Denotes the type of a string-related object.
+ *  
+ * @author Asger
+ *
+ */
+<span class="nc" id="L9">public enum StringType {</span>
+<span class="nc" id="L10">    /**</span>
+     * A single immutable string.
+     * &lt;p/&gt;
+     * In Java, this corresponds to the &lt;tt&gt;java.lang.String&lt;/tt&gt; class.
+     */
+<span class="nc" id="L15">    IMMUTABLE(0x1),</span>
+    
+<span class="nc" id="L17">    /**</span>
+     * A single mutable string.
+     * &lt;p/&gt;
+     * In Java, this corresponds to the &lt;tt&gt;java.lang.StringBuffer&lt;/tt&gt; and &lt;tt&gt;java.lang.StringBuilder&lt;/tt&gt;
+     * classes.
+     */
+<span class="nc" id="L23">    MUTABLE(0x2),</span>
+    
+<span class="nc" id="L25">    /**</span>
+     * A mutable collection of immutable strings.
+     * &lt;p/&gt;
+     * In Java, this corresponds to string-arrays and classes from the collections framework, such as &lt;tt&gt;ArrayList&amp;lt;String&amp;gt;&lt;/tt&gt;.
+     */
+<span class="nc" id="L30">    COLLECTION(0x4),</span>
+    
+<span class="nc" id="L32">    /**</span>
+     * An object not being modelled as a string.
+     * &lt;p/&gt;
+     * In Java, this is anything not treated as either of the other types.
+     */
+<span class="nc" id="L37">    USELESS(0x8),</span>
+    ;
+    
+    private int bitmask;
+    
+<span class="nc" id="L42">    private StringType(int index) {</span>
+<span class="nc" id="L43">        this.bitmask = index;</span>
+<span class="nc" id="L44">    }</span>
+    
+    /**
+     * Returns a bitmask unique for this string-type, with exactly one 1-bit.
+     * @return a bitmask with a single 1-bit
+     */
+    public int getBitmask() {
+<span class="nc" id="L51">        return bitmask;</span>
+    }
+    
+    /**
+     * Returns &lt;tt&gt;true&lt;/tt&gt; if this is {@link #MUTABLE} or {@link #COLLECTION}.
+     */
+    public boolean isModifiable() {
+<span class="nc bnc" id="L58" title="All 4 branches missed.">        return this == MUTABLE || this == COLLECTION;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

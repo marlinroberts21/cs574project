@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Insert.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">Insert.java</span></div><h1>Insert.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.string.charset.CharSet;
+
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Automaton operation for {@link StringBuffer#insert(int,Object)} and related methods.
+ */
+public class Insert extends BinaryOperation {
+
+    /**
+     * Constructs new operation object.
+     */
+<span class="fc" id="L19">    public Insert() {</span>
+<span class="fc" id="L20">    }</span>
+
+    /**
+     * Automaton operation.
+     * Constructs new automaton as two copies, &lt;i&gt;a1&lt;/i&gt; and &lt;i&gt;a2&lt;/i&gt;, of &lt;tt&gt;a&lt;/tt&gt; and
+     * one copy, &lt;i&gt;b&lt;/i&gt;, of &lt;tt&gt;b&lt;/tt&gt;.  The initial state is the one from &lt;i&gt;a1&lt;/i&gt;, the accept states
+     * are those in &lt;i&gt;a2&lt;/i&gt;. Epsilon transitions are added from each state in &lt;i&gt;a1&lt;/i&gt; to the
+     * initial state in &lt;i&gt;b&lt;/i&gt; and from each accept state in &lt;i&gt;b&lt;/i&gt; to each state in &lt;i&gt;a2&lt;/i&gt;.
+     *
+     * @param a first input automaton
+     * @param b second input automaton
+     * @return resulting automaton
+     */
+    @Override
+    public Automaton op(Automaton a, Automaton b) {
+<span class="fc" id="L35">        return pop(a, b);</span>
+    }
+
+    static Automaton pop(Automaton a, Automaton b) {
+<span class="fc" id="L39">        Automaton a1 = a.clone();</span>
+<span class="fc" id="L40">        Automaton a2 = a.clone();</span>
+<span class="fc" id="L41">        Automaton bb = b.clone();</span>
+<span class="fc" id="L42">        Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (State s : a1.getStates()) {</span>
+<span class="fc" id="L44">            s.setAccept(false);</span>
+<span class="fc" id="L45">            epsilons.add(new StatePair(s, bb.getInitialState()));</span>
+        }
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (State s : bb.getAcceptStates()) {</span>
+<span class="fc" id="L48">            s.setAccept(false);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            for (State p : a2.getStates()) {</span>
+<span class="fc" id="L50">                epsilons.add(new StatePair(s, p));</span>
+            }
+        }
+<span class="fc" id="L53">        a1.addEpsilons(epsilons);</span>
+<span class="pc" id="L54">        a1.minimize();</span>
+<span class="fc" id="L55">        return a1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L60">        return &quot;insert&quot;;</span>
+    }
+
+    @Override
+    public int getPriority() {
+<span class="nc" id="L65">        return 8;</span>
+    }
+
+    @Override
+    public CharSet charsetTransfer(CharSet a1, CharSet a2) {
+<span class="nc" id="L70">        return a1.union(a2);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L75">        return getClass().hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L80">        return obj instanceof Insert;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

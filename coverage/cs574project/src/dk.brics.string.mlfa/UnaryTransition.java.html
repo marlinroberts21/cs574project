@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>UnaryTransition.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.mlfa</a> &gt; <span class="el_source">UnaryTransition.java</span></div><h1>UnaryTransition.java</h1><pre class="source lang-java linenums">package dk.brics.string.mlfa;
+
+import dk.brics.string.stringoperations.UnaryOperation;
+
+/**
+ * Unary operation transition.
+ */
+public class UnaryTransition extends MLFATransition {
+
+    private UnaryOperation op;
+
+    private MLFAState s, f;
+
+    /**
+     * Constructs a new unary transition.
+     */
+<span class="nc" id="L17">    UnaryTransition(UnaryOperation op, MLFAState s, MLFAState f) {</span>
+<span class="nc" id="L18">        this.op = op;</span>
+<span class="nc" id="L19">        this.s = s;</span>
+<span class="nc" id="L20">        this.f = f;</span>
+<span class="nc" id="L21">    }</span>
+
+    /**
+     * Returns the unary operation.
+     */
+    public UnaryOperation getOperation() {
+<span class="nc" id="L27">        return op;</span>
+    }
+
+    /**
+     * Returns the start state.
+     */
+    public MLFAState getStartState() {
+<span class="nc" id="L34">        return s;</span>
+    }
+
+    /**
+     * Returns the final state.
+     */
+    public MLFAState getFinalState() {
+<span class="nc" id="L41">        return f;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L46">        return op + &quot;(&quot; + s + &quot;,&quot; + f + &quot;)&quot;;</span>
+    }
+
+    @Override
+    public &lt;T&gt; T visitBy(TransitionVisitor&lt;T&gt; v) {
+<span class="nc" id="L51">        return v.visitUnaryTransition(this);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Intermediate2Dot.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">Intermediate2Dot.java</span></div><h1>Intermediate2Dot.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Set;
+
+import dk.brics.string.Misc;
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.ExceptionalReturn;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.Variable;
+
+/**
+ * Constructs Graphviz dot representation of intermediate representation.
+ */
+public class Intermediate2Dot {
+
+    private Intermediate2Dot() {
+    }
+    
+    public static String convert(Collection&lt;? extends Method&gt; methods, ReachingDefinitions rd, AliasAnalysis aa, OperationAssertionAnalysis ass, Set&lt;Statement&gt; hotspots) {
+<span class="nc" id="L23">    	StringBuilder s = new StringBuilder();</span>
+<span class="nc" id="L24">        s.append(&quot;digraph IntermediateRepresentation {\n&quot;);</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        for (Method method : methods) {</span>
+<span class="nc" id="L26">            convertMethod(method, s, rd, aa, ass, hotspots);</span>
+        }
+<span class="nc" id="L28">        s.append(&quot;}\n&quot;);</span>
+<span class="nc" id="L29">        return s.toString();</span>
+    }
+    
+    /**
+     * Converts the given application.
+     */
+    public static String convert(Application app, ReachingDefinitions rd, AliasAnalysis aa, OperationAssertionAnalysis ass, Set&lt;Statement&gt; hotspots) {
+<span class="nc" id="L36">        return convert(app.getMethods(), rd, aa, ass, hotspots);</span>
+    }
+    
+    /**
+     * Converts the given application.
+     */
+    public static String convert(Application app, ReachingDefinitions rd, AliasAnalysis aa, Set&lt;Statement&gt; hotspots) {
+<span class="nc" id="L43">        return convert(app.getMethods(), rd, aa, null, hotspots);</span>
+    }
+
+    private static void convertMethod(Method m, StringBuilder s, ReachingDefinitions rd, AliasAnalysis aa, OperationAssertionAnalysis ass, Set&lt;Statement&gt; hotspots) {
+<span class="nc" id="L47">        s.append(&quot;  subgraph cluster&quot; + m.toString() + &quot; {\n&quot;);</span>
+<span class="nc" id="L48">        ToStringVisitor tsv = new ToStringVisitor(ass);</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        for (Statement t : m.getStatements()) {</span>
+<span class="nc" id="L50">            t.visitBy(tsv);</span>
+<span class="nc" id="L51">            s.append(&quot;    &quot; + m.toString() + 'S' + t.getIndex());</span>
+<span class="nc" id="L52">            s.append(&quot; [label=\&quot;&quot; + Misc.escape(aa.getInfoBefore(t).toString()) + &quot;\\n&quot; + Misc.escape(tsv.result) + &quot;\&quot;&quot;);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (hotspots.contains(t)) {</span>
+<span class="nc" id="L54">                s.append(&quot;,style=bold&quot;);</span>
+            }
+<span class="nc" id="L56">            s.append(&quot;]\n&quot;);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            for (Statement u : t.getSuccs()) {</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">                if (u instanceof ExceptionalReturn)</span>
+<span class="nc" id="L59">                    continue; // exceptional edges will flood the diagram</span>
+<span class="nc" id="L60">                s.append(&quot;    &quot; + m.toString() + 'S' + t.getIndex() +</span>
+<span class="nc" id="L61">                        &quot; -&gt; &quot; + m.toString() + 'S' + u.getIndex() + '\n');</span>
+            }
+<span class="nc" id="L63">            UsesVisitor uv = new UsesVisitor();</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            for (Variable v : uv.usedVars(t)) {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                for (Statement r : rd.getReachingDefs(t, v)) {</span>
+<span class="nc" id="L66">                    s.append(&quot;    &quot; + r.getMethod() + 'S' + r.getIndex() +</span>
+<span class="nc" id="L67">                            &quot; -&gt; &quot; + m.toString() + 'S' + t.getIndex() +</span>
+<span class="nc" id="L68">                            &quot; [style=dashed,label=\&quot;&quot; + v + &quot;\&quot;]\n&quot;);</span>
+                }
+            }
+        }
+<span class="nc" id="L72">        s.append(&quot;    label=\&quot;&quot; + Misc.escape(m.getName() + Arrays.toString(m.getParamAlias())));//</span>
+<span class="nc" id="L73">        s.append(&quot;\&quot;\n  }\n&quot;);</span>
+<span class="nc" id="L74">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

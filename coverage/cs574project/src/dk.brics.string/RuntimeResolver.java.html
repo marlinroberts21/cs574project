@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>RuntimeResolver.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string</a> &gt; <span class="el_source">RuntimeResolver.java</span></div><h1>RuntimeResolver.java</h1><pre class="source lang-java linenums">package dk.brics.string;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Unit;
+import soot.ValueBox;
+import soot.jimple.FieldRef;
+import soot.jimple.InvokeExpr;
+import soot.jimple.Stmt;
+import soot.jimple.StringConstant;
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.RegExp;
+import dk.brics.string.external.FieldResolution;
+import dk.brics.string.external.MethodResolution;
+import dk.brics.string.external.Resolver;
+
+/**
+ * Encapsulation of the analysis of a program
+ * using the string analysis runtime library.
+ * &lt;p/&gt;
+ * This class serves two purposes:
+ * &lt;ul&gt;
+ * &lt;li&gt;It implements the {@link dk.brics.string.external.Resolver} interface to
+ * identify {@link dk.brics.string.runtime.Strings#cast Strings.cast}
+ * calls and tell the string analysis about the assumption.&lt;/li&gt;
+ * &lt;li&gt;It locates all hotspots, indicated by
+ * {@link dk.brics.string.runtime.Strings#analyze Strings.analyze} and
+ * {@link dk.brics.string.runtime.Strings#check Strings.check} calls.
+ * &lt;/ul&gt;
+ * &lt;p/&gt;
+ * The following code will analyze a program with respect to the runtime methods.
+ * The resolver is added to the list of active resolvers to make the analysis aware
+ * of the results of {@link dk.brics.string.runtime.Strings#cast Strings.cast} calls,
+ * and the hotspots used in the analysis are the expressions occurring as the first
+ * argument to {@link dk.brics.string.runtime.Strings#analyze Strings.analyze} and
+ * {@link dk.brics.string.runtime.Strings#check Strings.check} calls.
+ * &lt;pre&gt;
+ *  RuntimeResolver rr = new RuntimeResolver();
+ *  StringAnalysis.addResolver(rr);
+ *  StringAnalysis sa = new StringAnalysis(rr.getHotspotExps());
+ * &lt;/pre&gt;
+ * The {@link dk.brics.string.StringAnalysis} object &lt;code&gt;sa&lt;/code&gt; will now contain
+ * the results of the analysis. Run through the set of {@link dk.brics.string.RuntimeHotspot}
+ * objects returned by the {@link dk.brics.string.RuntimeResolver#getHotspots getHotspots}
+ * method and compare the result given by the string analysis to the expected result given
+ * for the hotspot.
+ *
+ * @see dk.brics.string.StringAnalysis#addResolver StringAnalysis.addResolver
+ * @see dk.brics.string.RuntimeHotspot
+ * @see dk.brics.string.AnalyzeRuntime
+ * @see dk.brics.string.InvalidRuntimeUseException
+ */
+@SuppressWarnings(&quot;unchecked&quot;)
+public class RuntimeResolver implements Resolver {
+
+    private BindingAutomatonProvider bindings;
+
+<span class="nc" id="L65">    private List&lt;RuntimeHotspot&gt; hotspots = new ArrayList&lt;RuntimeHotspot&gt;();</span>
+
+<span class="nc" id="L67">    private Logger log = Logger.getLogger(RuntimeResolver.class);</span>
+
+    /**
+     * Initializes a &lt;code&gt;RuntimeResolver&lt;/code&gt; for the current
+     * application classes.
+     * &lt;p/&gt;
+     * First, all {@link dk.brics.string.runtime.Strings#bind Strings.bind}
+     * calls in the program are collected, so that the regular expressions
+     * occurring in runtime method calls can be correctly resolved.&lt;br&gt;
+     * Second, all {@link dk.brics.string.runtime.Strings#analyze Strings.analyze} and
+     * {@link dk.brics.string.runtime.Strings#check Strings.check} calls are
+     * internally marked as hotspots. These can be queried using the
+     * {@link dk.brics.string.RuntimeResolver#getHotspots getHotspots} and
+     * {@link dk.brics.string.RuntimeResolver#getHotspotExps getHotspotExps} methods.
+     *
+     * @throws InvalidRuntimeUseException if some invalid use of the runtime
+     *                                    library is encountered.
+     */
+<span class="nc" id="L85">    public RuntimeResolver(BindingAutomatonProvider bindings) {</span>
+<span class="nc" id="L86">        this.bindings = bindings;</span>
+<span class="nc" id="L87">        log.info(&quot;Finding runtime support methods...&quot;);</span>
+<span class="nc" id="L88">        findHotspots();</span>
+<span class="nc" id="L89">    }</span>
+    public RuntimeResolver() {
+<span class="nc" id="L91">        this(new BindingAutomatonProvider());</span>
+<span class="nc" id="L92">    }</span>
+    
+    /**
+     * Returns the runtime method hotspots for the program.
+     *
+     * @return a list of {@link dk.brics.string.RuntimeHotspot} objects
+     *         describing the runtime method hotspots.
+     */
+    public List&lt;RuntimeHotspot&gt; getHotspots() {
+<span class="nc" id="L101">        return hotspots;</span>
+    }
+
+    /**
+     * Returns the string expressions corresponding to the
+     * runtime method hotspots for the program.
+     *
+     * @return a list of {@link soot.ValueBox} objects indicating the
+     *         expressions marked as hotspots.
+     */
+    public List&lt;ValueBox&gt; getHotspotExps() {
+<span class="nc" id="L112">        List&lt;ValueBox&gt; exps = new ArrayList&lt;ValueBox&gt;();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        for (RuntimeHotspot rh : hotspots) {</span>
+<span class="nc" id="L114">            exps.add(rh.spot);</span>
+        }
+<span class="nc" id="L116">        return exps;</span>
+    }
+    
+    void findHotspots() {
+        // Find all hotspots
+<span class="nc" id="L121">        Iterator aci = Scene.v().getApplicationClasses().iterator();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        while (aci.hasNext()) {</span>
+<span class="nc" id="L123">            SootClass ac = (SootClass) aci.next();</span>
+<span class="nc" id="L124">            Iterator mi = ac.getMethods().iterator();</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">            while (mi.hasNext()) {</span>
+<span class="nc" id="L126">                SootMethod sm = (SootMethod) mi.next();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                if (sm.isConcrete()) {</span>
+                    
+<span class="nc bnc" id="L129" title="All 2 branches missed.">                    for (Unit unit : sm.getActiveBody().getUnits()) {</span>
+<span class="nc" id="L130">                        Stmt stmt = (Stmt) unit;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                        if (stmt.containsInvokeExpr()) {</span>
+<span class="nc" id="L132">                            InvokeExpr expr = stmt.getInvokeExpr();</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">                            if (expr.getMethod().getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String analyze(java.lang.String,java.lang.String)&gt;&quot;)) {</span>
+<span class="nc" id="L134">                                ValueBox spot = expr.getArgBox(0);</span>
+<span class="nc" id="L135">                                Automaton expected = getRegExp(expr).toAutomaton(bindings);</span>
+<span class="nc" id="L136">                                hotspots.add(new RuntimeHotspot(spot, expected, HotspotKind.ANALYZE));</span>
+<span class="nc" id="L137">                            } else</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                            if (expr.getMethod().getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String analyze(java.lang.String,java.net.URL)&gt;&quot;)) {</span>
+<span class="nc" id="L139">                                ValueBox spot = expr.getArgBox(0);</span>
+<span class="nc" id="L140">                                Automaton expected = bindings.getFromURL(bindings.getConstantURL(expr.getArg(1)));</span>
+<span class="nc" id="L141">                                hotspots.add(new RuntimeHotspot(spot, expected, HotspotKind.ANALYZE));</span>
+<span class="nc" id="L142">                            } else</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">                            if (expr.getMethod().getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String check(java.lang.String,java.lang.String)&gt;&quot;)) {</span>
+<span class="nc" id="L144">                                ValueBox spot = expr.getArgBox(0);</span>
+<span class="nc" id="L145">                                Automaton expected = getRegExp(expr).toAutomaton(bindings);</span>
+<span class="nc" id="L146">                                hotspots.add(new RuntimeHotspot(spot, expected, HotspotKind.CHECK));</span>
+<span class="nc" id="L147">                            } else</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">                            if (expr.getMethod().getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String check(java.lang.String,java.net.URL)&gt;&quot;)) {</span>
+<span class="nc" id="L149">                                ValueBox spot = expr.getArgBox(0);</span>
+<span class="nc" id="L150">                                Automaton expected = bindings.getFromURL(bindings.getConstantURL(expr.getArg(1)));</span>
+<span class="nc" id="L151">                                hotspots.add(new RuntimeHotspot(spot, expected, HotspotKind.CHECK));</span>
+                            }
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L158">    }</span>
+    
+//    private URL getURL(InvokeExpr expr, Value lastURLInstantiated, String lastURL) {
+//        if (!expr.getArg(1).equals(lastURLInstantiated)) {
+//            throw new InvalidRuntimeUseException(&quot;Non-constant URL&quot;);
+//        }
+//        try {
+//            return new URL(lastURL);
+//        } catch (MalformedURLException ex) {
+//            throw new InvalidRuntimeUseException(ex);
+//        }
+//    }
+    
+    String getName(InvokeExpr expr) {
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (expr.getArg(0) instanceof StringConstant) {</span>
+<span class="nc" id="L173">            return ((StringConstant)expr.getArg(0)).value;</span>
+        } else {
+<span class="nc" id="L175">            throw new InvalidRuntimeUseException(&quot;Non-constant name&quot;);</span>
+        }
+    }
+
+    RegExp getRegExp(InvokeExpr expr) {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (expr.getArg(1) instanceof StringConstant) {</span>
+<span class="nc" id="L181">            return new RegExp(((StringConstant) expr.getArg(1)).value);</span>
+        } else {
+<span class="nc" id="L183">            throw new InvalidRuntimeUseException(&quot;Non-constant regexp&quot;);</span>
+        }
+    }
+
+    /**
+     * If the given target method is {@link dk.brics.string.runtime.Strings#cast Strings.cast},
+     * returns the automaton given as a regular expression or automaton URL in the cast.
+     * &lt;p/&gt;
+     * If the given target method is {@link dk.brics.string.runtime.Strings#cast Strings.analyze},
+     * returns the value box for the first argument.
+     *
+     * @param expr   the invocation to be resolved.
+     * @param target the target method.
+     * @return the automaton given in the cast, or &lt;code&gt;null&lt;/code&gt;.
+     * @throws InvalidRuntimeUseException if some invalid use of the runtime
+     *                                    library is encountered.
+     */
+    public MethodResolution resolveMethod(InvokeExpr expr, SootMethod target) {
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (target.getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String cast(java.lang.String,java.lang.String)&gt;&quot;)) {</span>
+<span class="nc" id="L202">        	MethodResolution resolution = new MethodResolution(expr.getArgCount());</span>
+<span class="nc" id="L203">            resolution.setReturnedAutomaton(getRegExp(expr).toAutomaton(bindings));</span>
+<span class="nc" id="L204">            return resolution;</span>
+        }
+<span class="nc bnc" id="L206" title="All 2 branches missed.">        else if (target.getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String cast(java.lang.String,java.net.URL)&gt;&quot;)) {</span>
+<span class="nc" id="L207">        	MethodResolution resolution = new MethodResolution(expr.getArgCount());</span>
+<span class="nc" id="L208">        	resolution.setReturnedAutomaton(bindings.getFromURL(bindings.getConstantURL(expr.getArg(1))));</span>
+<span class="nc" id="L209">            return resolution;</span>
+        }
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        else if (target.getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String analyze(java.lang.String,java.lang.String)&gt;&quot;)) {</span>
+<span class="nc" id="L212">        	MethodResolution resolution = new MethodResolution(expr.getArgCount());</span>
+<span class="nc" id="L213">        	resolution.setReturnedArgument(0);</span>
+<span class="nc" id="L214">            return resolution;</span>
+        }
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        else if (target.getSignature().equals(&quot;&lt;dk.brics.string.runtime.Strings: java.lang.String analyze(java.lang.String,java.net.URL)&gt;&quot;)) {</span>
+<span class="nc" id="L217">        	MethodResolution resolution = new MethodResolution(expr.getArgCount());</span>
+<span class="nc" id="L218">        	resolution.setReturnedArgument(0);</span>
+<span class="nc" id="L219">            return resolution;</span>
+        }
+<span class="nc" id="L221">        return null;</span>
+    }
+
+    /**
+     * No special fields are resolved.
+     *
+     * @param expr the field to be resolved.
+     * @return &lt;code&gt;null&lt;/code&gt;.
+     */
+    public FieldResolution resolveField(FieldRef expr) {
+<span class="nc" id="L231">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

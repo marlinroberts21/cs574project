@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>MLFA2Automaton.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.mlfa.operations</a> &gt; <span class="el_source">MLFA2Automaton.java</span></div><h1>MLFA2Automaton.java</h1><pre class="source lang-java linenums">package dk.brics.string.mlfa.operations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.State;
+import dk.brics.automaton.StatePair;
+import dk.brics.string.mlfa.*;
+
+import java.util.*;
+
+/**
+ * Converter from MLFAs to automata.
+ *
+ * @see dk.brics.string.StringAnalysis
+ */
+public class MLFA2Automaton {
+
+    private Map&lt;MLFAStatePair, Automaton&gt; memo;
+
+    private List&lt;Set&lt;MLFAState&gt;&gt; succs, prevs;
+
+    private List&lt;Set&lt;MLFAState&gt;&gt; forward_reachable, backward_reachable;
+
+    /**
+     * Construcs a new converter for the given MLFA.
+     */
+<span class="nc" id="L26">    public MLFA2Automaton(MLFA m) {</span>
+<span class="nc" id="L27">        memo = new HashMap&lt;MLFAStatePair, Automaton&gt;();</span>
+<span class="nc" id="L28">        succs = new ArrayList&lt;Set&lt;MLFAState&gt;&gt;();</span>
+<span class="nc" id="L29">        prevs = new ArrayList&lt;Set&lt;MLFAState&gt;&gt;();</span>
+<span class="nc" id="L30">        forward_reachable = new ArrayList&lt;Set&lt;MLFAState&gt;&gt;();</span>
+<span class="nc" id="L31">        backward_reachable = new ArrayList&lt;Set&lt;MLFAState&gt;&gt;();</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        for (int i = 0; i &lt; m.getNumberOfStates(); i++) {</span>
+<span class="nc" id="L33">            succs.add(new HashSet&lt;MLFAState&gt;());</span>
+<span class="nc" id="L34">            prevs.add(new HashSet&lt;MLFAState&gt;());</span>
+<span class="nc" id="L35">            forward_reachable.add(null);</span>
+<span class="nc" id="L36">            backward_reachable.add(null);</span>
+        }
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (MLFAState s : m.getStates()) {</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">            for (MLFAEdge e : s.getEdges()) {</span>
+<span class="nc" id="L40">                MLFAState d = e.getDestination();</span>
+<span class="nc" id="L41">                succs.get(s.getKey()).add(d);</span>
+<span class="nc" id="L42">                prevs.get(d.getKey()).add(s);</span>
+            }
+        }
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Extracts ordinary minimal deterministic finite automaton from the MLFA.
+     *
+     * @param p pair representing initial and final state
+     * @return minimal deterministic finite automaton (should not be modified by caller)
+     */
+    public Automaton extract(MLFAStatePair p) {
+<span class="nc" id="L54">        return extract(p.getFirstState(), p.getSecondState(), new HashSet&lt;MLFAStatePair&gt;());</span>
+    }
+
+    private Automaton extract(MLFAState s, MLFAState f, final Set&lt;MLFAStatePair&gt; stack) {
+<span class="nc" id="L58">        MLFAStatePair p = new MLFAStatePair(s, f);</span>
+<span class="nc" id="L59">        Automaton a = memo.get(p);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (a != null) {</span>
+<span class="nc" id="L61">            return a;</span>
+        }
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (stack.contains(p)) {</span>
+<span class="nc" id="L64">            throw new RuntimeException(&quot;MLFA is non-rankable&quot;);</span>
+        }
+<span class="nc" id="L66">        stack.add(p);</span>
+<span class="nc" id="L67">        Set&lt;MLFAState&gt; reachable = findReachable(s, f);</span>
+
+        // handle special case with just one automaton/epsilon/identity transition from s to f
+<span class="nc bnc" id="L70" title="All 8 branches missed.">        if (((s != f &amp;&amp; reachable.size() == 2) || (s == f &amp;&amp; reachable.size() == 1))</span>
+<span class="nc bnc" id="L71" title="All 4 branches missed.">                &amp;&amp; s.getEdges().size() == 1 &amp;&amp; f.getEdges().size() == 0) {</span>
+<span class="nc" id="L72">            MLFATransition t = s.getEdges().iterator().next().getTransition();</span>
+<span class="nc" id="L73">            a = t.visitBy(new TransitionVisitor&lt;Automaton&gt;() {</span>
+
+                public Automaton visitAutomatonTransition(AutomatonTransition t) {
+<span class="nc" id="L76">                    return t.getAutomaton();</span>
+                }
+
+                public Automaton visitEpsilonTransition(EpsilonTransition t) {
+<span class="nc" id="L80">                    return Automaton.makeEmptyString();</span>
+                }
+
+                public Automaton visitIdentityTransition(IdentityTransition t) {
+<span class="nc" id="L84">                    return extract(t.getStartState(), t.getFinalState(), stack);</span>
+                }
+
+                public Automaton visitUnaryTransition(UnaryTransition t) {
+<span class="nc" id="L88">                    return null;</span>
+                }
+
+                public Automaton visitBinaryTransition(BinaryTransition t) {
+<span class="nc" id="L92">                    return null;</span>
+                }
+            });
+        }
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        if (a == null) {</span>
+<span class="nc" id="L97">            a = new Automaton();</span>
+
+            // construct automaton states
+<span class="nc" id="L100">            Map&lt;MLFAState, State&gt; statemap = new HashMap&lt;MLFAState, State&gt;();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            for (MLFAState q : reachable) {</span>
+<span class="nc" id="L102">                State ss = new State();</span>
+<span class="nc" id="L103">                statemap.put(q, ss);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                if (q == s) {</span>
+<span class="nc" id="L105">                    a.setInitialState(ss);</span>
+                }
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                if (q == f) {</span>
+<span class="nc" id="L108">                    ss.setAccept(true);</span>
+                }
+            }
+
+            // add transitions
+<span class="nc" id="L113">            final Set&lt;StatePair&gt; epsilons = new HashSet&lt;StatePair&gt;();</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            for (MLFAState q : reachable) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">                for (MLFAEdge e : q.getEdges()) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                    if (reachable.contains(e.getDestination())) {</span>
+<span class="nc" id="L117">                        final State qq = statemap.get(q);</span>
+<span class="nc" id="L118">                        final State pp = statemap.get(e.getDestination());</span>
+<span class="nc" id="L119">                        Automaton b = e.getTransition().visitBy(new TransitionVisitor&lt;Automaton&gt;() {</span>
+
+                            public Automaton visitAutomatonTransition(AutomatonTransition t) {
+<span class="nc" id="L122">                                return t.getAutomaton().clone();</span>
+                            }
+
+                            public Automaton visitEpsilonTransition(EpsilonTransition t) {
+<span class="nc" id="L126">                                epsilons.add(new StatePair(qq, pp));</span>
+<span class="nc" id="L127">                                return null;</span>
+                            }
+
+                            public Automaton visitIdentityTransition(IdentityTransition t) {
+<span class="nc" id="L131">                                return extract(t.getStartState(), t.getFinalState(), stack).clone();</span>
+                            }
+
+                            public Automaton visitUnaryTransition(UnaryTransition t) {
+<span class="nc" id="L135">                                return t.getOperation().op(extract(t.getStartState(), t.getFinalState(), stack));</span>
+                            }
+
+                            public Automaton visitBinaryTransition(BinaryTransition t) {
+<span class="nc" id="L139">                                return t.getOperation().op(</span>
+<span class="nc" id="L140">                                        extract(t.getStartState1(), t.getFinalState1(), stack),</span>
+<span class="nc" id="L141">                                        extract(t.getStartState2(), t.getFinalState2(), stack));</span>
+                            }
+                        });
+<span class="nc bnc" id="L144" title="All 2 branches missed.">                        if (b != null) {</span>
+<span class="nc" id="L145">                            epsilons.add(new StatePair(qq, b.getInitialState()));</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                            for (State rr : b.getAcceptStates()) {</span>
+<span class="nc" id="L147">                                rr.setAccept(false);</span>
+<span class="nc" id="L148">                                epsilons.add(new StatePair(rr, pp));</span>
+                            }
+                        }
+                    }
+                }
+            }
+<span class="nc" id="L154">            a.addEpsilons(epsilons);</span>
+<span class="nc" id="L155">            a.minimize();</span>
+        }
+<span class="nc" id="L157">        stack.remove(p);</span>
+<span class="nc" id="L158">        memo.put(p, a);</span>
+<span class="nc" id="L159">        return a;</span>
+    }
+
+    private Set&lt;MLFAState&gt; getForwardReachable(MLFAState s) { // TODO: improve performance of getXXReachable using strongly connected components?
+<span class="nc" id="L163">        Set&lt;MLFAState&gt; reachable = forward_reachable.get(s.getKey());</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (reachable == null) {</span>
+<span class="nc" id="L165">            reachable = new HashSet&lt;MLFAState&gt;();</span>
+<span class="nc" id="L166">            Set&lt;MLFAState&gt; pending = new HashSet&lt;MLFAState&gt;();</span>
+<span class="nc" id="L167">            pending.add(s);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            while (!pending.isEmpty()) {</span>
+<span class="nc" id="L169">                MLFAState p = pending.iterator().next();</span>
+<span class="nc" id="L170">                pending.remove(p);</span>
+<span class="nc" id="L171">                reachable.add(p);</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                for (MLFAState q : succs.get(p.getKey())) {</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">                    if (!reachable.contains(q)) {</span>
+<span class="nc" id="L174">                        pending.add(q);</span>
+                    }
+                }
+            }
+<span class="nc" id="L178">            forward_reachable.set(s.getKey(), reachable);</span>
+        }
+<span class="nc" id="L180">        return reachable;</span>
+    }
+
+    private Set&lt;MLFAState&gt; getBackwardReachable(MLFAState s) {
+<span class="nc" id="L184">        Set&lt;MLFAState&gt; reachable = backward_reachable.get(s.getKey());</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (reachable == null) {</span>
+<span class="nc" id="L186">            reachable = new HashSet&lt;MLFAState&gt;();</span>
+<span class="nc" id="L187">            Set&lt;MLFAState&gt; pending = new HashSet&lt;MLFAState&gt;();</span>
+<span class="nc" id="L188">            pending.add(s);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            while (!pending.isEmpty()) {</span>
+<span class="nc" id="L190">                MLFAState p = pending.iterator().next();</span>
+<span class="nc" id="L191">                pending.remove(p);</span>
+<span class="nc" id="L192">                reachable.add(p);</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">                for (MLFAState q : prevs.get(p.getKey())) {</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                    if (!reachable.contains(q)) {</span>
+<span class="nc" id="L195">                        pending.add(q);</span>
+                    }
+                }
+            }
+<span class="nc" id="L199">            backward_reachable.set(s.getKey(), reachable);</span>
+        }
+<span class="nc" id="L201">        return reachable;</span>
+    }
+
+    /**
+     * Finds states that are reachable from p and can reach f.
+     */
+    private Set&lt;MLFAState&gt; findReachable(MLFAState p, MLFAState f) {
+<span class="nc" id="L208">        Set&lt;MLFAState&gt; r = new HashSet&lt;MLFAState&gt;(getForwardReachable(p));</span>
+<span class="nc" id="L209">        r.retainAll(getBackwardReachable(f));</span>
+<span class="nc" id="L210">        return r;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

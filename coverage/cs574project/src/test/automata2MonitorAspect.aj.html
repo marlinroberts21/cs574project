@@ -1,0 +1,2754 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>automata2MonitorAspect.aj</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">test</a> &gt; <span class="el_source">automata2MonitorAspect.aj</span></div><h1>automata2MonitorAspect.aj</h1><pre class="source lang-java linenums"><span class="pc bpc" id="L1" title="7 of 8 branches missed.">package test;</span>
+import static org.junit.Assert.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.stringoperations.*;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
+import java.lang.ref.*;
+import com.runtimeverification.rvmonitor.java.rt.*;
+import com.runtimeverification.rvmonitor.java.rt.ref.*;
+import com.runtimeverification.rvmonitor.java.rt.table.*;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractIndexingTree;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.SetEventDelegator;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.TableAdopter.Tuple2;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.TableAdopter.Tuple3;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.IDisableHolder;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.IMonitor;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.DisableHolder;
+import com.runtimeverification.rvmonitor.java.rt.tablebase.TerminatedMonitorCleaner;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.aspectj.lang.*;
+
+final class automata_arg_clone_binaryMonitor_Set extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractMonitorSet&lt;automata_arg_clone_binaryMonitor&gt; {
+
+<span class="fc" id="L31">	automata_arg_clone_binaryMonitor_Set(){</span>
+<span class="fc" id="L32">		this.size = 0;</span>
+<span class="fc" id="L33">		this.elements = new automata_arg_clone_binaryMonitor[4];</span>
+<span class="fc" id="L34">	}</span>
+	final void event_Bop(BinaryOperation bo, Automaton a, Automaton b) {
+<span class="nc" id="L36">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L38">			automata_arg_clone_binaryMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L40">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L41">				numAlive++;</span>
+
+<span class="nc" id="L43">				final automata_arg_clone_binaryMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L44">				monitor.Prop_1_event_Bop(bo, a, b);</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L46">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L51">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L53">		size = numAlive;</span>
+<span class="nc" id="L54">	}</span>
+	final void event_aBinClone(Automaton a) {
+<span class="fc" id="L56">		int numAlive = 0 ;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="fc" id="L58">			automata_arg_clone_binaryMonitor monitor = this.elements[i];</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">			if(!monitor.isTerminated()){</span>
+<span class="fc" id="L60">				elements[numAlive] = monitor;</span>
+<span class="fc" id="L61">				numAlive++;</span>
+
+<span class="fc" id="L63">				final automata_arg_clone_binaryMonitor monitorfinalMonitor = monitor;</span>
+<span class="fc" id="L64">				monitor.Prop_1_event_aBinClone(a);</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L66">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="fc" id="L71">			this.elements[i] = null;</span>
+		}
+<span class="fc" id="L73">		size = numAlive;</span>
+<span class="fc" id="L74">	}</span>
+	final void event_bBinClone(Automaton b) {
+<span class="fc" id="L76">		int numAlive = 0 ;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="fc" id="L78">			automata_arg_clone_binaryMonitor monitor = this.elements[i];</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">			if(!monitor.isTerminated()){</span>
+<span class="fc" id="L80">				elements[numAlive] = monitor;</span>
+<span class="fc" id="L81">				numAlive++;</span>
+
+<span class="fc" id="L83">				final automata_arg_clone_binaryMonitor monitorfinalMonitor = monitor;</span>
+<span class="fc" id="L84">				monitor.Prop_1_event_bBinClone(b);</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L86">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="fc" id="L91">			this.elements[i] = null;</span>
+		}
+<span class="fc" id="L93">		size = numAlive;</span>
+<span class="fc" id="L94">	}</span>
+}
+final class automata_arg_clone_unaryMonitor_Set extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractMonitorSet&lt;automata_arg_clone_unaryMonitor&gt; {
+
+<span class="fc" id="L98">	automata_arg_clone_unaryMonitor_Set(){</span>
+<span class="fc" id="L99">		this.size = 0;</span>
+<span class="fc" id="L100">		this.elements = new automata_arg_clone_unaryMonitor[4];</span>
+<span class="fc" id="L101">	}</span>
+	final void event_Uop(UnaryOperation u, Automaton a) {
+<span class="nc" id="L103">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L105">			automata_arg_clone_unaryMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L107">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L108">				numAlive++;</span>
+
+<span class="nc" id="L110">				final automata_arg_clone_unaryMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L111">				monitor.Prop_1_event_Uop(u, a);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L113">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L118">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L120">		size = numAlive;</span>
+<span class="nc" id="L121">	}</span>
+	final void event_aClone(Automaton a) {
+<span class="fc" id="L123">		int numAlive = 0 ;</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="fc" id="L125">			automata_arg_clone_unaryMonitor monitor = this.elements[i];</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="fc" id="L127">				elements[numAlive] = monitor;</span>
+<span class="fc" id="L128">				numAlive++;</span>
+
+<span class="fc" id="L130">				final automata_arg_clone_unaryMonitor monitorfinalMonitor = monitor;</span>
+<span class="fc" id="L131">				monitor.Prop_1_event_aClone(a);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L133">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L138">			this.elements[i] = null;</span>
+		}
+<span class="fc" id="L140">		size = numAlive;</span>
+<span class="fc" id="L141">	}</span>
+}
+final class automata_determinizeMonitor_Set extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractMonitorSet&lt;automata_determinizeMonitor&gt; {
+
+<span class="nc" id="L145">	automata_determinizeMonitor_Set(){</span>
+<span class="nc" id="L146">		this.size = 0;</span>
+<span class="nc" id="L147">		this.elements = new automata_determinizeMonitor[4];</span>
+<span class="nc" id="L148">	}</span>
+	final void event_determinize(Automaton a) {
+<span class="nc" id="L150">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L152">			automata_determinizeMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L154">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L155">				numAlive++;</span>
+
+<span class="nc" id="L157">				final automata_determinizeMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L158">				monitor.Prop_1_event_determinize(a);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L160">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L165">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L167">		size = numAlive;</span>
+<span class="nc" id="L168">	}</span>
+	final void event_minimize(Automaton a) {
+<span class="nc" id="L170">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L172">			automata_determinizeMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L174">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L175">				numAlive++;</span>
+
+<span class="nc" id="L177">				final automata_determinizeMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L178">				monitor.Prop_1_event_minimize(a);</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L180">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L184" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L185">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L187">		size = numAlive;</span>
+<span class="nc" id="L188">	}</span>
+}
+final class automata_hashcodeMonitor_Set extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractMonitorSet&lt;automata_hashcodeMonitor&gt; {
+
+<span class="nc" id="L192">	automata_hashcodeMonitor_Set(){</span>
+<span class="nc" id="L193">		this.size = 0;</span>
+<span class="nc" id="L194">		this.elements = new automata_hashcodeMonitor[4];</span>
+<span class="nc" id="L195">	}</span>
+	final void event_clearHash(Automaton a) {
+<span class="nc" id="L197">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L199">			automata_hashcodeMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L201">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L202">				numAlive++;</span>
+
+<span class="nc" id="L204">				final automata_hashcodeMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L205">				monitor.Prop_1_event_clearHash(a);</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L207">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L211" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L212">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L214">		size = numAlive;</span>
+<span class="nc" id="L215">	}</span>
+	final void event_recomputeHash(Automaton a) {
+<span class="nc" id="L217">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L219">			automata_hashcodeMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L221">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L222">				numAlive++;</span>
+
+<span class="nc" id="L224">				final automata_hashcodeMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L225">				monitor.Prop_1_event_recomputeHash(a);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L227">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L231" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L232">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L234">		size = numAlive;</span>
+<span class="nc" id="L235">	}</span>
+}
+final class automata_minimize_recomputehashcodeMonitor_Set extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractMonitorSet&lt;automata_minimize_recomputehashcodeMonitor&gt; {
+
+<span class="nc" id="L239">	automata_minimize_recomputehashcodeMonitor_Set(){</span>
+<span class="nc" id="L240">		this.size = 0;</span>
+<span class="nc" id="L241">		this.elements = new automata_minimize_recomputehashcodeMonitor[4];</span>
+<span class="nc" id="L242">	}</span>
+	final void event_amr_recomputeHashCode(Automaton a) {
+<span class="nc" id="L244">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L246">			automata_minimize_recomputehashcodeMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L248">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L249">				numAlive++;</span>
+
+<span class="nc" id="L251">				final automata_minimize_recomputehashcodeMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L252">				monitor.Prop_1_event_amr_recomputeHashCode(a);</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L254">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L258" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L259">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L261">		size = numAlive;</span>
+<span class="nc" id="L262">	}</span>
+	final void event_amr_minimize(Automaton a) {
+<span class="nc" id="L264">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L266">			automata_minimize_recomputehashcodeMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L268">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L269">				numAlive++;</span>
+
+<span class="nc" id="L271">				final automata_minimize_recomputehashcodeMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L272">				monitor.Prop_1_event_amr_minimize(a);</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L274">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L278" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L279">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L281">		size = numAlive;</span>
+<span class="nc" id="L282">	}</span>
+}
+final class automata_restoreinvariantMonitor_Set extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractMonitorSet&lt;automata_restoreinvariantMonitor&gt; {
+
+<span class="nc" id="L286">	automata_restoreinvariantMonitor_Set(){</span>
+<span class="nc" id="L287">		this.size = 0;</span>
+<span class="nc" id="L288">		this.elements = new automata_restoreinvariantMonitor[4];</span>
+<span class="nc" id="L289">	}</span>
+	final void event_ri_getStates(Automaton a1) {
+<span class="nc" id="L291">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L293">			automata_restoreinvariantMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L295">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L296">				numAlive++;</span>
+
+<span class="nc" id="L298">				final automata_restoreinvariantMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L299">				monitor.Prop_1_event_ri_getStates(a1);</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L301">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L305" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L306">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L308">		size = numAlive;</span>
+<span class="nc" id="L309">	}</span>
+	final void event_ri_restoreInvariant(Automaton a1) {
+<span class="nc" id="L311">		int numAlive = 0 ;</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">		for(int i = 0; i &lt; this.size; i++){</span>
+<span class="nc" id="L313">			automata_restoreinvariantMonitor monitor = this.elements[i];</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">			if(!monitor.isTerminated()){</span>
+<span class="nc" id="L315">				elements[numAlive] = monitor;</span>
+<span class="nc" id="L316">				numAlive++;</span>
+
+<span class="nc" id="L318">				final automata_restoreinvariantMonitor monitorfinalMonitor = monitor;</span>
+<span class="nc" id="L319">				monitor.Prop_1_event_ri_restoreInvariant(a1);</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">				if(monitorfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L321">					monitorfinalMonitor.Prop_1_handler_fail();</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L325" title="All 2 branches missed.">		for(int i = numAlive; i &lt; this.size; i++){</span>
+<span class="nc" id="L326">			this.elements[i] = null;</span>
+		}
+<span class="nc" id="L328">		size = numAlive;</span>
+<span class="nc" id="L329">	}</span>
+}
+
+interface Iautomata_arg_clone_binaryMonitor extends IMonitor, IDisableHolder {
+}
+
+class automata_arg_clone_binaryDisableHolder extends DisableHolder implements Iautomata_arg_clone_binaryMonitor {
+	automata_arg_clone_binaryDisableHolder(long tau) {
+<span class="nc" id="L337">		super(tau);</span>
+<span class="nc" id="L338">	}</span>
+
+	@Override
+	public final boolean isTerminated() {
+<span class="nc" id="L342">		return false;</span>
+	}
+
+	@Override
+	public int getLastEvent() {
+<span class="nc" id="L347">		return -1;</span>
+	}
+
+	@Override
+	public int getState() {
+<span class="nc" id="L352">		return -1;</span>
+	}
+
+}
+
+class automata_arg_clone_binaryMonitor extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractSynchronizedMonitor implements Cloneable, com.runtimeverification.rvmonitor.java.rt.RVMObject, Iautomata_arg_clone_binaryMonitor {
+	protected Object clone() {
+		try {
+<span class="fc" id="L360">			automata_arg_clone_binaryMonitor ret = (automata_arg_clone_binaryMonitor) super.clone();</span>
+<span class="fc" id="L361">			return ret;</span>
+		}
+<span class="nc" id="L363">		catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L364">			throw new InternalError(e.toString());</span>
+		}
+	}
+
+<span class="fc" id="L368">	WeakReference Ref_a = null;</span>
+<span class="fc" id="L369">	WeakReference Ref_b = null;</span>
+<span class="fc" id="L370">	WeakReference Ref_bo = null;</span>
+	int Prop_1_state;
+<span class="fc" id="L372">	static final int Prop_1_transition_Bop[] = {1, 2, 2};;</span>
+<span class="fc" id="L373">	static final int Prop_1_transition_aBinClone[] = {0, 1, 2};;</span>
+<span class="fc" id="L374">	static final int Prop_1_transition_bBinClone[] = {0, 1, 2};;</span>
+
+<span class="fc" id="L376">	boolean Prop_1_Category_fail = false;</span>
+
+<span class="fc" id="L378">	automata_arg_clone_binaryMonitor(long tau, CachedWeakReference RVMRef_bo, CachedWeakReference RVMRef_a, CachedWeakReference RVMRef_b) {</span>
+<span class="fc" id="L379">		this.tau = tau;</span>
+<span class="fc" id="L380">		Prop_1_state = 0;</span>
+
+<span class="fc" id="L382">		this.RVMRef_bo = RVMRef_bo;</span>
+<span class="fc" id="L383">		this.RVMRef_a = RVMRef_a;</span>
+<span class="fc" id="L384">		this.RVMRef_b = RVMRef_b;</span>
+<span class="fc" id="L385">	}</span>
+
+	@Override
+	public final int getState() {
+<span class="nc" id="L389">		return Prop_1_state;</span>
+	}
+
+	private final long tau;
+<span class="fc" id="L393">	private long disable = -1;</span>
+
+	@Override
+	public final long getTau() {
+<span class="fc" id="L397">		return this.tau;</span>
+	}
+
+	@Override
+	public final long getDisable() {
+<span class="fc" id="L402">		return this.disable;</span>
+	}
+
+	@Override
+	public final void setDisable(long value) {
+<span class="fc" id="L407">		this.disable = value;</span>
+<span class="fc" id="L408">	}</span>
+
+	final boolean Prop_1_event_Bop(BinaryOperation bo, Automaton a, Automaton b) {
+		{
+		}
+<span class="pc bpc" id="L413" title="1 of 2 branches missed.">		if(Ref_a == null){</span>
+<span class="fc" id="L414">			Ref_a = new WeakReference(a);</span>
+		}
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">		if(Ref_b == null){</span>
+<span class="fc" id="L417">			Ref_b = new WeakReference(b);</span>
+		}
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">		if(Ref_bo == null){</span>
+<span class="fc" id="L420">			Ref_bo = new WeakReference(bo);</span>
+		}
+<span class="fc" id="L422">		RVM_lastevent = 0;</span>
+
+<span class="fc" id="L424">		Prop_1_state = Prop_1_transition_Bop[Prop_1_state];</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">		Prop_1_Category_fail = Prop_1_state == 2;</span>
+<span class="fc" id="L426">		return true;</span>
+	}
+
+	final boolean Prop_1_event_aBinClone(Automaton a) {
+<span class="fc" id="L430">		BinaryOperation bo = null;</span>
+<span class="fc bfc" id="L431" title="All 2 branches covered.">		if(Ref_bo != null){</span>
+<span class="fc" id="L432">			bo = (BinaryOperation)Ref_bo.get();</span>
+		}
+<span class="fc" id="L434">		Automaton b = null;</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">		if(Ref_b != null){</span>
+<span class="fc" id="L436">			b = (Automaton)Ref_b.get();</span>
+		}
+		{
+		}
+<span class="fc bfc" id="L440" title="All 2 branches covered.">		if(Ref_a == null){</span>
+<span class="fc" id="L441">			Ref_a = new WeakReference(a);</span>
+		}
+<span class="fc" id="L443">		RVM_lastevent = 1;</span>
+
+<span class="fc" id="L445">		Prop_1_state = Prop_1_transition_aBinClone[Prop_1_state];</span>
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">		Prop_1_Category_fail = Prop_1_state == 2;</span>
+<span class="fc" id="L447">		return true;</span>
+	}
+
+	final boolean Prop_1_event_bBinClone(Automaton b) {
+<span class="fc" id="L451">		BinaryOperation bo = null;</span>
+<span class="fc bfc" id="L452" title="All 2 branches covered.">		if(Ref_bo != null){</span>
+<span class="fc" id="L453">			bo = (BinaryOperation)Ref_bo.get();</span>
+		}
+<span class="fc" id="L455">		Automaton a = null;</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">		if(Ref_a != null){</span>
+<span class="fc" id="L457">			a = (Automaton)Ref_a.get();</span>
+		}
+		{
+		}
+<span class="fc bfc" id="L461" title="All 2 branches covered.">		if(Ref_b == null){</span>
+<span class="fc" id="L462">			Ref_b = new WeakReference(b);</span>
+		}
+<span class="fc" id="L464">		RVM_lastevent = 2;</span>
+
+<span class="fc" id="L466">		Prop_1_state = Prop_1_transition_bBinClone[Prop_1_state];</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">		Prop_1_Category_fail = Prop_1_state == 2;</span>
+<span class="fc" id="L468">		return true;</span>
+	}
+
+	final void Prop_1_handler_fail (){
+		{
+<span class="nc" id="L473">			System.err.println(&quot;! Warning: BinaryOp without argument clone(s) ...&quot;);</span>
+<span class="nc" id="L474">			this.reset();</span>
+		}
+
+<span class="nc" id="L477">	}</span>
+
+	final void reset() {
+<span class="nc" id="L480">		RVM_lastevent = -1;</span>
+<span class="nc" id="L481">		Prop_1_state = 0;</span>
+<span class="nc" id="L482">		Prop_1_Category_fail = false;</span>
+<span class="nc" id="L483">	}</span>
+
+	CachedWeakReference RVMRef_bo;
+	CachedWeakReference RVMRef_a;
+	CachedWeakReference RVMRef_b;
+
+	//alive_parameters_0 = [Automaton a]
+<span class="fc" id="L490">	boolean alive_parameters_0 = true;</span>
+	//alive_parameters_1 = [Automaton b]
+<span class="fc" id="L492">	boolean alive_parameters_1 = true;</span>
+
+	@Override
+	protected final void terminateInternal(int idnum) {
+<span class="pc bpc" id="L496" title="2 of 4 branches missed.">		switch(idnum){</span>
+			case 0:
+<span class="nc" id="L498">			break;</span>
+			case 1:
+<span class="fc" id="L500">			alive_parameters_0 = false;</span>
+<span class="fc" id="L501">			break;</span>
+			case 2:
+<span class="fc" id="L503">			alive_parameters_1 = false;</span>
+			break;
+		}
+<span class="pc bpc" id="L506" title="3 of 5 branches missed.">		switch(RVM_lastevent) {</span>
+			case -1:
+<span class="nc" id="L508">			return;</span>
+			case 0:
+			//Bop
+			//alive_a || alive_b
+<span class="nc bnc" id="L512" title="All 4 branches missed.">			if(!(alive_parameters_0 || alive_parameters_1)){</span>
+<span class="nc" id="L513">				RVM_terminated = true;</span>
+<span class="nc" id="L514">				return;</span>
+			}
+			break;
+
+			case 1:
+			//aBinClone
+			//alive_a || alive_b
+<span class="pc bpc" id="L521" title="1 of 4 branches missed.">			if(!(alive_parameters_0 || alive_parameters_1)){</span>
+<span class="nc" id="L522">				RVM_terminated = true;</span>
+<span class="nc" id="L523">				return;</span>
+			}
+			break;
+
+			case 2:
+			//bBinClone
+			//alive_a || alive_b
+<span class="pc bpc" id="L530" title="1 of 4 branches missed.">			if(!(alive_parameters_0 || alive_parameters_1)){</span>
+<span class="nc" id="L531">				RVM_terminated = true;</span>
+<span class="nc" id="L532">				return;</span>
+			}
+			break;
+
+		}
+<span class="fc" id="L537">		return;</span>
+	}
+
+	public static int getNumberOfEvents() {
+<span class="nc" id="L541">		return 3;</span>
+	}
+
+	public static int getNumberOfStates() {
+<span class="nc" id="L545">		return 3;</span>
+	}
+
+}
+interface Iautomata_arg_clone_unaryMonitor extends IMonitor, IDisableHolder {
+}
+
+class automata_arg_clone_unaryDisableHolder extends DisableHolder implements Iautomata_arg_clone_unaryMonitor {
+	automata_arg_clone_unaryDisableHolder(long tau) {
+<span class="nc" id="L554">		super(tau);</span>
+<span class="nc" id="L555">	}</span>
+
+	@Override
+	public final boolean isTerminated() {
+<span class="nc" id="L559">		return false;</span>
+	}
+
+	@Override
+	public int getLastEvent() {
+<span class="nc" id="L564">		return -1;</span>
+	}
+
+	@Override
+	public int getState() {
+<span class="nc" id="L569">		return -1;</span>
+	}
+
+}
+
+class automata_arg_clone_unaryMonitor extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractSynchronizedMonitor implements Cloneable, com.runtimeverification.rvmonitor.java.rt.RVMObject, Iautomata_arg_clone_unaryMonitor {
+	protected Object clone() {
+		try {
+<span class="fc" id="L577">			automata_arg_clone_unaryMonitor ret = (automata_arg_clone_unaryMonitor) super.clone();</span>
+<span class="fc" id="L578">			return ret;</span>
+		}
+<span class="nc" id="L580">		catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L581">			throw new InternalError(e.toString());</span>
+		}
+	}
+
+<span class="fc" id="L585">	WeakReference Ref_u = null;</span>
+	int Prop_1_state;
+<span class="fc" id="L587">	static final int Prop_1_transition_Uop[] = {1, 2, 2};;</span>
+<span class="fc" id="L588">	static final int Prop_1_transition_aClone[] = {0, 1, 2};;</span>
+
+<span class="fc" id="L590">	boolean Prop_1_Category_fail = false;</span>
+
+<span class="fc" id="L592">	automata_arg_clone_unaryMonitor(long tau) {</span>
+<span class="fc" id="L593">		this.tau = tau;</span>
+<span class="fc" id="L594">		Prop_1_state = 0;</span>
+
+<span class="fc" id="L596">	}</span>
+
+	@Override
+	public final int getState() {
+<span class="nc" id="L600">		return Prop_1_state;</span>
+	}
+
+	private final long tau;
+<span class="fc" id="L604">	private long disable = -1;</span>
+
+	@Override
+	public final long getTau() {
+<span class="nc" id="L608">		return this.tau;</span>
+	}
+
+	@Override
+	public final long getDisable() {
+<span class="nc" id="L613">		return this.disable;</span>
+	}
+
+	@Override
+	public final void setDisable(long value) {
+<span class="fc" id="L618">		this.disable = value;</span>
+<span class="fc" id="L619">	}</span>
+
+	final boolean Prop_1_event_Uop(UnaryOperation u, Automaton a) {
+		{
+		}
+<span class="pc bpc" id="L624" title="1 of 2 branches missed.">		if(Ref_u == null){</span>
+<span class="fc" id="L625">			Ref_u = new WeakReference(u);</span>
+		}
+<span class="fc" id="L627">		RVM_lastevent = 0;</span>
+
+<span class="fc" id="L629">		Prop_1_state = Prop_1_transition_Uop[Prop_1_state];</span>
+<span class="pc bpc" id="L630" title="1 of 2 branches missed.">		Prop_1_Category_fail = Prop_1_state == 2;</span>
+<span class="fc" id="L631">		return true;</span>
+	}
+
+	final boolean Prop_1_event_aClone(Automaton a) {
+<span class="fc" id="L635">		UnaryOperation u = null;</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">		if(Ref_u != null){</span>
+<span class="fc" id="L637">			u = (UnaryOperation)Ref_u.get();</span>
+		}
+		{
+		}
+<span class="fc" id="L641">		RVM_lastevent = 1;</span>
+
+<span class="fc" id="L643">		Prop_1_state = Prop_1_transition_aClone[Prop_1_state];</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">		Prop_1_Category_fail = Prop_1_state == 2;</span>
+<span class="fc" id="L645">		return true;</span>
+	}
+
+	final void Prop_1_handler_fail (){
+		{
+<span class="nc" id="L650">			System.err.println(&quot;! Warning: UnaryOp without argument clone ...&quot;);</span>
+<span class="nc" id="L651">			this.reset();</span>
+		}
+
+<span class="nc" id="L654">	}</span>
+
+	final void reset() {
+<span class="nc" id="L657">		RVM_lastevent = -1;</span>
+<span class="nc" id="L658">		Prop_1_state = 0;</span>
+<span class="nc" id="L659">		Prop_1_Category_fail = false;</span>
+<span class="nc" id="L660">	}</span>
+
+	// RVMRef_u was suppressed to reduce memory overhead
+	// RVMRef_a was suppressed to reduce memory overhead
+
+	//alive_parameters_0 = [Automaton a]
+<span class="fc" id="L666">	boolean alive_parameters_0 = true;</span>
+
+	@Override
+	protected final void terminateInternal(int idnum) {
+<span class="pc bpc" id="L670" title="2 of 3 branches missed.">		switch(idnum){</span>
+			case 0:
+<span class="nc" id="L672">			break;</span>
+			case 1:
+<span class="fc" id="L674">			alive_parameters_0 = false;</span>
+			break;
+		}
+<span class="pc bpc" id="L677" title="2 of 4 branches missed.">		switch(RVM_lastevent) {</span>
+			case -1:
+<span class="nc" id="L679">			return;</span>
+			case 0:
+			//Uop
+			//alive_a
+<span class="pc bpc" id="L683" title="1 of 2 branches missed.">			if(!(alive_parameters_0)){</span>
+<span class="fc" id="L684">				RVM_terminated = true;</span>
+<span class="fc" id="L685">				return;</span>
+			}
+			break;
+
+			case 1:
+			//aClone
+			//alive_a
+<span class="pc bpc" id="L692" title="1 of 2 branches missed.">			if(!(alive_parameters_0)){</span>
+<span class="fc" id="L693">				RVM_terminated = true;</span>
+<span class="fc" id="L694">				return;</span>
+			}
+			break;
+
+		}
+<span class="nc" id="L699">		return;</span>
+	}
+
+	public static int getNumberOfEvents() {
+<span class="nc" id="L703">		return 2;</span>
+	}
+
+	public static int getNumberOfStates() {
+<span class="nc" id="L707">		return 3;</span>
+	}
+
+}
+class automata_determinizeMonitor extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractAtomicMonitor implements Cloneable, com.runtimeverification.rvmonitor.java.rt.RVMObject {
+	protected Object clone() {
+		try {
+<span class="nc" id="L714">			automata_determinizeMonitor ret = (automata_determinizeMonitor) super.clone();</span>
+<span class="nc" id="L715">			return ret;</span>
+		}
+<span class="nc" id="L717">		catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L718">			throw new InternalError(e.toString());</span>
+		}
+	}
+
+<span class="fc" id="L722">	static final int Prop_1_transition_determinize[] = {1, 1, 2};;</span>
+<span class="fc" id="L723">	static final int Prop_1_transition_minimize[] = {2, 0, 2};;</span>
+
+<span class="fc" id="L725">	volatile boolean Prop_1_Category_fail = false;</span>
+
+	private final AtomicInteger pairValue;
+
+<span class="fc" id="L729">	automata_determinizeMonitor() {</span>
+<span class="fc" id="L730">		this.pairValue = new AtomicInteger(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="fc" id="L732">	}</span>
+
+	@Override public final int getState() {
+<span class="nc" id="L735">		return this.getState(this.pairValue.get() ) ;</span>
+	}
+	@Override public final int getLastEvent() {
+<span class="fc" id="L738">		return this.getLastEvent(this.pairValue.get() ) ;</span>
+	}
+	private final int getState(int pairValue) {
+<span class="fc" id="L741">		return (pairValue &amp; 3) ;</span>
+	}
+	private final int getLastEvent(int pairValue) {
+<span class="fc" id="L744">		return (pairValue &gt;&gt; 2) ;</span>
+	}
+	private final int calculatePairValue(int lastEvent, int state) {
+<span class="fc" id="L747">		return (((lastEvent + 1) &lt;&lt; 2) | state) ;</span>
+	}
+
+	private final int handleEvent(int eventId, int[] table) {
+		int nextstate;
+		while (true) {
+<span class="fc" id="L753">			int oldpairvalue = this.pairValue.get() ;</span>
+<span class="fc" id="L754">			int oldstate = this.getState(oldpairvalue) ;</span>
+<span class="fc" id="L755">			nextstate = table [ oldstate ];</span>
+<span class="fc" id="L756">			int nextpairvalue = this.calculatePairValue(eventId, nextstate) ;</span>
+<span class="pc bpc" id="L757" title="1 of 2 branches missed.">			if (this.pairValue.compareAndSet(oldpairvalue, nextpairvalue) ) {</span>
+				break;
+			}
+		}
+<span class="fc" id="L761">		return nextstate;</span>
+	}
+
+	final boolean Prop_1_event_determinize(Automaton a) {
+		{
+		}
+
+<span class="fc" id="L768">		int nextstate = this.handleEvent(0, Prop_1_transition_determinize) ;</span>
+<span class="pc bpc" id="L769" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 2;</span>
+
+<span class="fc" id="L771">		return true;</span>
+	}
+
+	final boolean Prop_1_event_minimize(Automaton a) {
+		{
+		}
+
+<span class="fc" id="L778">		int nextstate = this.handleEvent(1, Prop_1_transition_minimize) ;</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">		this.Prop_1_Category_fail = nextstate == 2;</span>
+
+<span class="fc" id="L781">		return true;</span>
+	}
+
+	final void Prop_1_handler_fail (){
+		{
+<span class="fc" id="L786">			System.err.println(&quot;! Warning: minimize without determinize ...&quot;);</span>
+<span class="fc" id="L787">			this.reset();</span>
+		}
+
+<span class="fc" id="L790">	}</span>
+
+	final void reset() {
+<span class="fc" id="L793">		this.pairValue.set(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="fc" id="L795">		Prop_1_Category_fail = false;</span>
+<span class="fc" id="L796">	}</span>
+
+	// RVMRef_a was suppressed to reduce memory overhead
+
+	//alive_parameters_0 = [Automaton a]
+<span class="fc" id="L801">	boolean alive_parameters_0 = true;</span>
+
+	@Override
+	protected final void terminateInternal(int idnum) {
+<span class="fc" id="L805">		int lastEvent = this.getLastEvent();</span>
+
+<span class="pc bpc" id="L807" title="1 of 2 branches missed.">		switch(idnum){</span>
+			case 0:
+<span class="fc" id="L809">			alive_parameters_0 = false;</span>
+			break;
+		}
+<span class="pc bpc" id="L812" title="2 of 4 branches missed.">		switch(lastEvent) {</span>
+			case -1:
+<span class="nc" id="L814">			return;</span>
+			case 0:
+			//determinize
+			//alive_a
+<span class="nc bnc" id="L818" title="All 2 branches missed.">			if(!(alive_parameters_0)){</span>
+<span class="nc" id="L819">				RVM_terminated = true;</span>
+<span class="nc" id="L820">				return;</span>
+			}
+			break;
+
+			case 1:
+			//minimize
+			//alive_a
+<span class="pc bpc" id="L827" title="1 of 2 branches missed.">			if(!(alive_parameters_0)){</span>
+<span class="fc" id="L828">				RVM_terminated = true;</span>
+<span class="fc" id="L829">				return;</span>
+			}
+			break;
+
+		}
+<span class="fc" id="L834">		return;</span>
+	}
+
+	public static int getNumberOfEvents() {
+<span class="nc" id="L838">		return 2;</span>
+	}
+
+	public static int getNumberOfStates() {
+<span class="nc" id="L842">		return 3;</span>
+	}
+
+}
+class automata_hashcodeMonitor extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractAtomicMonitor implements Cloneable, com.runtimeverification.rvmonitor.java.rt.RVMObject {
+	protected Object clone() {
+		try {
+<span class="nc" id="L849">			automata_hashcodeMonitor ret = (automata_hashcodeMonitor) super.clone();</span>
+<span class="nc" id="L850">			return ret;</span>
+		}
+<span class="nc" id="L852">		catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L853">			throw new InternalError(e.toString());</span>
+		}
+	}
+
+<span class="fc" id="L857">	static final int Prop_1_transition_clearHash[] = {0, 1};;</span>
+<span class="fc" id="L858">	static final int Prop_1_transition_recomputeHash[] = {0, 1};;</span>
+
+<span class="fc" id="L860">	volatile boolean Prop_1_Category_fail = false;</span>
+
+	private final AtomicInteger pairValue;
+
+<span class="fc" id="L864">	automata_hashcodeMonitor() {</span>
+<span class="fc" id="L865">		this.pairValue = new AtomicInteger(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="fc" id="L867">	}</span>
+
+	@Override public final int getState() {
+<span class="nc" id="L870">		return this.getState(this.pairValue.get() ) ;</span>
+	}
+	@Override public final int getLastEvent() {
+<span class="fc" id="L873">		return this.getLastEvent(this.pairValue.get() ) ;</span>
+	}
+	private final int getState(int pairValue) {
+<span class="fc" id="L876">		return (pairValue &amp; 1) ;</span>
+	}
+	private final int getLastEvent(int pairValue) {
+<span class="fc" id="L879">		return (pairValue &gt;&gt; 1) ;</span>
+	}
+	private final int calculatePairValue(int lastEvent, int state) {
+<span class="fc" id="L882">		return (((lastEvent + 1) &lt;&lt; 1) | state) ;</span>
+	}
+
+	private final int handleEvent(int eventId, int[] table) {
+		int nextstate;
+		while (true) {
+<span class="fc" id="L888">			int oldpairvalue = this.pairValue.get() ;</span>
+<span class="fc" id="L889">			int oldstate = this.getState(oldpairvalue) ;</span>
+<span class="fc" id="L890">			nextstate = table [ oldstate ];</span>
+<span class="fc" id="L891">			int nextpairvalue = this.calculatePairValue(eventId, nextstate) ;</span>
+<span class="pc bpc" id="L892" title="1 of 2 branches missed.">			if (this.pairValue.compareAndSet(oldpairvalue, nextpairvalue) ) {</span>
+				break;
+			}
+		}
+<span class="fc" id="L896">		return nextstate;</span>
+	}
+
+	final boolean Prop_1_event_clearHash(Automaton a) {
+		{
+		}
+
+<span class="fc" id="L903">		int nextstate = this.handleEvent(0, Prop_1_transition_clearHash) ;</span>
+<span class="pc bpc" id="L904" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 1;</span>
+
+<span class="fc" id="L906">		return true;</span>
+	}
+
+	final boolean Prop_1_event_recomputeHash(Automaton a) {
+		{
+		}
+
+<span class="fc" id="L913">		int nextstate = this.handleEvent(1, Prop_1_transition_recomputeHash) ;</span>
+<span class="pc bpc" id="L914" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 1;</span>
+
+<span class="fc" id="L916">		return true;</span>
+	}
+
+	final void Prop_1_handler_fail (){
+		{
+<span class="nc" id="L921">			System.err.println(&quot;! Warning: clearHashCode without recomputeHashCode ...&quot;);</span>
+<span class="nc" id="L922">			this.reset();</span>
+		}
+
+<span class="nc" id="L925">	}</span>
+
+	final void reset() {
+<span class="nc" id="L928">		this.pairValue.set(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="nc" id="L930">		Prop_1_Category_fail = false;</span>
+<span class="nc" id="L931">	}</span>
+
+	// RVMRef_a was suppressed to reduce memory overhead
+
+	@Override
+	protected final void terminateInternal(int idnum) {
+<span class="fc" id="L937">		int lastEvent = this.getLastEvent();</span>
+
+<span class="fc" id="L939">		switch(idnum){</span>
+			case 0:
+			break;
+		}
+<span class="pc bpc" id="L943" title="2 of 4 branches missed.">		switch(lastEvent) {</span>
+			case -1:
+<span class="nc" id="L945">			return;</span>
+			case 0:
+			//clearHash
+<span class="nc" id="L948">			return;</span>
+			case 1:
+			//recomputeHash
+<span class="fc" id="L951">			return;</span>
+		}
+<span class="fc" id="L953">		return;</span>
+	}
+
+	public static int getNumberOfEvents() {
+<span class="nc" id="L957">		return 2;</span>
+	}
+
+	public static int getNumberOfStates() {
+<span class="nc" id="L961">		return 2;</span>
+	}
+
+}
+class automata_minimize_recomputehashcodeMonitor extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractAtomicMonitor implements Cloneable, com.runtimeverification.rvmonitor.java.rt.RVMObject {
+	protected Object clone() {
+		try {
+<span class="nc" id="L968">			automata_minimize_recomputehashcodeMonitor ret = (automata_minimize_recomputehashcodeMonitor) super.clone();</span>
+<span class="nc" id="L969">			return ret;</span>
+		}
+<span class="nc" id="L971">		catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L972">			throw new InternalError(e.toString());</span>
+		}
+	}
+
+<span class="fc" id="L976">	static final int Prop_1_transition_amr_recomputeHashCode[] = {0, 0, 2};;</span>
+<span class="fc" id="L977">	static final int Prop_1_transition_amr_minimize[] = {1, 2, 2};;</span>
+
+<span class="fc" id="L979">	volatile boolean Prop_1_Category_fail = false;</span>
+
+	private final AtomicInteger pairValue;
+
+<span class="fc" id="L983">	automata_minimize_recomputehashcodeMonitor() {</span>
+<span class="fc" id="L984">		this.pairValue = new AtomicInteger(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="fc" id="L986">	}</span>
+
+	@Override public final int getState() {
+<span class="nc" id="L989">		return this.getState(this.pairValue.get() ) ;</span>
+	}
+	@Override public final int getLastEvent() {
+<span class="fc" id="L992">		return this.getLastEvent(this.pairValue.get() ) ;</span>
+	}
+	private final int getState(int pairValue) {
+<span class="fc" id="L995">		return (pairValue &amp; 3) ;</span>
+	}
+	private final int getLastEvent(int pairValue) {
+<span class="fc" id="L998">		return (pairValue &gt;&gt; 2) ;</span>
+	}
+	private final int calculatePairValue(int lastEvent, int state) {
+<span class="fc" id="L1001">		return (((lastEvent + 1) &lt;&lt; 2) | state) ;</span>
+	}
+
+	private final int handleEvent(int eventId, int[] table) {
+		int nextstate;
+		while (true) {
+<span class="fc" id="L1007">			int oldpairvalue = this.pairValue.get() ;</span>
+<span class="fc" id="L1008">			int oldstate = this.getState(oldpairvalue) ;</span>
+<span class="fc" id="L1009">			nextstate = table [ oldstate ];</span>
+<span class="fc" id="L1010">			int nextpairvalue = this.calculatePairValue(eventId, nextstate) ;</span>
+<span class="pc bpc" id="L1011" title="1 of 2 branches missed.">			if (this.pairValue.compareAndSet(oldpairvalue, nextpairvalue) ) {</span>
+				break;
+			}
+		}
+<span class="fc" id="L1015">		return nextstate;</span>
+	}
+
+	final boolean Prop_1_event_amr_recomputeHashCode(Automaton a) {
+		{
+		}
+
+<span class="fc" id="L1022">		int nextstate = this.handleEvent(0, Prop_1_transition_amr_recomputeHashCode) ;</span>
+<span class="pc bpc" id="L1023" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 2;</span>
+
+<span class="fc" id="L1025">		return true;</span>
+	}
+
+	final boolean Prop_1_event_amr_minimize(Automaton a) {
+		{
+		}
+
+<span class="fc" id="L1032">		int nextstate = this.handleEvent(1, Prop_1_transition_amr_minimize) ;</span>
+<span class="pc bpc" id="L1033" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 2;</span>
+
+<span class="fc" id="L1035">		return true;</span>
+	}
+
+	final void Prop_1_handler_fail (){
+		{
+<span class="nc" id="L1040">			System.err.println(&quot;! Warning: minimize without recomputeHashCode ...&quot;);</span>
+<span class="nc" id="L1041">			this.reset();</span>
+		}
+
+<span class="nc" id="L1044">	}</span>
+
+	final void reset() {
+<span class="nc" id="L1047">		this.pairValue.set(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="nc" id="L1049">		Prop_1_Category_fail = false;</span>
+<span class="nc" id="L1050">	}</span>
+
+	// RVMRef_a was suppressed to reduce memory overhead
+
+	//alive_parameters_0 = [Automaton a]
+<span class="fc" id="L1055">	boolean alive_parameters_0 = true;</span>
+
+	@Override
+	protected final void terminateInternal(int idnum) {
+<span class="fc" id="L1059">		int lastEvent = this.getLastEvent();</span>
+
+<span class="pc bpc" id="L1061" title="1 of 2 branches missed.">		switch(idnum){</span>
+			case 0:
+<span class="fc" id="L1063">			alive_parameters_0 = false;</span>
+			break;
+		}
+<span class="pc bpc" id="L1066" title="3 of 4 branches missed.">		switch(lastEvent) {</span>
+			case -1:
+<span class="nc" id="L1068">			return;</span>
+			case 0:
+			//amr_recomputeHashCode
+			//alive_a
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">			if(!(alive_parameters_0)){</span>
+<span class="nc" id="L1073">				RVM_terminated = true;</span>
+<span class="nc" id="L1074">				return;</span>
+			}
+			break;
+
+			case 1:
+			//amr_minimize
+			//alive_a
+<span class="nc bnc" id="L1081" title="All 2 branches missed.">			if(!(alive_parameters_0)){</span>
+<span class="nc" id="L1082">				RVM_terminated = true;</span>
+<span class="nc" id="L1083">				return;</span>
+			}
+			break;
+
+		}
+<span class="fc" id="L1088">		return;</span>
+	}
+
+	public static int getNumberOfEvents() {
+<span class="nc" id="L1092">		return 2;</span>
+	}
+
+	public static int getNumberOfStates() {
+<span class="nc" id="L1096">		return 3;</span>
+	}
+
+}
+class automata_restoreinvariantMonitor extends com.runtimeverification.rvmonitor.java.rt.tablebase.AbstractAtomicMonitor implements Cloneable, com.runtimeverification.rvmonitor.java.rt.RVMObject {
+	protected Object clone() {
+		try {
+<span class="nc" id="L1103">			automata_restoreinvariantMonitor ret = (automata_restoreinvariantMonitor) super.clone();</span>
+<span class="nc" id="L1104">			return ret;</span>
+		}
+<span class="nc" id="L1106">		catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L1107">			throw new InternalError(e.toString());</span>
+		}
+	}
+
+<span class="fc" id="L1111">	static final int Prop_1_transition_ri_getStates[] = {0, 1};;</span>
+<span class="fc" id="L1112">	static final int Prop_1_transition_ri_restoreInvariant[] = {0, 1};;</span>
+
+<span class="fc" id="L1114">	volatile boolean Prop_1_Category_fail = false;</span>
+
+	private final AtomicInteger pairValue;
+
+<span class="fc" id="L1118">	automata_restoreinvariantMonitor() {</span>
+<span class="fc" id="L1119">		this.pairValue = new AtomicInteger(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="fc" id="L1121">	}</span>
+
+	@Override public final int getState() {
+<span class="nc" id="L1124">		return this.getState(this.pairValue.get() ) ;</span>
+	}
+	@Override public final int getLastEvent() {
+<span class="fc" id="L1127">		return this.getLastEvent(this.pairValue.get() ) ;</span>
+	}
+	private final int getState(int pairValue) {
+<span class="fc" id="L1130">		return (pairValue &amp; 1) ;</span>
+	}
+	private final int getLastEvent(int pairValue) {
+<span class="fc" id="L1133">		return (pairValue &gt;&gt; 1) ;</span>
+	}
+	private final int calculatePairValue(int lastEvent, int state) {
+<span class="fc" id="L1136">		return (((lastEvent + 1) &lt;&lt; 1) | state) ;</span>
+	}
+
+	private final int handleEvent(int eventId, int[] table) {
+		int nextstate;
+		while (true) {
+<span class="fc" id="L1142">			int oldpairvalue = this.pairValue.get() ;</span>
+<span class="fc" id="L1143">			int oldstate = this.getState(oldpairvalue) ;</span>
+<span class="fc" id="L1144">			nextstate = table [ oldstate ];</span>
+<span class="fc" id="L1145">			int nextpairvalue = this.calculatePairValue(eventId, nextstate) ;</span>
+<span class="pc bpc" id="L1146" title="1 of 2 branches missed.">			if (this.pairValue.compareAndSet(oldpairvalue, nextpairvalue) ) {</span>
+				break;
+			}
+		}
+<span class="fc" id="L1150">		return nextstate;</span>
+	}
+
+	final boolean Prop_1_event_ri_getStates(Automaton a1) {
+		{
+		}
+
+<span class="fc" id="L1157">		int nextstate = this.handleEvent(0, Prop_1_transition_ri_getStates) ;</span>
+<span class="pc bpc" id="L1158" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 1;</span>
+
+<span class="fc" id="L1160">		return true;</span>
+	}
+
+	final boolean Prop_1_event_ri_restoreInvariant(Automaton a1) {
+		{
+		}
+
+<span class="fc" id="L1167">		int nextstate = this.handleEvent(1, Prop_1_transition_ri_restoreInvariant) ;</span>
+<span class="pc bpc" id="L1168" title="1 of 2 branches missed.">		this.Prop_1_Category_fail = nextstate == 1;</span>
+
+<span class="fc" id="L1170">		return true;</span>
+	}
+
+	final void Prop_1_handler_fail (){
+		{
+<span class="nc" id="L1175">			System.err.println(&quot;! Warning: states accessed with no restoreInvariant&quot;);</span>
+<span class="nc" id="L1176">			this.reset();</span>
+		}
+
+<span class="nc" id="L1179">	}</span>
+
+	final void reset() {
+<span class="nc" id="L1182">		this.pairValue.set(this.calculatePairValue(-1, 0) ) ;</span>
+
+<span class="nc" id="L1184">		Prop_1_Category_fail = false;</span>
+<span class="nc" id="L1185">	}</span>
+
+	// RVMRef_a1 was suppressed to reduce memory overhead
+
+	@Override
+	protected final void terminateInternal(int idnum) {
+<span class="fc" id="L1191">		int lastEvent = this.getLastEvent();</span>
+
+<span class="fc" id="L1193">		switch(idnum){</span>
+			case 0:
+			break;
+		}
+<span class="pc bpc" id="L1197" title="3 of 4 branches missed.">		switch(lastEvent) {</span>
+			case -1:
+<span class="nc" id="L1199">			return;</span>
+			case 0:
+			//ri_getStates
+<span class="nc" id="L1202">			return;</span>
+			case 1:
+			//ri_restoreInvariant
+<span class="fc" id="L1205">			return;</span>
+		}
+<span class="nc" id="L1207">		return;</span>
+	}
+
+	public static int getNumberOfEvents() {
+<span class="nc" id="L1211">		return 2;</span>
+	}
+
+	public static int getNumberOfStates() {
+<span class="nc" id="L1215">		return 2;</span>
+	}
+
+}
+
+<span class="nc" id="L1220">class automata2RuntimeMonitor implements com.runtimeverification.rvmonitor.java.rt.RVMObject {</span>
+	private static com.runtimeverification.rvmonitor.java.rt.map.RVMMapManager automata2MapManager;
+	static {
+<span class="fc" id="L1223">		automata2MapManager = new com.runtimeverification.rvmonitor.java.rt.map.RVMMapManager();</span>
+<span class="fc" id="L1224">		automata2MapManager.start();</span>
+	}
+
+	// Declarations for the Lock
+<span class="fc" id="L1228">	static final ReentrantLock automata2_RVMLock = new ReentrantLock();</span>
+<span class="fc" id="L1229">	static final Condition automata2_RVMLock_cond = automata2_RVMLock.newCondition();</span>
+
+	// Declarations for Timestamps
+<span class="fc" id="L1232">	private static long automata_arg_clone_binary_timestamp = 1;</span>
+<span class="fc" id="L1233">	private static long automata_arg_clone_unary_timestamp = 1;</span>
+
+<span class="fc" id="L1235">	private static boolean automata_arg_clone_binary_activated = false;</span>
+<span class="fc" id="L1236">	private static boolean automata_arg_clone_unary_activated = false;</span>
+<span class="fc" id="L1237">	private static boolean automata_determinize_activated = false;</span>
+<span class="fc" id="L1238">	private static boolean automata_hashcode_activated = false;</span>
+<span class="fc" id="L1239">	private static boolean automata_minimize_recomputehashcode_activated = false;</span>
+<span class="fc" id="L1240">	private static boolean automata_restoreinvariant_activated = false;</span>
+
+	// Declarations for Indexing Trees
+	private static Object automata_arg_clone_binary_a_Map_cachekey_a;
+	private static Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary_a_Map_cachevalue;
+	private static Object automata_arg_clone_binary_a_b_Map_cachekey_a;
+	private static Object automata_arg_clone_binary_a_b_Map_cachekey_b;
+	private static Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary_a_b_Map_cachevalue;
+	private static Object automata_arg_clone_binary_b_Map_cachekey_b;
+	private static Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary_b_Map_cachevalue;
+	private static Object automata_arg_clone_binary_bo_a_b_Map_cachekey_a;
+	private static Object automata_arg_clone_binary_bo_a_b_Map_cachekey_b;
+	private static Object automata_arg_clone_binary_bo_a_b_Map_cachekey_bo;
+	private static automata_arg_clone_binaryMonitor automata_arg_clone_binary_bo_a_b_Map_cachevalue;
+<span class="fc" id="L1254">	private static final MapOfAll&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary_a_b_Map = new MapOfAll&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;(1) ;</span>
+<span class="fc" id="L1255">	private static final MapOfMap&lt;MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt;&gt; automata_arg_clone_binary_bo_a_b_Map = new MapOfMap&lt;MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt;&gt;(0) ;</span>
+<span class="fc" id="L1256">	private static final MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary_b_Map = new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;(2) ;</span>
+	private static Object automata_arg_clone_binary_a_b__To__a_b_Map_cachekey_a;
+	private static Object automata_arg_clone_binary_a_b__To__a_b_Map_cachekey_b;
+	private static Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary_a_b__To__a_b_Map_cachevalue;
+<span class="fc" id="L1260">	private static final Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary___To__b_Map = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;(new automata_arg_clone_binaryMonitor_Set() , null) ;</span>
+<span class="fc" id="L1261">	private static final MapOfMap&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;&gt; automata_arg_clone_binary_a_b__To__a_b_Map = new MapOfMap&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;&gt;(1) ;</span>
+<span class="fc" id="L1262">	private static final Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; automata_arg_clone_binary___To__a_Map = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;(new automata_arg_clone_binaryMonitor_Set() , null) ;</span>
+
+	private static Object automata_arg_clone_unary_a_Map_cachekey_a;
+	private static Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; automata_arg_clone_unary_a_Map_cachevalue;
+	private static Object automata_arg_clone_unary_u_a_Map_cachekey_a;
+	private static Object automata_arg_clone_unary_u_a_Map_cachekey_u;
+	private static automata_arg_clone_unaryMonitor automata_arg_clone_unary_u_a_Map_cachevalue;
+<span class="fc" id="L1269">	private static final MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_unaryMonitor&gt;&gt; automata_arg_clone_unary_u_a_Map = new MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_unaryMonitor&gt;&gt;(0) ;</span>
+<span class="fc" id="L1270">	private static final MapOfSetMonitor&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; automata_arg_clone_unary_a_Map = new MapOfSetMonitor&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt;(1) ;</span>
+
+	private static Object automata_determinize_a_Map_cachekey_a;
+	private static automata_determinizeMonitor automata_determinize_a_Map_cachevalue;
+<span class="fc" id="L1274">	private static final MapOfMonitor&lt;automata_determinizeMonitor&gt; automata_determinize_a_Map = new MapOfMonitor&lt;automata_determinizeMonitor&gt;(0) ;</span>
+
+	private static Object automata_hashcode_a_Map_cachekey_a;
+	private static automata_hashcodeMonitor automata_hashcode_a_Map_cachevalue;
+<span class="fc" id="L1278">	private static final MapOfMonitor&lt;automata_hashcodeMonitor&gt; automata_hashcode_a_Map = new MapOfMonitor&lt;automata_hashcodeMonitor&gt;(0) ;</span>
+
+	private static Object automata_minimize_recomputehashcode_a_Map_cachekey_a;
+	private static automata_minimize_recomputehashcodeMonitor automata_minimize_recomputehashcode_a_Map_cachevalue;
+<span class="fc" id="L1282">	private static final MapOfMonitor&lt;automata_minimize_recomputehashcodeMonitor&gt; automata_minimize_recomputehashcode_a_Map = new MapOfMonitor&lt;automata_minimize_recomputehashcodeMonitor&gt;(0) ;</span>
+
+	private static Object automata_restoreinvariant_a1_Map_cachekey_a1;
+	private static automata_restoreinvariantMonitor automata_restoreinvariant_a1_Map_cachevalue;
+<span class="fc" id="L1286">	private static final MapOfMonitor&lt;automata_restoreinvariantMonitor&gt; automata_restoreinvariant_a1_Map = new MapOfMonitor&lt;automata_restoreinvariantMonitor&gt;(0) ;</span>
+
+	public static int cleanUp() {
+<span class="nc" id="L1289">		int collected = 0;</span>
+		// indexing trees
+<span class="nc" id="L1291">		collected += automata_arg_clone_binary_a_b_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1292">		collected += automata_arg_clone_binary_bo_a_b_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1293">		collected += automata_arg_clone_binary_b_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1294">		collected += automata_arg_clone_binary_a_b__To__a_b_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1295">		collected += automata_arg_clone_unary_u_a_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1296">		collected += automata_arg_clone_unary_a_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1297">		collected += automata_determinize_a_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1298">		collected += automata_hashcode_a_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1299">		collected += automata_minimize_recomputehashcode_a_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1300">		collected += automata_restoreinvariant_a1_Map.cleanUpUnnecessaryMappings();</span>
+<span class="nc" id="L1301">		return collected;</span>
+	}
+
+	// Removing terminated monitors from partitioned sets
+	static {
+<span class="fc" id="L1306">		TerminatedMonitorCleaner.start() ;</span>
+	}
+	// Setting the behavior of the runtime library according to the compile-time option
+	static {
+<span class="fc" id="L1310">		RuntimeOption.enableFineGrainedLock(false) ;</span>
+<span class="fc" id="L1311">	}</span>
+
+	public static final void UopEvent(UnaryOperation u, Automaton a) {
+<span class="fc" id="L1314">		automata_arg_clone_unary_activated = true;</span>
+<span class="pc bpc" id="L1315" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L1316">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L1319">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L1320">		CachedWeakReference wr_u = null;</span>
+<span class="fc" id="L1321">		MapOfMonitor&lt;automata_arg_clone_unaryMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L1322">		automata_arg_clone_unaryMonitor matchedEntry = null;</span>
+<span class="fc" id="L1323">		boolean cachehit = false;</span>
+<span class="pc bpc" id="L1324" title="1 of 4 branches missed.">		if (((a == automata_arg_clone_unary_u_a_Map_cachekey_a) &amp;&amp; (u == automata_arg_clone_unary_u_a_Map_cachekey_u) ) ) {</span>
+<span class="nc" id="L1325">			matchedEntry = automata_arg_clone_unary_u_a_Map_cachevalue;</span>
+<span class="nc" id="L1326">			cachehit = true;</span>
+<span class="nc" id="L1327">		}</span>
+		else {
+<span class="fc" id="L1329">			wr_u = new CachedWeakReference(u) ;</span>
+<span class="fc" id="L1330">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L1333">				MapOfMonitor&lt;automata_arg_clone_unaryMonitor&gt; node_u = automata_arg_clone_unary_u_a_Map.getNodeEquivalent(wr_u) ;</span>
+<span class="pc bpc" id="L1334" title="1 of 2 branches missed.">				if ((node_u == null) ) {</span>
+<span class="fc" id="L1335">					node_u = new MapOfMonitor&lt;automata_arg_clone_unaryMonitor&gt;(1) ;</span>
+<span class="fc" id="L1336">					automata_arg_clone_unary_u_a_Map.putNode(wr_u, node_u) ;</span>
+				}
+<span class="fc" id="L1338">				matchedLastMap = node_u;</span>
+<span class="fc" id="L1339">				automata_arg_clone_unaryMonitor node_u_a = node_u.getNodeEquivalent(wr_a) ;</span>
+<span class="fc" id="L1340">				matchedEntry = node_u_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="pc bpc" id="L1344" title="1 of 2 branches missed.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L1345" title="1 of 2 branches missed.">			if ((wr_u == null) ) {</span>
+<span class="nc" id="L1346">				wr_u = new CachedWeakReference(u) ;</span>
+			}
+<span class="pc bpc" id="L1348" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L1349">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			{
+				// D(X) createNewMonitorStates:4 when Dom(theta'') = &lt;a&gt;
+<span class="fc" id="L1353">				automata_arg_clone_unaryMonitor sourceLeaf = null;</span>
+				{
+					// FindCode
+<span class="fc" id="L1356">					Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; node_a = automata_arg_clone_unary_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1357" title="1 of 2 branches missed.">					if ((node_a != null) ) {</span>
+<span class="fc" id="L1358">						automata_arg_clone_unaryMonitor itmdLeaf = node_a.getValue2() ;</span>
+<span class="fc" id="L1359">						sourceLeaf = itmdLeaf;</span>
+					}
+				}
+<span class="pc bpc" id="L1362" title="1 of 2 branches missed.">				if ((sourceLeaf != null) ) {</span>
+<span class="fc" id="L1363">					boolean definable = true;</span>
+					// D(X) defineTo:1--5 for &lt;u, a&gt;
+<span class="pc bpc" id="L1365" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="fc" id="L1367">						MapOfMonitor&lt;automata_arg_clone_unaryMonitor&gt; node_u = automata_arg_clone_unary_u_a_Map.getNodeEquivalent(wr_u) ;</span>
+<span class="pc bpc" id="L1368" title="1 of 2 branches missed.">						if ((node_u != null) ) {</span>
+<span class="fc" id="L1369">							automata_arg_clone_unaryMonitor node_u_a = node_u.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1370" title="1 of 2 branches missed.">							if ((node_u_a != null) ) {</span>
+<span class="nc bnc" id="L1371" title="All 6 branches missed.">								if (((node_u_a.getDisable() &gt; sourceLeaf.getTau() ) || ((node_u_a.getTau() &gt; 0) &amp;&amp; (node_u_a.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1372">									definable = false;</span>
+								}
+							}
+						}
+					}
+<span class="pc bpc" id="L1377" title="1 of 2 branches missed.">					if (definable) {</span>
+						// D(X) defineTo:6
+<span class="fc" id="L1379">						automata_arg_clone_unaryMonitor created = (automata_arg_clone_unaryMonitor)sourceLeaf.clone() ;</span>
+<span class="fc" id="L1380">						matchedEntry = created;</span>
+<span class="fc" id="L1381">						matchedLastMap.putNode(wr_a, created) ;</span>
+						// D(X) defineTo:7 for &lt;a&gt;
+						{
+							// InsertMonitor
+<span class="fc" id="L1385">							Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; node_a = automata_arg_clone_unary_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1386" title="1 of 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1387">								node_a = new Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt;() ;</span>
+<span class="nc" id="L1388">								automata_arg_clone_unary_a_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1389">								node_a.setValue1(new automata_arg_clone_unaryMonitor_Set() ) ;</span>
+							}
+<span class="fc" id="L1391">							automata_arg_clone_unaryMonitor_Set targetSet = node_a.getValue1() ;</span>
+<span class="fc" id="L1392">							targetSet.add(created) ;</span>
+						}
+					}
+				}
+			}
+<span class="pc bpc" id="L1397" title="1 of 2 branches missed.">			if ((matchedEntry == null) ) {</span>
+				// D(X) main:4
+<span class="nc" id="L1399">				automata_arg_clone_unaryMonitor created = new automata_arg_clone_unaryMonitor(automata_arg_clone_unary_timestamp++) ;</span>
+<span class="nc" id="L1400">				matchedEntry = created;</span>
+<span class="nc" id="L1401">				matchedLastMap.putNode(wr_a, created) ;</span>
+				// D(X) defineNew:5 for &lt;a&gt;
+				{
+					// InsertMonitor
+<span class="nc" id="L1405">					Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; node_a = automata_arg_clone_unary_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1406" title="All 2 branches missed.">					if ((node_a == null) ) {</span>
+<span class="nc" id="L1407">						node_a = new Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt;() ;</span>
+<span class="nc" id="L1408">						automata_arg_clone_unary_a_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1409">						node_a.setValue1(new automata_arg_clone_unaryMonitor_Set() ) ;</span>
+					}
+<span class="nc" id="L1411">					automata_arg_clone_unaryMonitor_Set targetSet = node_a.getValue1() ;</span>
+<span class="nc" id="L1412">					targetSet.add(created) ;</span>
+				}
+			}
+			// D(X) main:6
+<span class="fc" id="L1416">			matchedEntry.setDisable(automata_arg_clone_unary_timestamp++) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L1419">		final automata_arg_clone_unaryMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L1420">		matchedEntry.Prop_1_event_Uop(u, a);</span>
+<span class="pc bpc" id="L1421" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L1422">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="pc bpc" id="L1425" title="1 of 2 branches missed.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L1426">			automata_arg_clone_unary_u_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L1427">			automata_arg_clone_unary_u_a_Map_cachekey_u = u;</span>
+<span class="fc" id="L1428">			automata_arg_clone_unary_u_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L1431">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L1432">	}</span>
+
+	public static final void aCloneEvent(Automaton a) {
+<span class="fc" id="L1435">		automata_arg_clone_unary_activated = true;</span>
+<span class="pc bpc" id="L1436" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L1437">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L1440">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L1441">		Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; matchedEntry = null;</span>
+<span class="fc" id="L1442">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L1443" title="All 2 branches covered.">		if ((a == automata_arg_clone_unary_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L1444">			matchedEntry = automata_arg_clone_unary_a_Map_cachevalue;</span>
+<span class="fc" id="L1445">			cachehit = true;</span>
+<span class="fc" id="L1446">		}</span>
+		else {
+<span class="fc" id="L1448">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L1451">				Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt; node_a = automata_arg_clone_unary_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc bfc" id="L1452" title="All 2 branches covered.">				if ((node_a == null) ) {</span>
+<span class="fc" id="L1453">					node_a = new Tuple2&lt;automata_arg_clone_unaryMonitor_Set, automata_arg_clone_unaryMonitor&gt;() ;</span>
+<span class="fc" id="L1454">					automata_arg_clone_unary_a_Map.putNode(wr_a, node_a) ;</span>
+<span class="fc" id="L1455">					node_a.setValue1(new automata_arg_clone_unaryMonitor_Set() ) ;</span>
+				}
+<span class="fc" id="L1457">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc" id="L1461">		automata_arg_clone_unaryMonitor matchedLeaf = matchedEntry.getValue2() ;</span>
+<span class="fc bfc" id="L1462" title="All 2 branches covered.">		if ((matchedLeaf == null) ) {</span>
+<span class="pc bpc" id="L1463" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L1464">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+<span class="pc bpc" id="L1466" title="1 of 2 branches missed.">			if ((matchedLeaf == null) ) {</span>
+				// D(X) main:4
+<span class="fc" id="L1468">				automata_arg_clone_unaryMonitor created = new automata_arg_clone_unaryMonitor(automata_arg_clone_unary_timestamp++) ;</span>
+<span class="fc" id="L1469">				matchedEntry.setValue2(created) ;</span>
+<span class="fc" id="L1470">				automata_arg_clone_unaryMonitor_Set enclosingSet = matchedEntry.getValue1() ;</span>
+<span class="fc" id="L1471">				enclosingSet.add(created) ;</span>
+			}
+			// D(X) main:6
+<span class="fc" id="L1474">			automata_arg_clone_unaryMonitor disableUpdatedLeaf = matchedEntry.getValue2() ;</span>
+<span class="fc" id="L1475">			disableUpdatedLeaf.setDisable(automata_arg_clone_unary_timestamp++) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L1478">		automata_arg_clone_unaryMonitor_Set stateTransitionedSet = matchedEntry.getValue1() ;</span>
+<span class="fc" id="L1479">		stateTransitionedSet.event_aClone(a);</span>
+
+<span class="fc bfc" id="L1481" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L1482">			automata_arg_clone_unary_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L1483">			automata_arg_clone_unary_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L1486">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L1487">	}</span>
+
+	public static final void BopEvent(BinaryOperation bo, Automaton a, Automaton b) {
+<span class="fc" id="L1490">		automata_arg_clone_binary_activated = true;</span>
+<span class="pc bpc" id="L1491" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L1492">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L1495">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L1496">		CachedWeakReference wr_b = null;</span>
+<span class="fc" id="L1497">		CachedWeakReference wr_bo = null;</span>
+<span class="fc" id="L1498">		MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L1499">		automata_arg_clone_binaryMonitor matchedEntry = null;</span>
+<span class="fc" id="L1500">		boolean cachehit = false;</span>
+<span class="pc bpc" id="L1501" title="5 of 6 branches missed.">		if ((((a == automata_arg_clone_binary_bo_a_b_Map_cachekey_a) &amp;&amp; (b == automata_arg_clone_binary_bo_a_b_Map_cachekey_b) ) &amp;&amp; (bo == automata_arg_clone_binary_bo_a_b_Map_cachekey_bo) ) ) {</span>
+<span class="nc" id="L1502">			matchedEntry = automata_arg_clone_binary_bo_a_b_Map_cachevalue;</span>
+<span class="nc" id="L1503">			cachehit = true;</span>
+<span class="nc" id="L1504">		}</span>
+		else {
+<span class="fc" id="L1506">			wr_bo = new CachedWeakReference(bo) ;</span>
+<span class="fc" id="L1507">			wr_a = new CachedWeakReference(a) ;</span>
+<span class="fc" id="L1508">			wr_b = new CachedWeakReference(b) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L1511">				MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt; node_bo = automata_arg_clone_binary_bo_a_b_Map.getNodeEquivalent(wr_bo) ;</span>
+<span class="pc bpc" id="L1512" title="1 of 2 branches missed.">				if ((node_bo == null) ) {</span>
+<span class="fc" id="L1513">					node_bo = new MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt;(1) ;</span>
+<span class="fc" id="L1514">					automata_arg_clone_binary_bo_a_b_Map.putNode(wr_bo, node_bo) ;</span>
+				}
+<span class="fc" id="L1516">				MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt; node_bo_a = node_bo.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1517" title="1 of 2 branches missed.">				if ((node_bo_a == null) ) {</span>
+<span class="fc" id="L1518">					node_bo_a = new MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;(2) ;</span>
+<span class="fc" id="L1519">					node_bo.putNode(wr_a, node_bo_a) ;</span>
+				}
+<span class="fc" id="L1521">				matchedLastMap = node_bo_a;</span>
+<span class="fc" id="L1522">				automata_arg_clone_binaryMonitor node_bo_a_b = node_bo_a.getNodeEquivalent(wr_b) ;</span>
+<span class="fc" id="L1523">				matchedEntry = node_bo_a_b;</span>
+			}
+		}
+		// D(X) main:1
+<span class="pc bpc" id="L1527" title="1 of 2 branches missed.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L1528" title="1 of 2 branches missed.">			if ((wr_bo == null) ) {</span>
+<span class="nc" id="L1529">				wr_bo = new CachedWeakReference(bo) ;</span>
+			}
+<span class="pc bpc" id="L1531" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L1532">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+<span class="pc bpc" id="L1534" title="1 of 2 branches missed.">			if ((wr_b == null) ) {</span>
+<span class="nc" id="L1535">				wr_b = new CachedWeakReference(b) ;</span>
+			}
+			{
+				// D(X) createNewMonitorStates:4 when Dom(theta'') = &lt;a, b&gt;
+<span class="fc" id="L1539">				automata_arg_clone_binaryMonitor sourceLeaf = null;</span>
+				{
+					// FindCode
+<span class="fc" id="L1542">					MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b__To__a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1543" title="1 of 2 branches missed.">					if ((node_a != null) ) {</span>
+<span class="fc" id="L1544">						Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L1545" title="1 of 2 branches missed.">						if ((node_a_b != null) ) {</span>
+<span class="fc" id="L1546">							automata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="fc" id="L1547">							sourceLeaf = itmdLeaf;</span>
+						}
+					}
+				}
+<span class="pc bpc" id="L1551" title="1 of 2 branches missed.">				if ((sourceLeaf != null) ) {</span>
+<span class="nc" id="L1552">					boolean definable = true;</span>
+					// D(X) defineTo:1--5 for &lt;bo, a, b&gt;
+<span class="nc bnc" id="L1554" title="All 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="nc" id="L1556">						MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt; node_bo = automata_arg_clone_binary_bo_a_b_Map.getNodeEquivalent(wr_bo) ;</span>
+<span class="nc bnc" id="L1557" title="All 2 branches missed.">						if ((node_bo != null) ) {</span>
+<span class="nc" id="L1558">							MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt; node_bo_a = node_bo.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1559" title="All 2 branches missed.">							if ((node_bo_a != null) ) {</span>
+<span class="nc" id="L1560">								automata_arg_clone_binaryMonitor node_bo_a_b = node_bo_a.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1561" title="All 2 branches missed.">								if ((node_bo_a_b != null) ) {</span>
+<span class="nc bnc" id="L1562" title="All 6 branches missed.">									if (((node_bo_a_b.getDisable() &gt; sourceLeaf.getTau() ) || ((node_bo_a_b.getTau() &gt; 0) &amp;&amp; (node_bo_a_b.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1563">										definable = false;</span>
+									}
+								}
+							}
+						}
+					}
+<span class="nc bnc" id="L1569" title="All 2 branches missed.">					if (definable) {</span>
+						// D(X) defineTo:6
+<span class="nc" id="L1571">						automata_arg_clone_binaryMonitor created = (automata_arg_clone_binaryMonitor)sourceLeaf.clone() ;</span>
+<span class="nc" id="L1572">						created.RVMRef_bo = wr_bo;</span>
+<span class="nc" id="L1573">						matchedEntry = created;</span>
+<span class="nc" id="L1574">						matchedLastMap.putNode(wr_b, created) ;</span>
+						// D(X) defineTo:7 for &lt;a&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1578">							Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1579" title="All 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1580">								node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1581">								automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1582">								node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1583">								node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1585">							automata_arg_clone_binaryMonitor_Set targetSet = node_a.getValue2() ;</span>
+<span class="nc" id="L1586">							targetSet.add(created) ;</span>
+						}
+						// D(X) defineTo:7 for &lt;a, b&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1591">							Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1592" title="All 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1593">								node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1594">								automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1595">								node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1596">								node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1598">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1599" title="All 2 branches missed.">							if ((node_a_b == null) ) {</span>
+<span class="nc" id="L1600">								node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1601">								node_a.getValue1() .putNode(wr_b, node_a_b) ;</span>
+<span class="nc" id="L1602">								node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1604">							automata_arg_clone_binaryMonitor_Set targetSet = node_a_b.getValue1() ;</span>
+<span class="nc" id="L1605">							targetSet.add(created) ;</span>
+						}
+						// D(X) defineTo:7 for &lt;b&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1610">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1611" title="All 2 branches missed.">							if ((node_b == null) ) {</span>
+<span class="nc" id="L1612">								node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1613">								automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="nc" id="L1614">								node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1616">							automata_arg_clone_binaryMonitor_Set targetSet = node_b.getValue1() ;</span>
+<span class="nc" id="L1617">							targetSet.add(created) ;</span>
+						}
+					}
+				}
+			}
+			{
+				// D(X) createNewMonitorStates:4 when Dom(theta'') = &lt;a&gt;
+<span class="fc" id="L1624">				automata_arg_clone_binaryMonitor sourceLeaf = null;</span>
+				{
+					// FindCode
+<span class="fc" id="L1627">					Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1628" title="1 of 2 branches missed.">					if ((node_a != null) ) {</span>
+<span class="fc" id="L1629">						automata_arg_clone_binaryMonitor itmdLeaf = node_a.getValue3() ;</span>
+<span class="fc" id="L1630">						sourceLeaf = itmdLeaf;</span>
+					}
+				}
+<span class="pc bpc" id="L1633" title="1 of 2 branches missed.">				if ((sourceLeaf != null) ) {</span>
+<span class="fc" id="L1634">					boolean definable = true;</span>
+					// D(X) defineTo:1--5 for &lt;a, b&gt;
+<span class="pc bpc" id="L1636" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="fc" id="L1638">						Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1639" title="1 of 2 branches missed.">						if ((node_a != null) ) {</span>
+<span class="fc" id="L1640">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L1641" title="1 of 2 branches missed.">							if ((node_a_b != null) ) {</span>
+<span class="fc" id="L1642">								Iautomata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="pc bpc" id="L1643" title="1 of 2 branches missed.">								if ((itmdLeaf != null) ) {</span>
+<span class="pc bpc" id="L1644" title="2 of 6 branches missed.">									if (((itmdLeaf.getDisable() &gt; sourceLeaf.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="fc" id="L1645">										definable = false;</span>
+									}
+								}
+							}
+						}
+					}
+					// D(X) defineTo:1--5 for &lt;b&gt;
+<span class="pc bpc" id="L1652" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="nc" id="L1654">						Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1655" title="All 2 branches missed.">						if ((node_b != null) ) {</span>
+<span class="nc" id="L1656">							automata_arg_clone_binaryMonitor itmdLeaf = node_b.getValue2() ;</span>
+<span class="nc bnc" id="L1657" title="All 2 branches missed.">							if ((itmdLeaf != null) ) {</span>
+<span class="nc bnc" id="L1658" title="All 6 branches missed.">								if (((itmdLeaf.getDisable() &gt; sourceLeaf.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1659">									definable = false;</span>
+								}
+							}
+						}
+					}
+					// D(X) defineTo:1--5 for &lt;bo, a, b&gt;
+<span class="pc bpc" id="L1665" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="nc" id="L1667">						MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt; node_bo = automata_arg_clone_binary_bo_a_b_Map.getNodeEquivalent(wr_bo) ;</span>
+<span class="nc bnc" id="L1668" title="All 2 branches missed.">						if ((node_bo != null) ) {</span>
+<span class="nc" id="L1669">							MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt; node_bo_a = node_bo.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1670" title="All 2 branches missed.">							if ((node_bo_a != null) ) {</span>
+<span class="nc" id="L1671">								automata_arg_clone_binaryMonitor node_bo_a_b = node_bo_a.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1672" title="All 2 branches missed.">								if ((node_bo_a_b != null) ) {</span>
+<span class="nc bnc" id="L1673" title="All 6 branches missed.">									if (((node_bo_a_b.getDisable() &gt; sourceLeaf.getTau() ) || ((node_bo_a_b.getTau() &gt; 0) &amp;&amp; (node_bo_a_b.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1674">										definable = false;</span>
+									}
+								}
+							}
+						}
+					}
+<span class="pc bpc" id="L1680" title="1 of 2 branches missed.">					if (definable) {</span>
+						// D(X) defineTo:6
+<span class="nc" id="L1682">						automata_arg_clone_binaryMonitor created = (automata_arg_clone_binaryMonitor)sourceLeaf.clone() ;</span>
+<span class="nc" id="L1683">						created.RVMRef_bo = wr_bo;</span>
+<span class="nc" id="L1684">						created.RVMRef_b = wr_b;</span>
+<span class="nc" id="L1685">						matchedEntry = created;</span>
+<span class="nc" id="L1686">						matchedLastMap.putNode(wr_b, created) ;</span>
+						// D(X) defineTo:7 for &lt;a&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1690">							Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1691" title="All 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1692">								node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1693">								automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1694">								node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1695">								node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1697">							automata_arg_clone_binaryMonitor_Set targetSet = node_a.getValue2() ;</span>
+<span class="nc" id="L1698">							targetSet.add(created) ;</span>
+						}
+						// D(X) defineTo:7 for &lt;a, b&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1703">							Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1704" title="All 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1705">								node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1706">								automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1707">								node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1708">								node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1710">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1711" title="All 2 branches missed.">							if ((node_a_b == null) ) {</span>
+<span class="nc" id="L1712">								node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1713">								node_a.getValue1() .putNode(wr_b, node_a_b) ;</span>
+<span class="nc" id="L1714">								node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1716">							automata_arg_clone_binaryMonitor_Set targetSet = node_a_b.getValue1() ;</span>
+<span class="nc" id="L1717">							targetSet.add(created) ;</span>
+						}
+						// D(X) defineTo:7 for &lt;b&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1722">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1723" title="All 2 branches missed.">							if ((node_b == null) ) {</span>
+<span class="nc" id="L1724">								node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1725">								automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="nc" id="L1726">								node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1728">							automata_arg_clone_binaryMonitor_Set targetSet = node_b.getValue1() ;</span>
+<span class="nc" id="L1729">							targetSet.add(created) ;</span>
+						}
+					}
+				}
+			}
+			{
+				// D(X) createNewMonitorStates:4 when Dom(theta'') = &lt;b&gt;
+<span class="fc" id="L1736">				automata_arg_clone_binaryMonitor sourceLeaf = null;</span>
+				{
+					// FindCode
+<span class="fc" id="L1739">					Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L1740" title="1 of 2 branches missed.">					if ((node_b != null) ) {</span>
+<span class="fc" id="L1741">						automata_arg_clone_binaryMonitor itmdLeaf = node_b.getValue2() ;</span>
+<span class="fc" id="L1742">						sourceLeaf = itmdLeaf;</span>
+					}
+				}
+<span class="pc bpc" id="L1745" title="1 of 2 branches missed.">				if ((sourceLeaf != null) ) {</span>
+<span class="fc" id="L1746">					boolean definable = true;</span>
+					// D(X) defineTo:1--5 for &lt;a&gt;
+<span class="pc bpc" id="L1748" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="fc" id="L1750">						Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1751" title="1 of 2 branches missed.">						if ((node_a != null) ) {</span>
+<span class="fc" id="L1752">							automata_arg_clone_binaryMonitor itmdLeaf = node_a.getValue3() ;</span>
+<span class="pc bpc" id="L1753" title="1 of 2 branches missed.">							if ((itmdLeaf != null) ) {</span>
+<span class="pc bpc" id="L1754" title="2 of 6 branches missed.">								if (((itmdLeaf.getDisable() &gt; sourceLeaf.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="fc" id="L1755">									definable = false;</span>
+								}
+							}
+						}
+					}
+					// D(X) defineTo:1--5 for &lt;a, b&gt;
+<span class="pc bpc" id="L1761" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="nc" id="L1763">						Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1764" title="All 2 branches missed.">						if ((node_a != null) ) {</span>
+<span class="nc" id="L1765">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1766" title="All 2 branches missed.">							if ((node_a_b != null) ) {</span>
+<span class="nc" id="L1767">								Iautomata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="nc bnc" id="L1768" title="All 2 branches missed.">								if ((itmdLeaf != null) ) {</span>
+<span class="nc bnc" id="L1769" title="All 6 branches missed.">									if (((itmdLeaf.getDisable() &gt; sourceLeaf.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1770">										definable = false;</span>
+									}
+								}
+							}
+						}
+					}
+					// D(X) defineTo:1--5 for &lt;bo, a, b&gt;
+<span class="pc bpc" id="L1777" title="1 of 2 branches missed.">					if (definable) {</span>
+						// FindCode
+<span class="nc" id="L1779">						MapOfMap&lt;MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt;&gt; node_bo = automata_arg_clone_binary_bo_a_b_Map.getNodeEquivalent(wr_bo) ;</span>
+<span class="nc bnc" id="L1780" title="All 2 branches missed.">						if ((node_bo != null) ) {</span>
+<span class="nc" id="L1781">							MapOfMonitor&lt;automata_arg_clone_binaryMonitor&gt; node_bo_a = node_bo.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1782" title="All 2 branches missed.">							if ((node_bo_a != null) ) {</span>
+<span class="nc" id="L1783">								automata_arg_clone_binaryMonitor node_bo_a_b = node_bo_a.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1784" title="All 2 branches missed.">								if ((node_bo_a_b != null) ) {</span>
+<span class="nc bnc" id="L1785" title="All 6 branches missed.">									if (((node_bo_a_b.getDisable() &gt; sourceLeaf.getTau() ) || ((node_bo_a_b.getTau() &gt; 0) &amp;&amp; (node_bo_a_b.getTau() &lt; sourceLeaf.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1786">										definable = false;</span>
+									}
+								}
+							}
+						}
+					}
+<span class="pc bpc" id="L1792" title="1 of 2 branches missed.">					if (definable) {</span>
+						// D(X) defineTo:6
+<span class="nc" id="L1794">						automata_arg_clone_binaryMonitor created = (automata_arg_clone_binaryMonitor)sourceLeaf.clone() ;</span>
+<span class="nc" id="L1795">						created.RVMRef_bo = wr_bo;</span>
+<span class="nc" id="L1796">						created.RVMRef_a = wr_a;</span>
+<span class="nc" id="L1797">						matchedEntry = created;</span>
+<span class="nc" id="L1798">						matchedLastMap.putNode(wr_b, created) ;</span>
+						// D(X) defineTo:7 for &lt;a&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1802">							Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1803" title="All 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1804">								node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1805">								automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1806">								node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1807">								node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1809">							automata_arg_clone_binaryMonitor_Set targetSet = node_a.getValue2() ;</span>
+<span class="nc" id="L1810">							targetSet.add(created) ;</span>
+						}
+						// D(X) defineTo:7 for &lt;a, b&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1815">							Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc bnc" id="L1816" title="All 2 branches missed.">							if ((node_a == null) ) {</span>
+<span class="nc" id="L1817">								node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1818">								automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1819">								node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1820">								node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1822">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1823" title="All 2 branches missed.">							if ((node_a_b == null) ) {</span>
+<span class="nc" id="L1824">								node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1825">								node_a.getValue1() .putNode(wr_b, node_a_b) ;</span>
+<span class="nc" id="L1826">								node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1828">							automata_arg_clone_binaryMonitor_Set targetSet = node_a_b.getValue1() ;</span>
+<span class="nc" id="L1829">							targetSet.add(created) ;</span>
+						}
+						// D(X) defineTo:7 for &lt;b&gt;
+						{
+							// InsertMonitor
+<span class="nc" id="L1834">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="nc bnc" id="L1835" title="All 2 branches missed.">							if ((node_b == null) ) {</span>
+<span class="nc" id="L1836">								node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1837">								automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="nc" id="L1838">								node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+							}
+<span class="nc" id="L1840">							automata_arg_clone_binaryMonitor_Set targetSet = node_b.getValue1() ;</span>
+<span class="nc" id="L1841">							targetSet.add(created) ;</span>
+						}
+					}
+				}
+			}
+<span class="pc bpc" id="L1846" title="1 of 2 branches missed.">			if ((matchedEntry == null) ) {</span>
+				// D(X) main:4
+<span class="fc" id="L1848">				automata_arg_clone_binaryMonitor created = new automata_arg_clone_binaryMonitor(automata_arg_clone_binary_timestamp++, wr_bo, wr_a, wr_b) ;</span>
+<span class="fc" id="L1849">				matchedEntry = created;</span>
+<span class="fc" id="L1850">				matchedLastMap.putNode(wr_b, created) ;</span>
+				// D(X) defineNew:5 for &lt;a&gt;
+				{
+					// InsertMonitor
+<span class="fc" id="L1854">					Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1855" title="1 of 2 branches missed.">					if ((node_a == null) ) {</span>
+<span class="nc" id="L1856">						node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1857">						automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1858">						node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1859">						node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+					}
+<span class="fc" id="L1861">					automata_arg_clone_binaryMonitor_Set targetSet = node_a.getValue2() ;</span>
+<span class="fc" id="L1862">					targetSet.add(created) ;</span>
+				}
+				// D(X) defineNew:5 for &lt;a, b&gt;
+				{
+					// InsertMonitor
+<span class="fc" id="L1867">					Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1868" title="1 of 2 branches missed.">					if ((node_a == null) ) {</span>
+<span class="nc" id="L1869">						node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1870">						automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1871">						node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1872">						node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+					}
+<span class="fc" id="L1874">					Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L1875" title="1 of 2 branches missed.">					if ((node_a_b == null) ) {</span>
+<span class="nc" id="L1876">						node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1877">						node_a.getValue1() .putNode(wr_b, node_a_b) ;</span>
+<span class="nc" id="L1878">						node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+					}
+<span class="fc" id="L1880">					automata_arg_clone_binaryMonitor_Set targetSet = node_a_b.getValue1() ;</span>
+<span class="fc" id="L1881">					targetSet.add(created) ;</span>
+				}
+				// D(X) defineNew:5 for &lt;b&gt;
+				{
+					// InsertMonitor
+<span class="fc" id="L1886">					Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L1887" title="1 of 2 branches missed.">					if ((node_b == null) ) {</span>
+<span class="nc" id="L1888">						node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1889">						automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="nc" id="L1890">						node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+					}
+<span class="fc" id="L1892">					automata_arg_clone_binaryMonitor_Set targetSet = node_b.getValue1() ;</span>
+<span class="fc" id="L1893">					targetSet.add(created) ;</span>
+				}
+			}
+			// D(X) main:6
+<span class="fc" id="L1897">			matchedEntry.setDisable(automata_arg_clone_binary_timestamp++) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L1900">		final automata_arg_clone_binaryMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L1901">		matchedEntry.Prop_1_event_Bop(bo, a, b);</span>
+<span class="pc bpc" id="L1902" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L1903">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="pc bpc" id="L1906" title="1 of 2 branches missed.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L1907">			automata_arg_clone_binary_bo_a_b_Map_cachekey_a = a;</span>
+<span class="fc" id="L1908">			automata_arg_clone_binary_bo_a_b_Map_cachekey_b = b;</span>
+<span class="fc" id="L1909">			automata_arg_clone_binary_bo_a_b_Map_cachekey_bo = bo;</span>
+<span class="fc" id="L1910">			automata_arg_clone_binary_bo_a_b_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L1913">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L1914">	}</span>
+
+	public static final void aBinCloneEvent(Automaton a) {
+<span class="fc" id="L1917">		automata_arg_clone_binary_activated = true;</span>
+<span class="pc bpc" id="L1918" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L1919">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L1922">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L1923">		Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; matchedEntry = null;</span>
+<span class="fc" id="L1924">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L1925" title="All 2 branches covered.">		if ((a == automata_arg_clone_binary_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L1926">			matchedEntry = automata_arg_clone_binary_a_Map_cachevalue;</span>
+<span class="fc" id="L1927">			cachehit = true;</span>
+<span class="fc" id="L1928">		}</span>
+		else {
+<span class="fc" id="L1930">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L1933">				Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc bfc" id="L1934" title="All 2 branches covered.">				if ((node_a == null) ) {</span>
+<span class="fc" id="L1935">					node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="fc" id="L1936">					automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="fc" id="L1937">					node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="fc" id="L1938">					node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+				}
+<span class="fc" id="L1940">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc" id="L1944">		automata_arg_clone_binaryMonitor matchedLeaf = matchedEntry.getValue3() ;</span>
+<span class="fc bfc" id="L1945" title="All 2 branches covered.">		if ((matchedLeaf == null) ) {</span>
+<span class="pc bpc" id="L1946" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L1947">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			{
+				// D(X) createNewMonitorStates:4 when Dom(theta'') = &lt;&gt;
+<span class="fc" id="L1951">				automata_arg_clone_binaryMonitor_Set sourceSet = null;</span>
+				{
+					// FindCode
+<span class="fc" id="L1954">					automata_arg_clone_binaryMonitor_Set itmdSet = automata_arg_clone_binary___To__b_Map.getValue1() ;</span>
+<span class="fc" id="L1955">					sourceSet = itmdSet;</span>
+				}
+<span class="pc bpc" id="L1957" title="1 of 2 branches missed.">				if ((sourceSet != null) ) {</span>
+<span class="fc" id="L1958">					int numalive = 0;</span>
+<span class="fc" id="L1959">					int setlen = sourceSet.getSize() ;</span>
+<span class="fc bfc" id="L1960" title="All 2 branches covered.">					for (int ielem = 0; (ielem &lt; setlen) ;++ielem) {</span>
+<span class="fc" id="L1961">						automata_arg_clone_binaryMonitor sourceMonitor = sourceSet.get(ielem) ;</span>
+<span class="fc bfc" id="L1962" title="All 4 branches covered.">						if ((!sourceMonitor.isTerminated() &amp;&amp; (sourceMonitor.RVMRef_b.get() != null) ) ) {</span>
+<span class="fc" id="L1963">							sourceSet.set(numalive++, sourceMonitor) ;</span>
+<span class="fc" id="L1964">							CachedWeakReference wr_b = sourceMonitor.RVMRef_b;</span>
+<span class="fc" id="L1965">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; destEntry = null;</span>
+<span class="fc" id="L1966">							Iautomata_arg_clone_binaryMonitor destLeaf = null;</span>
+							{
+								// FindOrCreate
+<span class="fc" id="L1969">								Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1970" title="1 of 2 branches missed.">								if ((node_a == null) ) {</span>
+<span class="nc" id="L1971">									node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L1972">									automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L1973">									node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L1974">									node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+								}
+<span class="fc" id="L1976">								Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L1977" title="1 of 2 branches missed.">								if ((node_a_b == null) ) {</span>
+<span class="fc" id="L1978">									node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="fc" id="L1979">									node_a.getValue1() .putNode(wr_b, node_a_b) ;</span>
+<span class="fc" id="L1980">									node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+								}
+<span class="fc" id="L1982">								destEntry = node_a_b;</span>
+<span class="fc" id="L1983">								Iautomata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="fc" id="L1984">								destLeaf = itmdLeaf;</span>
+							}
+<span class="pc bpc" id="L1986" title="3 of 4 branches missed.">							if (((destLeaf == null) || destLeaf instanceof automata_arg_clone_binaryDisableHolder) ) {</span>
+<span class="fc" id="L1987">								boolean definable = true;</span>
+								// D(X) defineTo:1--5 for &lt;a&gt;
+<span class="pc bpc" id="L1989" title="1 of 2 branches missed.">								if (definable) {</span>
+									// FindCode
+<span class="fc" id="L1991">									Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L1992" title="1 of 2 branches missed.">									if ((node_a != null) ) {</span>
+<span class="fc" id="L1993">										automata_arg_clone_binaryMonitor itmdLeaf = node_a.getValue3() ;</span>
+<span class="pc bpc" id="L1994" title="1 of 2 branches missed.">										if ((itmdLeaf != null) ) {</span>
+<span class="nc bnc" id="L1995" title="All 6 branches missed.">											if (((itmdLeaf.getDisable() &gt; sourceMonitor.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceMonitor.getTau() ) ) ) ) {</span>
+<span class="nc" id="L1996">												definable = false;</span>
+											}
+										}
+									}
+								}
+								// D(X) defineTo:1--5 for &lt;a, b&gt;
+<span class="pc bpc" id="L2002" title="1 of 2 branches missed.">								if (definable) {</span>
+									// FindCode
+<span class="fc" id="L2004">									Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L2005" title="1 of 2 branches missed.">									if ((node_a != null) ) {</span>
+<span class="fc" id="L2006">										Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2007" title="1 of 2 branches missed.">										if ((node_a_b != null) ) {</span>
+<span class="fc" id="L2008">											Iautomata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="fc bfc" id="L2009" title="All 2 branches covered.">											if ((itmdLeaf != null) ) {</span>
+<span class="pc bpc" id="L2010" title="3 of 6 branches missed.">												if (((itmdLeaf.getDisable() &gt; sourceMonitor.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceMonitor.getTau() ) ) ) ) {</span>
+<span class="fc" id="L2011">													definable = false;</span>
+												}
+											}
+										}
+									}
+								}
+<span class="fc bfc" id="L2017" title="All 2 branches covered.">								if (definable) {</span>
+									// D(X) defineTo:6
+<span class="fc" id="L2019">									automata_arg_clone_binaryMonitor created = (automata_arg_clone_binaryMonitor)sourceMonitor.clone() ;</span>
+<span class="fc" id="L2020">									created.RVMRef_a = wr_a;</span>
+<span class="fc" id="L2021">									destEntry.setValue2(created) ;</span>
+									// D(X) defineTo:7 for &lt;a&gt;
+									{
+										// InsertMonitor
+<span class="fc" id="L2025">										Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L2026" title="1 of 2 branches missed.">										if ((node_a == null) ) {</span>
+<span class="nc" id="L2027">											node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L2028">											automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L2029">											node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L2030">											node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+										}
+<span class="fc" id="L2032">										automata_arg_clone_binaryMonitor_Set targetSet = node_a.getValue2() ;</span>
+<span class="fc" id="L2033">										targetSet.add(created) ;</span>
+									}
+									// D(X) defineTo:7 for &lt;b&gt;
+									{
+										// InsertMonitor
+<span class="fc" id="L2038">										Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2039" title="1 of 2 branches missed.">										if ((node_b == null) ) {</span>
+<span class="nc" id="L2040">											node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L2041">											automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="nc" id="L2042">											node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+										}
+<span class="fc" id="L2044">										automata_arg_clone_binaryMonitor_Set targetSet = node_b.getValue1() ;</span>
+<span class="fc" id="L2045">										targetSet.add(created) ;</span>
+									}
+									// D(X) defineTo:7 for &lt;a, b-a, b&gt;
+									{
+										// InsertMonitor
+<span class="fc" id="L2050">										MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b__To__a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc bfc" id="L2051" title="All 2 branches covered.">										if ((node_a == null) ) {</span>
+<span class="fc" id="L2052">											node_a = new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;(1) ;</span>
+<span class="fc" id="L2053">											automata_arg_clone_binary_a_b__To__a_b_Map.putNode(wr_a, node_a) ;</span>
+										}
+<span class="fc" id="L2055">										Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2056" title="1 of 2 branches missed.">										if ((node_a_b == null) ) {</span>
+<span class="fc" id="L2057">											node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="fc" id="L2058">											node_a.putNode(wr_b, node_a_b) ;</span>
+<span class="fc" id="L2059">											node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+										}
+<span class="fc" id="L2061">										automata_arg_clone_binaryMonitor_Set targetSet = node_a_b.getValue1() ;</span>
+<span class="fc" id="L2062">										targetSet.add(created) ;</span>
+									}
+								}
+							}
+						}
+					}
+<span class="fc" id="L2068">					sourceSet.eraseRange(numalive) ;</span>
+				}
+			}
+<span class="pc bpc" id="L2071" title="1 of 2 branches missed.">			if ((matchedLeaf == null) ) {</span>
+				// D(X) main:4
+<span class="fc" id="L2073">				automata_arg_clone_binaryMonitor created = new automata_arg_clone_binaryMonitor(automata_arg_clone_binary_timestamp++, null, wr_a, null) ;</span>
+<span class="fc" id="L2074">				matchedEntry.setValue3(created) ;</span>
+<span class="fc" id="L2075">				automata_arg_clone_binaryMonitor_Set enclosingSet = matchedEntry.getValue2() ;</span>
+<span class="fc" id="L2076">				enclosingSet.add(created) ;</span>
+				// D(X) defineNew:5 for &lt;-a&gt;
+				{
+					// InsertMonitor
+<span class="fc" id="L2080">					automata_arg_clone_binaryMonitor_Set targetSet = automata_arg_clone_binary___To__a_Map.getValue1() ;</span>
+<span class="fc" id="L2081">					targetSet.add(created) ;</span>
+				}
+			}
+			// D(X) main:6
+<span class="fc" id="L2085">			automata_arg_clone_binaryMonitor disableUpdatedLeaf = matchedEntry.getValue3() ;</span>
+<span class="fc" id="L2086">			disableUpdatedLeaf.setDisable(automata_arg_clone_binary_timestamp++) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2089">		automata_arg_clone_binaryMonitor_Set stateTransitionedSet = matchedEntry.getValue2() ;</span>
+<span class="fc" id="L2090">		stateTransitionedSet.event_aBinClone(a);</span>
+
+<span class="fc bfc" id="L2092" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2093">			automata_arg_clone_binary_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L2094">			automata_arg_clone_binary_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2097">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2098">	}</span>
+
+	public static final void bBinCloneEvent(Automaton b) {
+<span class="fc" id="L2101">		automata_arg_clone_binary_activated = true;</span>
+<span class="pc bpc" id="L2102" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2103">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2106">		CachedWeakReference wr_b = null;</span>
+<span class="fc" id="L2107">		Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; matchedEntry = null;</span>
+<span class="fc" id="L2108">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2109" title="All 2 branches covered.">		if ((b == automata_arg_clone_binary_b_Map_cachekey_b) ) {</span>
+<span class="fc" id="L2110">			matchedEntry = automata_arg_clone_binary_b_Map_cachevalue;</span>
+<span class="fc" id="L2111">			cachehit = true;</span>
+<span class="fc" id="L2112">		}</span>
+		else {
+<span class="fc" id="L2114">			wr_b = new CachedWeakReference(b) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2117">				Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="fc bfc" id="L2118" title="All 2 branches covered.">				if ((node_b == null) ) {</span>
+<span class="fc" id="L2119">					node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="fc" id="L2120">					automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="fc" id="L2121">					node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+				}
+<span class="fc" id="L2123">				matchedEntry = node_b;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc" id="L2127">		automata_arg_clone_binaryMonitor matchedLeaf = matchedEntry.getValue2() ;</span>
+<span class="fc bfc" id="L2128" title="All 2 branches covered.">		if ((matchedLeaf == null) ) {</span>
+<span class="pc bpc" id="L2129" title="1 of 2 branches missed.">			if ((wr_b == null) ) {</span>
+<span class="nc" id="L2130">				wr_b = new CachedWeakReference(b) ;</span>
+			}
+			{
+				// D(X) createNewMonitorStates:4 when Dom(theta'') = &lt;&gt;
+<span class="fc" id="L2134">				automata_arg_clone_binaryMonitor_Set sourceSet = null;</span>
+				{
+					// FindCode
+<span class="fc" id="L2137">					automata_arg_clone_binaryMonitor_Set itmdSet = automata_arg_clone_binary___To__a_Map.getValue1() ;</span>
+<span class="fc" id="L2138">					sourceSet = itmdSet;</span>
+				}
+<span class="pc bpc" id="L2140" title="1 of 2 branches missed.">				if ((sourceSet != null) ) {</span>
+<span class="fc" id="L2141">					int numalive = 0;</span>
+<span class="fc" id="L2142">					int setlen = sourceSet.getSize() ;</span>
+<span class="fc bfc" id="L2143" title="All 2 branches covered.">					for (int ielem = 0; (ielem &lt; setlen) ;++ielem) {</span>
+<span class="fc" id="L2144">						automata_arg_clone_binaryMonitor sourceMonitor = sourceSet.get(ielem) ;</span>
+<span class="pc bpc" id="L2145" title="1 of 4 branches missed.">						if ((!sourceMonitor.isTerminated() &amp;&amp; (sourceMonitor.RVMRef_a.get() != null) ) ) {</span>
+<span class="fc" id="L2146">							sourceSet.set(numalive++, sourceMonitor) ;</span>
+<span class="fc" id="L2147">							CachedWeakReference wr_a = sourceMonitor.RVMRef_a;</span>
+<span class="fc" id="L2148">							Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; destEntry = null;</span>
+<span class="fc" id="L2149">							Iautomata_arg_clone_binaryMonitor destLeaf = null;</span>
+							{
+								// FindOrCreate
+<span class="fc" id="L2152">								Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L2153" title="1 of 2 branches missed.">								if ((node_a == null) ) {</span>
+<span class="nc" id="L2154">									node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L2155">									automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L2156">									node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L2157">									node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+								}
+<span class="fc" id="L2159">								Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2160" title="1 of 2 branches missed.">								if ((node_a_b == null) ) {</span>
+<span class="fc" id="L2161">									node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="fc" id="L2162">									node_a.getValue1() .putNode(wr_b, node_a_b) ;</span>
+<span class="fc" id="L2163">									node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+								}
+<span class="fc" id="L2165">								destEntry = node_a_b;</span>
+<span class="fc" id="L2166">								Iautomata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="fc" id="L2167">								destLeaf = itmdLeaf;</span>
+							}
+<span class="pc bpc" id="L2169" title="3 of 4 branches missed.">							if (((destLeaf == null) || destLeaf instanceof automata_arg_clone_binaryDisableHolder) ) {</span>
+<span class="fc" id="L2170">								boolean definable = true;</span>
+								// D(X) defineTo:1--5 for &lt;a, b&gt;
+<span class="pc bpc" id="L2172" title="1 of 2 branches missed.">								if (definable) {</span>
+									// FindCode
+<span class="fc" id="L2174">									Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L2175" title="1 of 2 branches missed.">									if ((node_a != null) ) {</span>
+<span class="fc" id="L2176">										Tuple2&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getValue1() .getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2177" title="1 of 2 branches missed.">										if ((node_a_b != null) ) {</span>
+<span class="fc" id="L2178">											Iautomata_arg_clone_binaryMonitor itmdLeaf = node_a_b.getValue2() ;</span>
+<span class="pc bpc" id="L2179" title="1 of 2 branches missed.">											if ((itmdLeaf != null) ) {</span>
+<span class="nc bnc" id="L2180" title="All 6 branches missed.">												if (((itmdLeaf.getDisable() &gt; sourceMonitor.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceMonitor.getTau() ) ) ) ) {</span>
+<span class="nc" id="L2181">													definable = false;</span>
+												}
+											}
+										}
+									}
+								}
+								// D(X) defineTo:1--5 for &lt;b&gt;
+<span class="pc bpc" id="L2188" title="1 of 2 branches missed.">								if (definable) {</span>
+									// FindCode
+<span class="fc" id="L2190">									Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2191" title="1 of 2 branches missed.">									if ((node_b != null) ) {</span>
+<span class="fc" id="L2192">										automata_arg_clone_binaryMonitor itmdLeaf = node_b.getValue2() ;</span>
+<span class="pc bpc" id="L2193" title="1 of 2 branches missed.">										if ((itmdLeaf != null) ) {</span>
+<span class="nc bnc" id="L2194" title="All 6 branches missed.">											if (((itmdLeaf.getDisable() &gt; sourceMonitor.getTau() ) || ((itmdLeaf.getTau() &gt; 0) &amp;&amp; (itmdLeaf.getTau() &lt; sourceMonitor.getTau() ) ) ) ) {</span>
+<span class="nc" id="L2195">												definable = false;</span>
+											}
+										}
+									}
+								}
+<span class="pc bpc" id="L2200" title="1 of 2 branches missed.">								if (definable) {</span>
+									// D(X) defineTo:6
+<span class="fc" id="L2202">									automata_arg_clone_binaryMonitor created = (automata_arg_clone_binaryMonitor)sourceMonitor.clone() ;</span>
+<span class="fc" id="L2203">									created.RVMRef_b = wr_b;</span>
+<span class="fc" id="L2204">									destEntry.setValue2(created) ;</span>
+									// D(X) defineTo:7 for &lt;a&gt;
+									{
+										// InsertMonitor
+<span class="fc" id="L2208">										Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L2209" title="1 of 2 branches missed.">										if ((node_a == null) ) {</span>
+<span class="nc" id="L2210">											node_a = new Tuple3&lt;MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;, automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L2211">											automata_arg_clone_binary_a_b_Map.putNode(wr_a, node_a) ;</span>
+<span class="nc" id="L2212">											node_a.setValue1(new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, Iautomata_arg_clone_binaryMonitor&gt;(1) ) ;</span>
+<span class="nc" id="L2213">											node_a.setValue2(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+										}
+<span class="fc" id="L2215">										automata_arg_clone_binaryMonitor_Set targetSet = node_a.getValue2() ;</span>
+<span class="fc" id="L2216">										targetSet.add(created) ;</span>
+									}
+									// D(X) defineTo:7 for &lt;b&gt;
+									{
+										// InsertMonitor
+<span class="fc" id="L2221">										Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_b = automata_arg_clone_binary_b_Map.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2222" title="1 of 2 branches missed.">										if ((node_b == null) ) {</span>
+<span class="nc" id="L2223">											node_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="nc" id="L2224">											automata_arg_clone_binary_b_Map.putNode(wr_b, node_b) ;</span>
+<span class="nc" id="L2225">											node_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+										}
+<span class="fc" id="L2227">										automata_arg_clone_binaryMonitor_Set targetSet = node_b.getValue1() ;</span>
+<span class="fc" id="L2228">										targetSet.add(created) ;</span>
+									}
+									// D(X) defineTo:7 for &lt;a, b-a, b&gt;
+									{
+										// InsertMonitor
+<span class="fc" id="L2233">										MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a = automata_arg_clone_binary_a_b__To__a_b_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="pc bpc" id="L2234" title="1 of 2 branches missed.">										if ((node_a == null) ) {</span>
+<span class="nc" id="L2235">											node_a = new MapOfSetMonitor&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;(1) ;</span>
+<span class="nc" id="L2236">											automata_arg_clone_binary_a_b__To__a_b_Map.putNode(wr_a, node_a) ;</span>
+										}
+<span class="fc" id="L2238">										Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt; node_a_b = node_a.getNodeEquivalent(wr_b) ;</span>
+<span class="pc bpc" id="L2239" title="1 of 2 branches missed.">										if ((node_a_b == null) ) {</span>
+<span class="fc" id="L2240">											node_a_b = new Tuple2&lt;automata_arg_clone_binaryMonitor_Set, automata_arg_clone_binaryMonitor&gt;() ;</span>
+<span class="fc" id="L2241">											node_a.putNode(wr_b, node_a_b) ;</span>
+<span class="fc" id="L2242">											node_a_b.setValue1(new automata_arg_clone_binaryMonitor_Set() ) ;</span>
+										}
+<span class="fc" id="L2244">										automata_arg_clone_binaryMonitor_Set targetSet = node_a_b.getValue1() ;</span>
+<span class="fc" id="L2245">										targetSet.add(created) ;</span>
+									}
+								}
+							}
+						}
+					}
+<span class="fc" id="L2251">					sourceSet.eraseRange(numalive) ;</span>
+				}
+			}
+<span class="pc bpc" id="L2254" title="1 of 2 branches missed.">			if ((matchedLeaf == null) ) {</span>
+				// D(X) main:4
+<span class="fc" id="L2256">				automata_arg_clone_binaryMonitor created = new automata_arg_clone_binaryMonitor(automata_arg_clone_binary_timestamp++, null, null, wr_b) ;</span>
+<span class="fc" id="L2257">				matchedEntry.setValue2(created) ;</span>
+<span class="fc" id="L2258">				automata_arg_clone_binaryMonitor_Set enclosingSet = matchedEntry.getValue1() ;</span>
+<span class="fc" id="L2259">				enclosingSet.add(created) ;</span>
+				// D(X) defineNew:5 for &lt;-b&gt;
+				{
+					// InsertMonitor
+<span class="fc" id="L2263">					automata_arg_clone_binaryMonitor_Set targetSet = automata_arg_clone_binary___To__b_Map.getValue1() ;</span>
+<span class="fc" id="L2264">					targetSet.add(created) ;</span>
+				}
+			}
+			// D(X) main:6
+<span class="fc" id="L2268">			automata_arg_clone_binaryMonitor disableUpdatedLeaf = matchedEntry.getValue2() ;</span>
+<span class="fc" id="L2269">			disableUpdatedLeaf.setDisable(automata_arg_clone_binary_timestamp++) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2272">		automata_arg_clone_binaryMonitor_Set stateTransitionedSet = matchedEntry.getValue1() ;</span>
+<span class="fc" id="L2273">		stateTransitionedSet.event_bBinClone(b);</span>
+
+<span class="fc bfc" id="L2275" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2276">			automata_arg_clone_binary_b_Map_cachekey_b = b;</span>
+<span class="fc" id="L2277">			automata_arg_clone_binary_b_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2280">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2281">	}</span>
+
+	public static final void clearHashEvent(Automaton a) {
+<span class="fc" id="L2284">		automata_hashcode_activated = true;</span>
+<span class="pc bpc" id="L2285" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2286">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2289">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L2290">		MapOfMonitor&lt;automata_hashcodeMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2291">		automata_hashcodeMonitor matchedEntry = null;</span>
+<span class="fc" id="L2292">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2293" title="All 2 branches covered.">		if ((a == automata_hashcode_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L2294">			matchedEntry = automata_hashcode_a_Map_cachevalue;</span>
+<span class="fc" id="L2295">			cachehit = true;</span>
+<span class="fc" id="L2296">		}</span>
+		else {
+<span class="fc" id="L2298">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2301">				MapOfMonitor&lt;automata_hashcodeMonitor&gt; itmdMap = automata_hashcode_a_Map;</span>
+<span class="fc" id="L2302">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2303">				automata_hashcodeMonitor node_a = automata_hashcode_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc" id="L2304">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2308" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2309" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L2310">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2313">			automata_hashcodeMonitor created = new automata_hashcodeMonitor() ;</span>
+<span class="fc" id="L2314">			matchedEntry = created;</span>
+<span class="fc" id="L2315">			matchedLastMap.putNode(wr_a, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2318">		final automata_hashcodeMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2319">		matchedEntry.Prop_1_event_clearHash(a);</span>
+<span class="pc bpc" id="L2320" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2321">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2324" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2325">			automata_hashcode_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L2326">			automata_hashcode_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2329">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2330">	}</span>
+
+	public static final void recomputeHashEvent(Automaton a) {
+<span class="fc" id="L2333">		automata_hashcode_activated = true;</span>
+<span class="pc bpc" id="L2334" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2335">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2338">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L2339">		MapOfMonitor&lt;automata_hashcodeMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2340">		automata_hashcodeMonitor matchedEntry = null;</span>
+<span class="fc" id="L2341">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2342" title="All 2 branches covered.">		if ((a == automata_hashcode_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L2343">			matchedEntry = automata_hashcode_a_Map_cachevalue;</span>
+<span class="fc" id="L2344">			cachehit = true;</span>
+<span class="fc" id="L2345">		}</span>
+		else {
+<span class="fc" id="L2347">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2350">				MapOfMonitor&lt;automata_hashcodeMonitor&gt; itmdMap = automata_hashcode_a_Map;</span>
+<span class="fc" id="L2351">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2352">				automata_hashcodeMonitor node_a = automata_hashcode_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc" id="L2353">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2357" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2358" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L2359">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2362">			automata_hashcodeMonitor created = new automata_hashcodeMonitor() ;</span>
+<span class="fc" id="L2363">			matchedEntry = created;</span>
+<span class="fc" id="L2364">			matchedLastMap.putNode(wr_a, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2367">		final automata_hashcodeMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2368">		matchedEntry.Prop_1_event_recomputeHash(a);</span>
+<span class="pc bpc" id="L2369" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2370">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2373" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2374">			automata_hashcode_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L2375">			automata_hashcode_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2378">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2379">	}</span>
+
+	public static final void determinizeEvent(Automaton a) {
+<span class="fc" id="L2382">		automata_determinize_activated = true;</span>
+<span class="pc bpc" id="L2383" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2384">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2387">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L2388">		MapOfMonitor&lt;automata_determinizeMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2389">		automata_determinizeMonitor matchedEntry = null;</span>
+<span class="fc" id="L2390">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2391" title="All 2 branches covered.">		if ((a == automata_determinize_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L2392">			matchedEntry = automata_determinize_a_Map_cachevalue;</span>
+<span class="fc" id="L2393">			cachehit = true;</span>
+<span class="fc" id="L2394">		}</span>
+		else {
+<span class="fc" id="L2396">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2399">				MapOfMonitor&lt;automata_determinizeMonitor&gt; itmdMap = automata_determinize_a_Map;</span>
+<span class="fc" id="L2400">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2401">				automata_determinizeMonitor node_a = automata_determinize_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc" id="L2402">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2406" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2407" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L2408">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2411">			automata_determinizeMonitor created = new automata_determinizeMonitor() ;</span>
+<span class="fc" id="L2412">			matchedEntry = created;</span>
+<span class="fc" id="L2413">			matchedLastMap.putNode(wr_a, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2416">		final automata_determinizeMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2417">		matchedEntry.Prop_1_event_determinize(a);</span>
+<span class="pc bpc" id="L2418" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2419">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2422" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2423">			automata_determinize_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L2424">			automata_determinize_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2427">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2428">	}</span>
+
+	public static final void minimizeEvent(Automaton a) {
+<span class="fc" id="L2431">		automata_determinize_activated = true;</span>
+<span class="pc bpc" id="L2432" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2433">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2436">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L2437">		MapOfMonitor&lt;automata_determinizeMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2438">		automata_determinizeMonitor matchedEntry = null;</span>
+<span class="fc" id="L2439">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2440" title="All 2 branches covered.">		if ((a == automata_determinize_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L2441">			matchedEntry = automata_determinize_a_Map_cachevalue;</span>
+<span class="fc" id="L2442">			cachehit = true;</span>
+<span class="fc" id="L2443">		}</span>
+		else {
+<span class="fc" id="L2445">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2448">				MapOfMonitor&lt;automata_determinizeMonitor&gt; itmdMap = automata_determinize_a_Map;</span>
+<span class="fc" id="L2449">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2450">				automata_determinizeMonitor node_a = automata_determinize_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc" id="L2451">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2455" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2456" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L2457">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2460">			automata_determinizeMonitor created = new automata_determinizeMonitor() ;</span>
+<span class="fc" id="L2461">			matchedEntry = created;</span>
+<span class="fc" id="L2462">			matchedLastMap.putNode(wr_a, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2465">		final automata_determinizeMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2466">		matchedEntry.Prop_1_event_minimize(a);</span>
+<span class="fc bfc" id="L2467" title="All 2 branches covered.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="fc" id="L2468">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2471" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2472">			automata_determinize_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L2473">			automata_determinize_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2476">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2477">	}</span>
+
+	public static final void amr_recomputeHashCodeEvent(Automaton a) {
+<span class="fc" id="L2480">		automata_minimize_recomputehashcode_activated = true;</span>
+<span class="pc bpc" id="L2481" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2482">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2485">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L2486">		MapOfMonitor&lt;automata_minimize_recomputehashcodeMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2487">		automata_minimize_recomputehashcodeMonitor matchedEntry = null;</span>
+<span class="fc" id="L2488">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2489" title="All 2 branches covered.">		if ((a == automata_minimize_recomputehashcode_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L2490">			matchedEntry = automata_minimize_recomputehashcode_a_Map_cachevalue;</span>
+<span class="fc" id="L2491">			cachehit = true;</span>
+<span class="fc" id="L2492">		}</span>
+		else {
+<span class="fc" id="L2494">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2497">				MapOfMonitor&lt;automata_minimize_recomputehashcodeMonitor&gt; itmdMap = automata_minimize_recomputehashcode_a_Map;</span>
+<span class="fc" id="L2498">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2499">				automata_minimize_recomputehashcodeMonitor node_a = automata_minimize_recomputehashcode_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="fc" id="L2500">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2504" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2505" title="1 of 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L2506">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2509">			automata_minimize_recomputehashcodeMonitor created = new automata_minimize_recomputehashcodeMonitor() ;</span>
+<span class="fc" id="L2510">			matchedEntry = created;</span>
+<span class="fc" id="L2511">			matchedLastMap.putNode(wr_a, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2514">		final automata_minimize_recomputehashcodeMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2515">		matchedEntry.Prop_1_event_amr_recomputeHashCode(a);</span>
+<span class="pc bpc" id="L2516" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2517">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2520" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2521">			automata_minimize_recomputehashcode_a_Map_cachekey_a = a;</span>
+<span class="fc" id="L2522">			automata_minimize_recomputehashcode_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2525">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2526">	}</span>
+
+	public static final void amr_minimizeEvent(Automaton a) {
+<span class="fc" id="L2529">		automata_minimize_recomputehashcode_activated = true;</span>
+<span class="pc bpc" id="L2530" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2531">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2534">		CachedWeakReference wr_a = null;</span>
+<span class="fc" id="L2535">		MapOfMonitor&lt;automata_minimize_recomputehashcodeMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2536">		automata_minimize_recomputehashcodeMonitor matchedEntry = null;</span>
+<span class="fc" id="L2537">		boolean cachehit = false;</span>
+<span class="pc bpc" id="L2538" title="1 of 2 branches missed.">		if ((a == automata_minimize_recomputehashcode_a_Map_cachekey_a) ) {</span>
+<span class="fc" id="L2539">			matchedEntry = automata_minimize_recomputehashcode_a_Map_cachevalue;</span>
+<span class="fc" id="L2540">			cachehit = true;</span>
+<span class="fc" id="L2541">		}</span>
+		else {
+<span class="nc" id="L2543">			wr_a = new CachedWeakReference(a) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="nc" id="L2546">				MapOfMonitor&lt;automata_minimize_recomputehashcodeMonitor&gt; itmdMap = automata_minimize_recomputehashcode_a_Map;</span>
+<span class="nc" id="L2547">				matchedLastMap = itmdMap;</span>
+<span class="nc" id="L2548">				automata_minimize_recomputehashcodeMonitor node_a = automata_minimize_recomputehashcode_a_Map.getNodeEquivalent(wr_a) ;</span>
+<span class="nc" id="L2549">				matchedEntry = node_a;</span>
+			}
+		}
+		// D(X) main:1
+<span class="pc bpc" id="L2553" title="1 of 2 branches missed.">		if ((matchedEntry == null) ) {</span>
+<span class="nc bnc" id="L2554" title="All 2 branches missed.">			if ((wr_a == null) ) {</span>
+<span class="nc" id="L2555">				wr_a = new CachedWeakReference(a) ;</span>
+			}
+			// D(X) main:4
+<span class="nc" id="L2558">			automata_minimize_recomputehashcodeMonitor created = new automata_minimize_recomputehashcodeMonitor() ;</span>
+<span class="nc" id="L2559">			matchedEntry = created;</span>
+<span class="nc" id="L2560">			matchedLastMap.putNode(wr_a, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2563">		final automata_minimize_recomputehashcodeMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2564">		matchedEntry.Prop_1_event_amr_minimize(a);</span>
+<span class="pc bpc" id="L2565" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2566">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="pc bpc" id="L2569" title="1 of 2 branches missed.">		if ((cachehit == false) ) {</span>
+<span class="nc" id="L2570">			automata_minimize_recomputehashcode_a_Map_cachekey_a = a;</span>
+<span class="nc" id="L2571">			automata_minimize_recomputehashcode_a_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2574">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2575">	}</span>
+
+	public static final void ri_getStatesEvent(Automaton a1) {
+<span class="fc" id="L2578">		automata_restoreinvariant_activated = true;</span>
+<span class="pc bpc" id="L2579" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2580">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2583">		CachedWeakReference wr_a1 = null;</span>
+<span class="fc" id="L2584">		MapOfMonitor&lt;automata_restoreinvariantMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2585">		automata_restoreinvariantMonitor matchedEntry = null;</span>
+<span class="fc" id="L2586">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2587" title="All 2 branches covered.">		if ((a1 == automata_restoreinvariant_a1_Map_cachekey_a1) ) {</span>
+<span class="fc" id="L2588">			matchedEntry = automata_restoreinvariant_a1_Map_cachevalue;</span>
+<span class="fc" id="L2589">			cachehit = true;</span>
+<span class="fc" id="L2590">		}</span>
+		else {
+<span class="fc" id="L2592">			wr_a1 = new CachedWeakReference(a1) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2595">				MapOfMonitor&lt;automata_restoreinvariantMonitor&gt; itmdMap = automata_restoreinvariant_a1_Map;</span>
+<span class="fc" id="L2596">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2597">				automata_restoreinvariantMonitor node_a1 = automata_restoreinvariant_a1_Map.getNodeEquivalent(wr_a1) ;</span>
+<span class="fc" id="L2598">				matchedEntry = node_a1;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2602" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2603" title="1 of 2 branches missed.">			if ((wr_a1 == null) ) {</span>
+<span class="nc" id="L2604">				wr_a1 = new CachedWeakReference(a1) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2607">			automata_restoreinvariantMonitor created = new automata_restoreinvariantMonitor() ;</span>
+<span class="fc" id="L2608">			matchedEntry = created;</span>
+<span class="fc" id="L2609">			matchedLastMap.putNode(wr_a1, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2612">		final automata_restoreinvariantMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2613">		matchedEntry.Prop_1_event_ri_getStates(a1);</span>
+<span class="pc bpc" id="L2614" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2615">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2618" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2619">			automata_restoreinvariant_a1_Map_cachekey_a1 = a1;</span>
+<span class="fc" id="L2620">			automata_restoreinvariant_a1_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2623">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2624">	}</span>
+
+	public static final void ri_restoreInvariantEvent(Automaton a1) {
+<span class="fc" id="L2627">		automata_restoreinvariant_activated = true;</span>
+<span class="pc bpc" id="L2628" title="1 of 2 branches missed.">		while (!automata2_RVMLock.tryLock()) {</span>
+<span class="nc" id="L2629">			Thread.yield();</span>
+		}
+
+<span class="fc" id="L2632">		CachedWeakReference wr_a1 = null;</span>
+<span class="fc" id="L2633">		MapOfMonitor&lt;automata_restoreinvariantMonitor&gt; matchedLastMap = null;</span>
+<span class="fc" id="L2634">		automata_restoreinvariantMonitor matchedEntry = null;</span>
+<span class="fc" id="L2635">		boolean cachehit = false;</span>
+<span class="fc bfc" id="L2636" title="All 2 branches covered.">		if ((a1 == automata_restoreinvariant_a1_Map_cachekey_a1) ) {</span>
+<span class="fc" id="L2637">			matchedEntry = automata_restoreinvariant_a1_Map_cachevalue;</span>
+<span class="fc" id="L2638">			cachehit = true;</span>
+<span class="fc" id="L2639">		}</span>
+		else {
+<span class="fc" id="L2641">			wr_a1 = new CachedWeakReference(a1) ;</span>
+			{
+				// FindOrCreateEntry
+<span class="fc" id="L2644">				MapOfMonitor&lt;automata_restoreinvariantMonitor&gt; itmdMap = automata_restoreinvariant_a1_Map;</span>
+<span class="fc" id="L2645">				matchedLastMap = itmdMap;</span>
+<span class="fc" id="L2646">				automata_restoreinvariantMonitor node_a1 = automata_restoreinvariant_a1_Map.getNodeEquivalent(wr_a1) ;</span>
+<span class="fc" id="L2647">				matchedEntry = node_a1;</span>
+			}
+		}
+		// D(X) main:1
+<span class="fc bfc" id="L2651" title="All 2 branches covered.">		if ((matchedEntry == null) ) {</span>
+<span class="pc bpc" id="L2652" title="1 of 2 branches missed.">			if ((wr_a1 == null) ) {</span>
+<span class="nc" id="L2653">				wr_a1 = new CachedWeakReference(a1) ;</span>
+			}
+			// D(X) main:4
+<span class="fc" id="L2656">			automata_restoreinvariantMonitor created = new automata_restoreinvariantMonitor() ;</span>
+<span class="fc" id="L2657">			matchedEntry = created;</span>
+<span class="fc" id="L2658">			matchedLastMap.putNode(wr_a1, created) ;</span>
+		}
+		// D(X) main:8--9
+<span class="fc" id="L2661">		final automata_restoreinvariantMonitor matchedEntryfinalMonitor = matchedEntry;</span>
+<span class="fc" id="L2662">		matchedEntry.Prop_1_event_ri_restoreInvariant(a1);</span>
+<span class="pc bpc" id="L2663" title="1 of 2 branches missed.">		if(matchedEntryfinalMonitor.Prop_1_Category_fail) {</span>
+<span class="nc" id="L2664">			matchedEntryfinalMonitor.Prop_1_handler_fail();</span>
+		}
+
+<span class="fc bfc" id="L2667" title="All 2 branches covered.">		if ((cachehit == false) ) {</span>
+<span class="fc" id="L2668">			automata_restoreinvariant_a1_Map_cachekey_a1 = a1;</span>
+<span class="fc" id="L2669">			automata_restoreinvariant_a1_Map_cachevalue = matchedEntry;</span>
+		}
+
+<span class="fc" id="L2672">		automata2_RVMLock.unlock();</span>
+<span class="fc" id="L2673">	}</span>
+
+}
+
+
+<span class="nc" id="L2678">class  BaseAspect {</span>
+	pointcut notwithin()                                                                                                                                                                                                                                                                                                                                               ;
+}
+
+public class  automata2MonitorAspect implements com.runtimeverification.rvmonitor.java.rt.RVMObject {
+	public automata2MonitorAspect(){
+	}
+
+	// Declarations for the Lock
+	static ReentrantLock automata2_MOPLock = new ReentrantLock();
+	static Condition automata2_MOPLock_cond = automata2_MOPLock.newCondition();
+
+	pointcut MOP_CommonPointCut()                                                                                                                ;
+	pointcut automata_restoreinvariant_ri_restoreInvariant(Automaton a1)                                                                            ;
+	void b (Automaton a1)                                                     {
+		automata2RuntimeMonitor.ri_restoreInvariantEvent(a1);
+	}
+<span class="fc" id="L2695"></span>
+<span class="fc" id="L2696">	pointcut automata_restoreinvariant_ri_getStates(Automaton a1)                                                                     ;</span>
+	void b (Automaton a1)                                              {
+		automata2RuntimeMonitor.ri_getStatesEvent(a1);
+<span class="fc" id="L2699">	}</span>
+<span class="pc" id="L2700"></span>
+	pointcut automata_determinize_determinize(Automaton a)                                                               ;
+	void b (Automaton a)                                       {
+		automata2RuntimeMonitor.determinizeEvent(a);
+	}
+<span class="fc" id="L2705"></span>
+<span class="fc" id="L2706">	pointcut automata_hashcode_recomputeHash(Automaton a)                                                                     ;</span>
+	void b (Automaton a)                                      {
+		//automata_minimize_recomputehashcode_amr_recomputeHashCode
+		automata2RuntimeMonitor.amr_recomputeHashCodeEvent(a);
+<span class="fc" id="L2710">		//automata_hashcode_recomputeHash</span>
+<span class="fc" id="L2711">		automata2RuntimeMonitor.recomputeHashEvent(a);</span>
+	}
+
+	pointcut automata_hashcode_clearHash(Automaton a)                                                                 ;
+<span class="fc" id="L2715">	void b (Automaton a)                                  {</span>
+<span class="fc" id="L2716">		automata2RuntimeMonitor.clearHashEvent(a);</span>
+	}
+
+	pointcut automata_arg_clone_binary_bBinClone(Automaton b)                                                                ;
+	void b (Automaton b)                                          {
+<span class="fc" id="L2721">		automata2RuntimeMonitor.bBinCloneEvent(b);</span>
+	}
+<span class="fc" id="L2723"></span>
+<span class="fc" id="L2724">	pointcut automata_arg_clone_binary_Bop(BinaryOperation bo, Automaton a, Automaton b)                                                                                                ;</span>
+	void b (BinaryOperation bo, Automaton a, Automaton b)                                           {
+		automata2RuntimeMonitor.BopEvent(bo, a, b);
+	}
+<span class="fc" id="L2728"></span>
+<span class="fc" id="L2729">	pointcut automata_arg_clone_unary_aClone(Automaton a)                                                                ;</span>
+	void b (Automaton a)                                      {
+		//automata_arg_clone_binary_aBinClone
+		automata2RuntimeMonitor.aBinCloneEvent(a);
+<span class="fc" id="L2733">		//automata_arg_clone_unary_aClone</span>
+<span class="fc" id="L2734">		automata2RuntimeMonitor.aCloneEvent(a);</span>
+	}
+
+	pointcut automata_arg_clone_unary_Uop(UnaryOperation u, Automaton a)                                                                                 ;
+<span class="fc" id="L2738">	void b (UnaryOperation u, Automaton a)                                      {</span>
+<span class="fc" id="L2739">		automata2RuntimeMonitor.UopEvent(u, a);</span>
+	}
+
+	pointcut automata_determinize_minimize(Automaton a)                                                            ;
+	int a (Automaton a)                                    {
+<span class="fc" id="L2744">		//automata_determinize_minimize</span>
+		automata2RuntimeMonitor.minimizeEvent(a);
+<span class="fc" id="L2746">		//automata_minimize_recomputehashcode_amr_minimize</span>
+<span class="fc" id="L2747">		automata2RuntimeMonitor.amr_minimizeEvent(a);</span>
+	}
+
+MOP_CommonPointCut ___ITD_INSERTED_IDENTIFIER___0;
+<span class="fc" id="L2751">BaseAspect ___ITD_INSERTED_IDENTIFIER___1;</span>
+<span class="fc" id="L2752">Automaton ___ITD_INSERTED_IDENTIFIER___2;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FlowGraph2Grammar.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.flow.operations</a> &gt; <span class="el_source">FlowGraph2Grammar.java</span></div><h1>FlowGraph2Grammar.java</h1><pre class="source lang-java linenums">package dk.brics.string.flow.operations;
+
+import dk.brics.string.flow.*;
+import dk.brics.string.grammar.Grammar;
+import dk.brics.string.grammar.Nonterminal;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Converter from flow graphs to grammars.
+ *
+ * @see dk.brics.string.StringAnalysis
+ */
+public class FlowGraph2Grammar {
+
+    private FlowGraph g;
+
+    private List&lt;Nonterminal&gt; node2nt;
+
+    /**
+     * Constructs a new converter for the given flow graph.
+     */
+<span class="nc" id="L24">    public FlowGraph2Grammar(FlowGraph g) {</span>
+<span class="nc" id="L25">        this.g = g;</span>
+<span class="nc" id="L26">    }</span>
+
+    /**
+     * Constructs grammar for the flow graph.
+     *
+     * @see #getNonterminal(Node)
+     */
+    public Grammar convert() {
+<span class="nc" id="L34">        final Grammar r = new Grammar();</span>
+<span class="nc" id="L35">        node2nt = new ArrayList&lt;Nonterminal&gt;();</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        for (Node node : g.getNodes()) {</span>
+<span class="nc" id="L37">            Nonterminal n = r.addNonterminal();</span>
+<span class="nc" id="L38">            n.setTaint(node.isTaint());</span>
+<span class="nc" id="L39">            node2nt.add(n);</span>
+        }
+<span class="nc" id="L41">        g.visitNodes(new NodeVisitor() {</span>
+
+            public void visitAssignmentNode(AssignmentNode n) {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">                for (Node m : n.getArg().getDefs()) {</span>
+<span class="nc" id="L45">                    r.addUnitProduction(getNonterminal(n), getNonterminal(m));</span>
+                }
+<span class="nc" id="L47">            }</span>
+
+            public void visitConcatenationNode(ConcatenationNode n) {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">                for (Node m1 : n.getArg1().getDefs()) {</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">                    for (Node m2 : n.getArg2().getDefs()) {</span>
+<span class="nc" id="L52">                        r.addPairProduction(getNonterminal(n), getNonterminal(m1), getNonterminal(m2));</span>
+                    }
+                }
+<span class="nc" id="L55">            }</span>
+
+            public void visitInitializationNode(InitializationNode n) {
+<span class="nc" id="L58">                r.addAutomatonProduction(getNonterminal(n), n.getReg());</span>
+<span class="nc" id="L59">            }</span>
+
+            public void visitUnaryNode(UnaryNode n) {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">                for (Node m : n.getArg().getDefs()) {</span>
+<span class="nc" id="L63">                    r.addUnaryProduction(getNonterminal(n), n.getOp(), getNonterminal(m));</span>
+                }
+<span class="nc" id="L65">            }</span>
+
+            public void visitBinaryNode(BinaryNode n) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">                for (Node m1 : n.getArg1().getDefs()) {</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">                    for (Node m2 : n.getArg2().getDefs()) {</span>
+<span class="nc" id="L70">                        r.addBinaryProduction(getNonterminal(n), n.getOp(), getNonterminal(m1), getNonterminal(m2));</span>
+                    }
+                }
+<span class="nc" id="L73">            }</span>
+        });
+<span class="nc" id="L75">        return r;</span>
+    }
+
+    /**
+     * Returns grammar nonterminal for the given node.
+     * Should only be invoked after {@link #convert()}.
+     */
+    public Nonterminal getNonterminal(Node n) {
+<span class="nc" id="L83">        return node2nt.get(n.getIndex());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

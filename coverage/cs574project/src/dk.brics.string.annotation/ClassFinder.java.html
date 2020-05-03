@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ClassFinder.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.annotation</a> &gt; <span class="el_source">ClassFinder.java</span></div><h1>ClassFinder.java</h1><pre class="source lang-java linenums">package dk.brics.string.annotation;
+import java.io.*;
+import java.util.*;
+
+public class ClassFinder {
+	
+	private String projectPath;
+<span class="nc" id="L8">	private List&lt;String&gt; classFiles = new LinkedList&lt;String&gt;();</span>
+
+<span class="nc" id="L10">	public ClassFinder (String projectPath) {</span>
+<span class="nc" id="L11">		this.projectPath = projectPath;</span>
+<span class="nc" id="L12">	}</span>
+	
+	public void findClasses(String path) {
+		File file;
+		
+		//Try if path is a package (directory)
+<span class="nc" id="L18">		file = new File(projectPath + &quot;\\&quot; + path.replace(&quot;.&quot;, &quot;\\&quot;));</span>
+<span class="nc bnc" id="L19" title="All 2 branches missed.">		if (file.isDirectory())</span>
+<span class="nc" id="L20">			findClasses(file);</span>
+		
+		//Try if path is a class file
+<span class="nc" id="L23">		file = new File(projectPath + &quot;\\&quot; + path.replace(&quot;.&quot;, &quot;\\&quot;) + &quot;.class&quot;);</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">		if (file.isFile())</span>
+<span class="nc" id="L25">			findClasses(file);</span>
+<span class="nc" id="L26">	}</span>
+	
+	private void findClasses(File file) {
+<span class="nc bnc" id="L29" title="All 2 branches missed.">		if (file.isDirectory()) {</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">			for (File f : file.listFiles()) {</span>
+<span class="nc" id="L31">				findClasses(f);</span>
+			}
+		}
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		if (file.isFile()) {</span>
+<span class="nc" id="L35">			String filePath = file.getAbsolutePath();</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">			if (filePath.substring(filePath.length()-6).toLowerCase().equals(&quot;.class&quot;)) {</span>
+<span class="nc" id="L37">				String relativePath = filePath.substring(projectPath.length() + 1, filePath.length()-6);</span>
+<span class="nc" id="L38">				classFiles.add(relativePath.replace(&quot;\\&quot;, &quot;.&quot;));</span>
+			}
+		}
+<span class="nc" id="L41">	}</span>
+	
+	public List&lt;String&gt; getClassFiles() {
+<span class="nc" id="L44">		return classFiles;</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

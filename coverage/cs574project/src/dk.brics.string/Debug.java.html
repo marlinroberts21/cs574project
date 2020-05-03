@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Debug.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string</a> &gt; <span class="el_source">Debug.java</span></div><h1>Debug.java</h1><pre class="source lang-java linenums">package dk.brics.string;
+
+import org.apache.log4j.*;
+
+/**
+ * Debug mode enabled/disabled.
+ * Enable debug info with &lt;code&gt;-Ddk.brics.string.debug=&amp;lt;LEVEL&amp;gt;&lt;/code&gt;.
+ */
+public class Debug {
+
+
+    private static boolean test_mode;
+    private static boolean isInitialized;
+
+    static {
+<span class="nc" id="L16">        init();</span>
+<span class="nc" id="L17">    }</span>
+
+    public static void init() {
+<span class="nc bnc" id="L20" title="All 2 branches missed.">        if (isInitialized) {</span>
+<span class="nc" id="L21">            return;</span>
+        }
+<span class="nc" id="L23">        isInitialized = true;</span>
+<span class="nc" id="L24">        String debug = System.getProperty(&quot;dk.brics.string.debug&quot;);</span>
+<span class="nc bnc" id="L25" title="All 4 branches missed.">        if (debug != null &amp;&amp; !Logger.getRootLogger().getAllAppenders().hasMoreElements()) {</span>
+            int debug_level;
+            try {
+<span class="nc" id="L28">                debug_level = Integer.parseInt(debug);</span>
+<span class="nc" id="L29">            } catch (NumberFormatException e) {</span>
+<span class="nc" id="L30">                debug_level = 1;</span>
+            }
+<span class="nc" id="L32">            BasicConfigurator.configure(new ConsoleAppender(new PatternLayout(&quot;%m%n&quot;), &quot;System.err&quot;));</span>
+<span class="nc" id="L33">            Logger log = Logger.getRootLogger();</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">            if (debug_level == 0) {</span>
+<span class="nc" id="L35">                log.setLevel(Level.WARN);</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">            } else if (debug_level == 1) {</span>
+<span class="nc" id="L37">                log.setLevel(Level.INFO);</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">            } else if (debug_level == 2) {</span>
+<span class="nc" id="L39">                log.setLevel(Level.DEBUG);</span>
+<span class="nc" id="L40">            } else {</span>
+<span class="nc" id="L41">                log.setLevel(Level.ALL);</span>
+            }
+        }
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        test_mode = System.getProperty(&quot;dk.brics.string.test&quot;) != null;</span>
+<span class="nc" id="L45">    }</span>
+
+    private Debug() {
+    }
+
+
+    /**
+     * Returns true if in test mode.
+     * This is often used to ensure that unordered collections are traversed in a particular order.
+     */
+    public static boolean isTest() {
+<span class="nc" id="L56">        return test_mode;</span>
+    }
+
+    /**
+     * Sets test mode.
+     */
+    public static void setTest(boolean test_mode) {
+<span class="nc" id="L63">        Debug.test_mode = test_mode;</span>
+<span class="nc" id="L64">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BasicOperations.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">BasicOperations.java</span></div><h1>BasicOperations.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Basic automata operations.
+ */
+final public class BasicOperations {
+	
+	private BasicOperations() {}
+
+	/** 
+	 * Returns an automaton that accepts the concatenation of the languages of 
+	 * the given automata. 
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states. 
+	 */
+	static public Automaton concatenate(Automaton a1, Automaton a2) {
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">		if (a1.isSingleton() &amp;&amp; a2.isSingleton())</span>
+<span class="nc" id="L57">			return BasicAutomata.makeString(a1.singleton + a2.singleton);</span>
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">		if (isEmpty(a1) || isEmpty(a2))</span>
+<span class="nc" id="L59">			return BasicAutomata.makeEmpty();</span>
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">		boolean deterministic = a1.isSingleton() &amp;&amp; a2.isDeterministic();</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">		if (a1 == a2) {</span>
+<span class="nc" id="L62">			a1 = a1.cloneExpanded();</span>
+<span class="nc" id="L63">			a2 = a2.cloneExpanded();</span>
+<span class="nc" id="L64">		} else {</span>
+<span class="fc" id="L65">			a1 = a1.cloneExpandedIfRequired();</span>
+<span class="fc" id="L66">			a2 = a2.cloneExpandedIfRequired();</span>
+		}
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		for (State s : a1.getAcceptStates()) {</span>
+<span class="fc" id="L69">			s.accept = false;</span>
+<span class="fc" id="L70">			s.addEpsilon(a2.initial);</span>
+		}
+<span class="fc" id="L72">		a1.deterministic = deterministic;</span>
+<span class="fc" id="L73">		a1.clearHashCode();</span>
+<span class="fc" id="L74">		a1.checkMinimizeAlways();</span>
+<span class="fc" id="L75">		return a1;</span>
+	}
+	
+	/**
+	 * Returns an automaton that accepts the concatenation of the languages of
+	 * the given automata.
+	 * &lt;p&gt;
+	 * Complexity: linear in total number of states.
+	 */
+	static public Automaton concatenate(List&lt;Automaton&gt; l) {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (l.isEmpty())</span>
+<span class="nc" id="L86">			return BasicAutomata.makeEmptyString();</span>
+<span class="fc" id="L87">		boolean all_singleton = true;</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		for (Automaton a : l)</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (!a.isSingleton()) {</span>
+<span class="fc" id="L90">				all_singleton = false;</span>
+<span class="fc" id="L91">				break;</span>
+			}
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		if (all_singleton) {</span>
+<span class="nc" id="L94">			StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">			for (Automaton a : l)</span>
+<span class="nc" id="L96">				b.append(a.singleton);</span>
+<span class="nc" id="L97">			return BasicAutomata.makeString(b.toString());</span>
+		} else {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">			for (Automaton a : l)</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">				if (a.isEmpty())</span>
+<span class="nc" id="L101">					return BasicAutomata.makeEmpty();</span>
+<span class="fc" id="L102">			Set&lt;Integer&gt; ids = new HashSet&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			for (Automaton a : l)</span>
+<span class="fc" id="L104">				ids.add(System.identityHashCode(a));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			boolean has_aliases = ids.size() != l.size();</span>
+<span class="fc" id="L106">			Automaton b = l.get(0);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">			if (has_aliases)</span>
+<span class="fc" id="L108">				b = b.cloneExpanded();</span>
+			else
+<span class="fc" id="L110">				b = b.cloneExpandedIfRequired();</span>
+<span class="fc" id="L111">			Set&lt;State&gt; ac = b.getAcceptStates();</span>
+<span class="fc" id="L112">			boolean first = true;</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">			for (Automaton a : l)</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">				if (first)</span>
+<span class="fc" id="L115">					first = false;</span>
+				else {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">					if (a.isEmptyString())</span>
+<span class="nc" id="L118">						continue;</span>
+<span class="fc" id="L119">					Automaton aa = a;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">					if (has_aliases)</span>
+<span class="fc" id="L121">						aa = aa.cloneExpanded();</span>
+					else
+<span class="fc" id="L123">						aa = aa.cloneExpandedIfRequired();</span>
+<span class="fc" id="L124">					Set&lt;State&gt; ns = aa.getAcceptStates();</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">					for (State s : ac) {</span>
+<span class="fc" id="L126">						s.accept = false;</span>
+<span class="fc" id="L127">						s.addEpsilon(aa.initial);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">						if (s.accept)</span>
+<span class="fc" id="L129">							ns.add(s);</span>
+					}
+<span class="fc" id="L131">					ac = ns;</span>
+				}
+<span class="fc" id="L133">			b.deterministic = false;</span>
+<span class="fc" id="L134">			b.clearHashCode();</span>
+<span class="fc" id="L135">			b.checkMinimizeAlways();</span>
+<span class="fc" id="L136">			return b;</span>
+		}
+	}
+
+	/**
+	 * Returns an automaton that accepts the union of the empty string and the
+	 * language of the given automaton.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states.
+	 */
+	static public Automaton optional(Automaton a) {
+<span class="fc" id="L147">		a = a.cloneExpandedIfRequired();</span>
+<span class="fc" id="L148">		State s = new State();</span>
+<span class="fc" id="L149">		s.addEpsilon(a.initial);</span>
+<span class="fc" id="L150">		s.accept = true;</span>
+<span class="fc" id="L151">		a.initial = s;</span>
+<span class="fc" id="L152">		a.deterministic = false;</span>
+<span class="fc" id="L153">		a.clearHashCode();</span>
+<span class="fc" id="L154">		a.checkMinimizeAlways();</span>
+<span class="fc" id="L155">		return a;</span>
+	}
+	
+	/**
+	 * Returns an automaton that accepts the Kleene star (zero or more
+	 * concatenated repetitions) of the language of the given automaton.
+	 * Never modifies the input automaton language.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states.
+	 */
+	static public Automaton repeat(Automaton a) {
+<span class="fc" id="L166">		a = a.cloneExpanded();</span>
+<span class="fc" id="L167">		State s = new State();</span>
+<span class="fc" id="L168">		s.accept = true;</span>
+<span class="fc" id="L169">		s.addEpsilon(a.initial);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		for (State p : a.getAcceptStates())</span>
+<span class="fc" id="L171">			p.addEpsilon(s);</span>
+<span class="fc" id="L172">		a.initial = s;</span>
+<span class="fc" id="L173">		a.deterministic = false;</span>
+<span class="fc" id="L174">		a.clearHashCode();</span>
+<span class="fc" id="L175">		a.checkMinimizeAlways();</span>
+<span class="fc" id="L176">		return a;</span>
+	}
+
+	/**
+	 * Returns an automaton that accepts &lt;code&gt;min&lt;/code&gt; or more
+	 * concatenated repetitions of the language of the given automaton.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states and in &lt;code&gt;min&lt;/code&gt;.
+	 */
+	static public Automaton repeat(Automaton a, int min) {
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		if (min == 0)</span>
+<span class="fc" id="L187">			return repeat(a);</span>
+<span class="fc" id="L188">		List&lt;Automaton&gt; as = new ArrayList&lt;Automaton&gt;();</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">		while (min-- &gt; 0)</span>
+<span class="fc" id="L190">			as.add(a);</span>
+<span class="fc" id="L191">		as.add(repeat(a));</span>
+<span class="fc" id="L192">		return concatenate(as);</span>
+	}
+	
+	/**
+	 * Returns an automaton that accepts between &lt;code&gt;min&lt;/code&gt; and
+	 * &lt;code&gt;max&lt;/code&gt; (including both) concatenated repetitions of the
+	 * language of the given automaton.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states and in &lt;code&gt;min&lt;/code&gt; and
+	 * &lt;code&gt;max&lt;/code&gt;.
+	 */
+	static public Automaton repeat(Automaton a, int min, int max) {
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (min &gt; max)</span>
+<span class="nc" id="L205">			return BasicAutomata.makeEmpty();</span>
+<span class="fc" id="L206">		max -= min;</span>
+<span class="fc" id="L207">		a.expandSingleton();</span>
+		Automaton b;
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (min == 0)</span>
+<span class="nc" id="L210">			b = BasicAutomata.makeEmptyString();</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		else if (min == 1)</span>
+<span class="fc" id="L212">			b = a.clone();</span>
+		else {
+<span class="fc" id="L214">			List&lt;Automaton&gt; as = new ArrayList&lt;Automaton&gt;();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">			while (min-- &gt; 0)</span>
+<span class="fc" id="L216">				as.add(a);</span>
+<span class="fc" id="L217">			b = concatenate(as);</span>
+		}
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		if (max &gt; 0) {</span>
+<span class="fc" id="L220">			Automaton d = a.clone();</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">			while (--max &gt; 0) {</span>
+<span class="fc" id="L222">				Automaton c = a.clone();</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">				for (State p : c.getAcceptStates())</span>
+<span class="fc" id="L224">					p.addEpsilon(d.initial);</span>
+<span class="fc" id="L225">				d = c;</span>
+			}
+<span class="fc bfc" id="L227" title="All 2 branches covered.">			for (State p : b.getAcceptStates())</span>
+<span class="fc" id="L228">				p.addEpsilon(d.initial);</span>
+<span class="fc" id="L229">			b.deterministic = false;</span>
+<span class="fc" id="L230">			b.clearHashCode();</span>
+<span class="fc" id="L231">			b.checkMinimizeAlways();</span>
+		}
+<span class="fc" id="L233">		return b;</span>
+	}
+
+	/**
+	 * Returns a (deterministic) automaton that accepts the complement of the
+	 * language of the given automaton.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states (if already deterministic).
+	 */
+	static public Automaton complement(Automaton a) {
+<span class="fc" id="L243">		a = a.cloneExpandedIfRequired();</span>
+<span class="fc" id="L244">		a.determinize();</span>
+<span class="fc" id="L245">		a.totalize();</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">		for (State p : a.getStates())</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">			p.accept = !p.accept;</span>
+<span class="fc" id="L248">		a.removeDeadTransitions();</span>
+<span class="fc" id="L249">		return a;</span>
+	}
+
+	/**
+	 * Returns a (deterministic) automaton that accepts the intersection of
+	 * the language of &lt;code&gt;a1&lt;/code&gt; and the complement of the language of 
+	 * &lt;code&gt;a2&lt;/code&gt;. As a side-effect, the automata may be determinized, if not
+	 * already deterministic.
+	 * &lt;p&gt;
+	 * Complexity: quadratic in number of states (if already deterministic).
+	 */
+	static public Automaton minus(Automaton a1, Automaton a2) {
+<span class="pc bpc" id="L261" title="2 of 4 branches missed.">		if (a1.isEmpty() || a1 == a2)</span>
+<span class="nc" id="L262">			return BasicAutomata.makeEmpty();</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (a2.isEmpty())</span>
+<span class="nc" id="L264">			return a1.cloneIfRequired();</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		if (a1.isSingleton()) {</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">			if (a2.run(a1.singleton))</span>
+<span class="nc" id="L267">				return BasicAutomata.makeEmpty();</span>
+			else
+<span class="nc" id="L269">				return a1.cloneIfRequired();</span>
+		}
+<span class="fc" id="L271">		return intersection(a1, a2.complement());</span>
+	}
+
+	/**
+	 * Returns an automaton that accepts the intersection of
+	 * the languages of the given automata. 
+	 * Never modifies the input automata languages.
+	 * &lt;p&gt;
+	 * Complexity: quadratic in number of states.
+	 */
+	static public Automaton intersection(Automaton a1, Automaton a2) {
+<span class="fc bfc" id="L282" title="All 2 branches covered.">		if (a1.isSingleton()) {</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">			if (a2.run(a1.singleton))</span>
+<span class="nc" id="L284">				return a1.cloneIfRequired();</span>
+			else
+<span class="fc" id="L286">				return BasicAutomata.makeEmpty();</span>
+		}
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">		if (a2.isSingleton()) {</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">			if (a1.run(a2.singleton))</span>
+<span class="nc" id="L290">				return a2.cloneIfRequired();</span>
+			else
+<span class="nc" id="L292">				return BasicAutomata.makeEmpty();</span>
+		}
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">		if (a1 == a2)</span>
+<span class="nc" id="L295">			return a1.cloneIfRequired();</span>
+<span class="fc" id="L296">		Transition[][] transitions1 = Automaton.getSortedTransitions(a1.getStates());</span>
+<span class="fc" id="L297">		Transition[][] transitions2 = Automaton.getSortedTransitions(a2.getStates());</span>
+<span class="fc" id="L298">		Automaton c = new Automaton();</span>
+<span class="fc" id="L299">		LinkedList&lt;StatePair&gt; worklist = new LinkedList&lt;StatePair&gt;();</span>
+<span class="fc" id="L300">		HashMap&lt;StatePair, StatePair&gt; newstates = new HashMap&lt;StatePair, StatePair&gt;();</span>
+<span class="fc" id="L301">		StatePair p = new StatePair(c.initial, a1.initial, a2.initial);</span>
+<span class="fc" id="L302">		worklist.add(p);</span>
+<span class="fc" id="L303">		newstates.put(p, p);</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">		while (worklist.size() &gt; 0) {</span>
+<span class="fc" id="L305">			p = worklist.removeFirst();</span>
+<span class="fc bfc" id="L306" title="All 4 branches covered.">			p.s.accept = p.s1.accept &amp;&amp; p.s2.accept;</span>
+<span class="fc" id="L307">			Transition[] t1 = transitions1[p.s1.number];</span>
+<span class="fc" id="L308">			Transition[] t2 = transitions2[p.s2.number];</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">			for (int n1 = 0, b2 = 0; n1 &lt; t1.length; n1++) {</span>
+<span class="fc bfc" id="L310" title="All 4 branches covered.">				while (b2 &lt; t2.length &amp;&amp; t2[b2].max &lt; t1[n1].min)</span>
+<span class="fc" id="L311">					b2++;</span>
+<span class="fc bfc" id="L312" title="All 4 branches covered.">				for (int n2 = b2; n2 &lt; t2.length &amp;&amp; t1[n1].max &gt;= t2[n2].min; n2++) </span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">					if (t2[n2].max &gt;= t1[n1].min) {</span>
+<span class="fc" id="L314">						StatePair q = new StatePair(t1[n1].to, t2[n2].to);</span>
+<span class="fc" id="L315">						StatePair r = newstates.get(q);</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">						if (r == null) {</span>
+<span class="fc" id="L317">							q.s = new State();</span>
+<span class="fc" id="L318">							worklist.add(q);</span>
+<span class="fc" id="L319">							newstates.put(q, q);</span>
+<span class="fc" id="L320">							r = q;</span>
+						}
+<span class="fc bfc" id="L322" title="All 2 branches covered.">						char min = t1[n1].min &gt; t2[n2].min ? t1[n1].min : t2[n2].min;</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">						char max = t1[n1].max &lt; t2[n2].max ? t1[n1].max : t2[n2].max;</span>
+<span class="fc" id="L324">						p.s.transitions.add(new Transition(min, max, r.s));</span>
+					}
+			}
+		}
+<span class="pc bpc" id="L328" title="1 of 4 branches missed.">		c.deterministic = a1.deterministic &amp;&amp; a2.deterministic;</span>
+<span class="fc" id="L329">		c.removeDeadTransitions();</span>
+<span class="fc" id="L330">		c.checkMinimizeAlways();</span>
+<span class="fc" id="L331">		return c;</span>
+	}
+		
+	/**
+	 * Returns true if the language of &lt;code&gt;a1&lt;/code&gt; is a subset of the
+	 * language of &lt;code&gt;a2&lt;/code&gt;. 
+	 * As a side-effect, &lt;code&gt;a2&lt;/code&gt; is determinized if not already marked as
+	 * deterministic.
+	 * &lt;p&gt;
+	 * Complexity: quadratic in number of states.
+	 */
+	public static boolean subsetOf(Automaton a1, Automaton a2) {
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">		if (a1 == a2)</span>
+<span class="nc" id="L344">			return true;</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">		if (a1.isSingleton()) {</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">			if (a2.isSingleton())</span>
+<span class="nc" id="L347">				return a1.singleton.equals(a2.singleton);</span>
+<span class="nc" id="L348">			return a2.run(a1.singleton);</span>
+		}
+<span class="fc" id="L350">		a2.determinize();</span>
+<span class="fc" id="L351">		Transition[][] transitions1 = Automaton.getSortedTransitions(a1.getStates());</span>
+<span class="fc" id="L352">		Transition[][] transitions2 = Automaton.getSortedTransitions(a2.getStates());</span>
+<span class="fc" id="L353">		LinkedList&lt;StatePair&gt; worklist = new LinkedList&lt;StatePair&gt;();</span>
+<span class="fc" id="L354">		HashSet&lt;StatePair&gt; visited = new HashSet&lt;StatePair&gt;();</span>
+<span class="fc" id="L355">		StatePair p = new StatePair(a1.initial, a2.initial);</span>
+<span class="fc" id="L356">		worklist.add(p);</span>
+<span class="fc" id="L357">		visited.add(p);</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">		while (worklist.size() &gt; 0) {</span>
+<span class="fc" id="L359">			p = worklist.removeFirst();</span>
+<span class="fc bfc" id="L360" title="All 4 branches covered.">			if (p.s1.accept &amp;&amp; !p.s2.accept)</span>
+<span class="fc" id="L361">				return false;</span>
+<span class="fc" id="L362">			Transition[] t1 = transitions1[p.s1.number];</span>
+<span class="fc" id="L363">			Transition[] t2 = transitions2[p.s2.number];</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">			for (int n1 = 0, b2 = 0; n1 &lt; t1.length; n1++) {</span>
+<span class="pc bpc" id="L365" title="1 of 4 branches missed.">				while (b2 &lt; t2.length &amp;&amp; t2[b2].max &lt; t1[n1].min)</span>
+<span class="fc" id="L366">					b2++;</span>
+<span class="fc" id="L367">				int min1 = t1[n1].min, max1 = t1[n1].max;</span>
+<span class="fc bfc" id="L368" title="All 4 branches covered.">				for (int n2 = b2; n2 &lt; t2.length &amp;&amp; t1[n1].max &gt;= t2[n2].min; n2++) {</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">					if (t2[n2].min &gt; min1)</span>
+<span class="nc" id="L370">						return false;</span>
+<span class="fc bfc" id="L371" title="All 2 branches covered.">					if (t2[n2].max &lt; Character.MAX_VALUE) </span>
+<span class="fc" id="L372">						min1 = t2[n2].max + 1;</span>
+					else {
+<span class="fc" id="L374">						min1 = Character.MAX_VALUE;</span>
+<span class="fc" id="L375">						max1 = Character.MIN_VALUE;</span>
+					}
+<span class="fc" id="L377">					StatePair q = new StatePair(t1[n1].to, t2[n2].to);</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">					if (!visited.contains(q)) {</span>
+<span class="fc" id="L379">						worklist.add(q);</span>
+<span class="fc" id="L380">						visited.add(q);</span>
+					}
+				}
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">				if (min1 &lt;= max1)</span>
+<span class="nc" id="L384">					return false;</span>
+			}		
+		}
+<span class="fc" id="L387">		return true;</span>
+	}
+	
+	/**
+	 * Returns an automaton that accepts the union of the languages of the given automata.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states.
+	 */
+	public static Automaton union(Automaton a1, Automaton a2) {
+<span class="pc bpc" id="L396" title="2 of 8 branches missed.">		if ((a1.isSingleton() &amp;&amp; a2.isSingleton() &amp;&amp; a1.singleton.equals(a2.singleton)) || a1 == a2)</span>
+<span class="nc" id="L397">			return a1.cloneIfRequired();</span>
+<span class="fc" id="L398">		a1 = a1.cloneExpandedIfRequired();</span>
+<span class="fc" id="L399">		a2 = a2.cloneExpandedIfRequired();</span>
+<span class="fc" id="L400">		State s = new State();</span>
+<span class="fc" id="L401">		s.addEpsilon(a1.initial);</span>
+<span class="fc" id="L402">		s.addEpsilon(a2.initial);</span>
+<span class="fc" id="L403">		a1.initial = s;</span>
+<span class="fc" id="L404">		a1.deterministic = false;</span>
+<span class="fc" id="L405">		a1.clearHashCode();</span>
+<span class="fc" id="L406">		a1.checkMinimizeAlways();</span>
+<span class="fc" id="L407">		return a1;</span>
+	}
+	
+	/**
+	 * Returns an automaton that accepts the union of the languages of the given automata.
+	 * &lt;p&gt;
+	 * Complexity: linear in number of states.
+	 */
+	public static Automaton union(Collection&lt;Automaton&gt; l) {
+<span class="fc" id="L416">		Set&lt;Integer&gt; ids = new HashSet&lt;Integer&gt;();</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">		for (Automaton a : l)</span>
+<span class="fc" id="L418">			ids.add(System.identityHashCode(a));</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">		boolean has_aliases = ids.size() != l.size();</span>
+<span class="fc" id="L420">		State s = new State();</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">		for (Automaton b : l) {</span>
+<span class="pc bpc" id="L422" title="1 of 2 branches missed.">			if (b.isEmpty())</span>
+<span class="nc" id="L423">				continue;</span>
+<span class="fc" id="L424">			Automaton bb = b;</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">			if (has_aliases)</span>
+<span class="nc" id="L426">				bb = bb.cloneExpanded();</span>
+			else
+<span class="fc" id="L428">				bb = bb.cloneExpandedIfRequired();</span>
+<span class="fc" id="L429">			s.addEpsilon(bb.initial);</span>
+		}
+<span class="fc" id="L431">		Automaton a = new Automaton();</span>
+<span class="fc" id="L432">		a.initial = s;</span>
+<span class="fc" id="L433">		a.deterministic = false;</span>
+<span class="fc" id="L434">		a.clearHashCode();</span>
+<span class="fc" id="L435">		a.checkMinimizeAlways();</span>
+<span class="fc" id="L436">		return a;</span>
+	}
+
+	/**
+	 * Determinizes the given automaton.
+	 * &lt;p&gt;
+	 * Complexity: exponential in number of states.
+	 */
+	public static void determinize(Automaton a) {
+<span class="pc bpc" id="L445" title="1 of 4 branches missed.">		if (a.deterministic || a.isSingleton())</span>
+<span class="fc" id="L446">			return;</span>
+<span class="fc" id="L447">		Set&lt;State&gt; initialset = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L448">		initialset.add(a.initial);</span>
+<span class="fc" id="L449">		determinize(a, initialset);</span>
+<span class="fc" id="L450">	}</span>
+
+	/** 
+	 * Determinizes the given automaton using the given set of initial states. 
+	 */
+	static void determinize(Automaton a, Set&lt;State&gt; initialset) {
+<span class="fc" id="L456">		char[] points = a.getStartPoints();</span>
+		// subset construction
+<span class="fc" id="L458">		LinkedList&lt;Set&lt;State&gt;&gt; worklist = new LinkedList&lt;Set&lt;State&gt;&gt;();</span>
+<span class="fc" id="L459">		Map&lt;Set&lt;State&gt;, State&gt; newstate = new HashMap&lt;Set&lt;State&gt;, State&gt;();</span>
+<span class="fc" id="L460">		worklist.add(initialset);</span>
+<span class="fc" id="L461">		a.initial = new State();</span>
+<span class="fc" id="L462">		newstate.put(initialset, a.initial);</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">		while (worklist.size() &gt; 0) {</span>
+<span class="fc" id="L464">			Set&lt;State&gt; s = worklist.removeFirst();</span>
+<span class="fc" id="L465">			State r = newstate.get(s);</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">			for (State q : s)</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">				if (q.accept) {</span>
+<span class="fc" id="L468">					r.accept = true;</span>
+<span class="fc" id="L469">					break;</span>
+				}
+<span class="fc bfc" id="L471" title="All 2 branches covered.">			for (int n = 0; n &lt; points.length; n++) {</span>
+<span class="fc" id="L472">				Set&lt;State&gt; p = new HashSet&lt;State&gt;();</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">				for (State q : s)</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">					for (Transition t : q.transitions)</span>
+<span class="fc bfc" id="L475" title="All 4 branches covered.">						if (t.min &lt;= points[n] &amp;&amp; points[n] &lt;= t.max)</span>
+<span class="fc" id="L476">							p.add(t.to);</span>
+<span class="fc bfc" id="L477" title="All 2 branches covered.">				if (!p.isEmpty()) {</span>
+<span class="fc" id="L478">                    State q = newstate.get(p);</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">                    if (q == null) {</span>
+<span class="fc" id="L480">                        worklist.add(p);</span>
+<span class="fc" id="L481">                        q = new State();</span>
+<span class="fc" id="L482">                        newstate.put(p, q);</span>
+                    }
+<span class="fc" id="L484">                    char min = points[n];</span>
+                    char max;
+<span class="fc bfc" id="L486" title="All 2 branches covered.">                    if (n + 1 &lt; points.length)</span>
+<span class="fc" id="L487">                        max = (char) (points[n + 1] - 1);</span>
+                    else
+<span class="fc" id="L489">                        max = Character.MAX_VALUE;</span>
+<span class="fc" id="L490">                    r.transitions.add(new Transition(min, max, q));</span>
+                }
+			}
+		}
+<span class="fc" id="L494">		a.deterministic = true;</span>
+<span class="fc" id="L495">		a.removeDeadTransitions();</span>
+<span class="fc" id="L496">	}</span>
+
+	/** 
+	 * Adds epsilon transitions to the given automaton.
+	 * This method adds extra character interval transitions that are equivalent to the given
+	 * set of epsilon transitions. 
+	 * @param pairs collection of {@link StatePair} objects representing pairs of source/destination states 
+	 *        where epsilon transitions should be added
+	 */
+	public static void addEpsilons(Automaton a, Collection&lt;StatePair&gt; pairs) {
+<span class="fc" id="L506">		a.expandSingleton();</span>
+<span class="fc" id="L507">		HashMap&lt;State, HashSet&lt;State&gt;&gt; forward = new HashMap&lt;State, HashSet&lt;State&gt;&gt;();</span>
+<span class="fc" id="L508">		HashMap&lt;State, HashSet&lt;State&gt;&gt; back = new HashMap&lt;State, HashSet&lt;State&gt;&gt;();</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">		for (StatePair p : pairs) {</span>
+<span class="fc" id="L510">			HashSet&lt;State&gt; to = forward.get(p.s1);</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">			if (to == null) {</span>
+<span class="fc" id="L512">				to = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L513">				forward.put(p.s1, to);</span>
+			}
+<span class="fc" id="L515">			to.add(p.s2);</span>
+<span class="fc" id="L516">			HashSet&lt;State&gt; from = back.get(p.s2);</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">			if (from == null) {</span>
+<span class="fc" id="L518">				from = new HashSet&lt;State&gt;();</span>
+<span class="fc" id="L519">				back.put(p.s2, from);</span>
+			}
+<span class="fc" id="L521">			from.add(p.s1);</span>
+		}
+		// calculate epsilon closure
+<span class="fc" id="L524">		LinkedList&lt;StatePair&gt; worklist = new LinkedList&lt;StatePair&gt;(pairs);</span>
+<span class="fc" id="L525">		HashSet&lt;StatePair&gt; workset = new HashSet&lt;StatePair&gt;(pairs);</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">		while (!worklist.isEmpty()) {</span>
+<span class="fc" id="L527">			StatePair p = worklist.removeFirst();</span>
+<span class="fc" id="L528">			workset.remove(p);</span>
+<span class="fc" id="L529">			HashSet&lt;State&gt; to = forward.get(p.s2);</span>
+<span class="fc" id="L530">			HashSet&lt;State&gt; from = back.get(p.s1);</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">			if (to != null) {</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">				for (State s : to) {</span>
+<span class="fc" id="L533">					StatePair pp = new StatePair(p.s1, s);</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">					if (!pairs.contains(pp)) {</span>
+<span class="fc" id="L535">						pairs.add(pp);</span>
+<span class="fc" id="L536">						forward.get(p.s1).add(s);</span>
+<span class="fc" id="L537">						back.get(s).add(p.s1);</span>
+<span class="fc" id="L538">						worklist.add(pp);</span>
+<span class="fc" id="L539">						workset.add(pp);</span>
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">						if (from != null) {</span>
+<span class="nc bnc" id="L541" title="All 2 branches missed.">							for (State q : from) {</span>
+<span class="nc" id="L542">								StatePair qq = new StatePair(q, p.s1);</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">								if (!workset.contains(qq)) {</span>
+<span class="nc" id="L544">									worklist.add(qq);</span>
+<span class="nc" id="L545">									workset.add(qq);</span>
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// add transitions
+<span class="fc bfc" id="L554" title="All 2 branches covered.">		for (StatePair p : pairs)</span>
+<span class="fc" id="L555">			p.s1.addEpsilon(p.s2);</span>
+<span class="fc" id="L556">		a.deterministic = false;</span>
+<span class="fc" id="L557">		a.clearHashCode();</span>
+<span class="fc" id="L558">		a.checkMinimizeAlways();</span>
+<span class="fc" id="L559">	}</span>
+	
+	/**
+	 * Returns true if the given automaton accepts the empty string and nothing else.
+	 */
+	public static boolean isEmptyString(Automaton a) {
+<span class="fc bfc" id="L565" title="All 2 branches covered.">		if (a.isSingleton())</span>
+<span class="pc bpc" id="L566" title="1 of 2 branches missed.">			return a.singleton.length() == 0;</span>
+		else
+<span class="pc bpc" id="L568" title="1 of 4 branches missed.">			return a.initial.accept &amp;&amp; a.initial.transitions.isEmpty();</span>
+	}
+
+	/**
+	 * Returns true if the given automaton accepts no strings.
+	 */
+	public static boolean isEmpty(Automaton a) {
+<span class="fc bfc" id="L575" title="All 2 branches covered.">		if (a.isSingleton())</span>
+<span class="fc" id="L576">			return false;</span>
+<span class="fc bfc" id="L577" title="All 4 branches covered.">		return !a.initial.accept &amp;&amp; a.initial.transitions.isEmpty();</span>
+	}
+	
+	/**
+	 * Returns true if the given automaton accepts all strings.
+	 */
+	public static boolean isTotal(Automaton a) {
+<span class="nc bnc" id="L584" title="All 2 branches missed.">		if (a.isSingleton())</span>
+<span class="nc" id="L585">			return false;</span>
+<span class="nc bnc" id="L586" title="All 4 branches missed.">		if (a.initial.accept &amp;&amp; a.initial.transitions.size() == 1) {</span>
+<span class="nc" id="L587">			Transition t = a.initial.transitions.iterator().next();</span>
+<span class="nc bnc" id="L588" title="All 6 branches missed.">			return t.to == a.initial &amp;&amp; t.min == Character.MIN_VALUE &amp;&amp; t.max == Character.MAX_VALUE;</span>
+		}
+<span class="nc" id="L590">		return false;</span>
+	}
+	
+	/**
+	 * Returns a shortest accepted/rejected string. 
+	 * If more than one shortest string is found, the lexicographically first of the shortest strings is returned.
+	 * @param accepted if true, look for accepted strings; otherwise, look for rejected strings
+	 * @return the string, null if none found
+	 */
+	public static String getShortestExample(Automaton a, boolean accepted) {
+<span class="fc bfc" id="L600" title="All 2 branches covered.">		if (a.isSingleton()) {</span>
+<span class="pc bpc" id="L601" title="1 of 2 branches missed.">			if (accepted)</span>
+<span class="fc" id="L602">				return a.singleton;</span>
+<span class="nc bnc" id="L603" title="All 2 branches missed.">			else if (a.singleton.length() &gt; 0)</span>
+<span class="nc" id="L604">				return &quot;&quot;;</span>
+			else
+<span class="nc" id="L606">				return &quot;\u0000&quot;;</span>
+
+		}
+<span class="fc" id="L609">		return getShortestExample(a.getInitialState(), accepted);</span>
+	}
+
+	static String getShortestExample(State s, boolean accepted) {
+<span class="fc" id="L613">		Map&lt;State,String&gt; path = new HashMap&lt;State,String&gt;();</span>
+<span class="fc" id="L614">		LinkedList&lt;State&gt; queue = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L615">		path.put(s, &quot;&quot;);</span>
+<span class="fc" id="L616">		queue.add(s);</span>
+<span class="fc" id="L617">		String best = null;</span>
+<span class="fc bfc" id="L618" title="All 2 branches covered.">		while (!queue.isEmpty()) {</span>
+<span class="fc" id="L619">			State q = queue.removeFirst();</span>
+<span class="fc" id="L620">			String p = path.get(q);</span>
+<span class="fc bfc" id="L621" title="All 2 branches covered.">			if (q.accept == accepted) {</span>
+<span class="pc bpc" id="L622" title="3 of 8 branches missed.">				if (best == null || p.length() &lt; best.length() || (p.length() == best.length() &amp;&amp; p.compareTo(best) &lt; 0))</span>
+<span class="fc" id="L623">					best = p;</span>
+<span class="fc" id="L624">			} else </span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">				for (Transition t : q.getTransitions()) {</span>
+<span class="fc" id="L626">					String tp = path.get(t.to);</span>
+<span class="fc" id="L627">					String np = p + t.min;</span>
+<span class="pc bpc" id="L628" title="5 of 6 branches missed.">					if (tp == null || (tp.length() == np.length() &amp;&amp; np.compareTo(tp) &lt; 0)) {</span>
+<span class="pc bpc" id="L629" title="1 of 2 branches missed.">						if (tp == null)</span>
+<span class="fc" id="L630">							queue.addLast(t.to);</span>
+<span class="fc" id="L631">						path.put(t.to, np);</span>
+					}
+				}
+		}
+<span class="fc" id="L635">		return best;</span>
+	}
+	
+	/**
+	 * Returns true if the given string is accepted by the automaton. 
+	 * &lt;p&gt;
+	 * Complexity: linear in the length of the string.
+	 * &lt;p&gt;
+	 * &lt;b&gt;Note:&lt;/b&gt; for full performance, use the {@link RunAutomaton} class.
+	 */
+	public static boolean run(Automaton a, String s) {
+<span class="pc bpc" id="L646" title="1 of 2 branches missed.">		if (a.isSingleton())</span>
+<span class="nc" id="L647">			return s.equals(a.singleton);</span>
+<span class="pc bpc" id="L648" title="1 of 2 branches missed.">		if (a.deterministic) {</span>
+<span class="nc" id="L649">			State p = a.initial;</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">			for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="nc" id="L651">				State q = p.step(s.charAt(i));</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">				if (q == null)</span>
+<span class="nc" id="L653">					return false;</span>
+<span class="nc" id="L654">				p = q;</span>
+			}
+<span class="nc" id="L656">			return p.accept;</span>
+		} else {
+<span class="fc" id="L658">			Set&lt;State&gt; states = a.getStates();</span>
+<span class="fc" id="L659">			Automaton.setStateNumbers(states);</span>
+<span class="fc" id="L660">			LinkedList&lt;State&gt; pp = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L661">			LinkedList&lt;State&gt; pp_other = new LinkedList&lt;State&gt;();</span>
+<span class="fc" id="L662">			BitSet bb = new BitSet(states.size());</span>
+<span class="fc" id="L663">			BitSet bb_other = new BitSet(states.size());</span>
+<span class="fc" id="L664">			pp.add(a.initial);</span>
+<span class="fc" id="L665">			ArrayList&lt;State&gt; dest = new ArrayList&lt;State&gt;();</span>
+<span class="fc" id="L666">			boolean accept = a.initial.accept;</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">			for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="fc" id="L668">				char c = s.charAt(i);</span>
+<span class="fc" id="L669">				accept = false;</span>
+<span class="fc" id="L670">				pp_other.clear();</span>
+<span class="fc" id="L671">				bb_other.clear();</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">				for (State p : pp) {</span>
+<span class="fc" id="L673">					dest.clear();</span>
+<span class="fc" id="L674">					p.step(c, dest);</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">					for (State q : dest) {</span>
+<span class="pc bpc" id="L676" title="1 of 2 branches missed.">						if (q.accept)</span>
+<span class="nc" id="L677">							accept = true;</span>
+<span class="pc bpc" id="L678" title="1 of 2 branches missed.">						if (!bb_other.get(q.number)) {</span>
+<span class="fc" id="L679">							bb_other.set(q.number);</span>
+<span class="fc" id="L680">							pp_other.add(q);</span>
+						}
+					}
+				}
+<span class="fc" id="L684">				LinkedList&lt;State&gt; tp = pp;</span>
+<span class="fc" id="L685">				pp = pp_other;</span>
+<span class="fc" id="L686">				pp_other = tp;</span>
+<span class="fc" id="L687">				BitSet tb = bb;</span>
+<span class="fc" id="L688">				bb = bb_other;</span>
+<span class="fc" id="L689">				bb_other = tb;</span>
+			}
+<span class="fc" id="L691">			return accept;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

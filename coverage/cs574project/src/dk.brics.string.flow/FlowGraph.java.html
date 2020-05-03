@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FlowGraph.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.flow</a> &gt; <span class="el_source">FlowGraph.java</span></div><h1>FlowGraph.java</h1><pre class="source lang-java linenums">package dk.brics.string.flow;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.flow.operations.FlowGraph2Dot;
+import dk.brics.string.flow.operations.Simplifier;
+import dk.brics.string.stringoperations.BinaryOperation;
+import dk.brics.string.stringoperations.UnaryOperation;
+
+import java.util.*;
+
+/**
+ * Flow graph.
+ * Nodes represent definitions (variables or expressions).
+ * Edges represent data flow.
+ *
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ * @author Aske Simon Christensen &amp;lt;&lt;a href=&quot;mailto:aske@cs.au.dk&quot;&gt;aske@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class FlowGraph {
+
+<span class="nc" id="L21">    private List&lt;Node&gt; nodes = new ArrayList&lt;Node&gt;();</span>
+
+    /**
+     * Constructs new empty flow graph.
+     */
+<span class="nc" id="L26">    public FlowGraph() {</span>
+<span class="nc" id="L27">    }</span>
+
+    /**
+     * Returns the (unmodifiable) collection of nodes in this graph.
+     */
+    public List&lt;Node&gt; getNodes() {
+<span class="nc" id="L33">        return Collections.unmodifiableList(nodes);</span>
+    }
+
+    private int getNextKey() {
+<span class="nc" id="L37">        return nodes.size();</span>
+    }
+
+    /**
+     * Adds new assignment node to this flow graph.
+     *
+     * @return new node
+     */
+    public AssignmentNode addAssignmentNode() {
+<span class="nc" id="L46">        AssignmentNode n = new AssignmentNode(getNextKey());</span>
+<span class="nc" id="L47">        nodes.add(n);</span>
+<span class="nc" id="L48">        return n;</span>
+    }
+
+    /**
+     * Adds new concatenation node to this flow graph.
+     *
+     * @return new node
+     */
+    public ConcatenationNode addConcatenationNode() {
+<span class="nc" id="L57">        ConcatenationNode n = new ConcatenationNode(getNextKey());</span>
+<span class="nc" id="L58">        nodes.add(n);</span>
+<span class="nc" id="L59">        return n;</span>
+    }
+
+    /**
+     * Adds new initialization node to this flow graph.
+     *
+     * @param reg regular language representing initialization values
+     * @return new node
+     */
+    public InitializationNode addInitializationNode(Automaton reg) {
+<span class="nc" id="L69">        InitializationNode n = new InitializationNode(getNextKey(), reg);</span>
+<span class="nc" id="L70">        nodes.add(n);</span>
+<span class="nc" id="L71">        return n;</span>
+    }
+
+    /**
+     * Adds new unary operation node to this flow graph.
+     *
+     * @param op unary operation
+     * @return new node
+     */
+    public UnaryNode addUnaryNode(UnaryOperation op) {
+<span class="nc" id="L81">        UnaryNode n = new UnaryNode(getNextKey(), op);</span>
+<span class="nc" id="L82">        nodes.add(n);</span>
+<span class="nc" id="L83">        return n;</span>
+    }
+
+    /**
+     * Adds new binary operation node to this flow graph.
+     *
+     * @param op binary operation
+     * @return new node
+     */
+    public BinaryNode addBinaryNode(BinaryOperation op) {
+<span class="nc" id="L93">        BinaryNode n = new BinaryNode(getNextKey(), op);</span>
+<span class="nc" id="L94">        nodes.add(n);</span>
+<span class="nc" id="L95">        return n;</span>
+    }
+
+    /**
+     * Returns number of nodes in this graph.
+     */
+    public int getNumberOfNodes() {
+<span class="nc" id="L102">        return nodes.size();</span>
+    }
+
+    /**
+     * Returns number of edges in this graph.
+     */
+    public int getNumberOfEdges() {
+<span class="nc" id="L109">        int x = 0;</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        for (Node n : nodes) {</span>
+<span class="nc" id="L111">            x += n.getUses().size();</span>
+        }
+<span class="nc" id="L113">        return x;</span>
+    }
+
+    /**
+     * Removes the given nodes from this graph.
+     */
+    public void removeNodes(Set&lt;Node&gt; removed) {
+<span class="nc" id="L120">        nodes.removeAll(removed);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        for (int i = 0; i &lt; nodes.size(); i++) {</span>
+<span class="nc" id="L122">            nodes.get(i).setIndex(i);</span>
+        }
+<span class="nc" id="L124">    }</span>
+
+    /**
+     * Visits all nodes with the given visitor.
+     */
+    public void visitNodes(NodeVisitor v) {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        for (Node n : nodes) {</span>
+<span class="nc" id="L131">            n.visitBy(v);</span>
+        }
+<span class="nc" id="L133">    }</span>
+
+    /**
+     * See {@link Simplifier#normalize(FlowGraph)}.
+     */
+    public void normalize() {
+<span class="nc" id="L139">        Simplifier.normalize(this);</span>
+<span class="nc" id="L140">    }</span>
+
+    /**
+     * See {@link Simplifier#simplify(FlowGraph)}.
+     */
+    public Map&lt;Node, Node&gt; simplify() {
+<span class="nc" id="L146">        return Simplifier.simplify(this);</span>
+    }
+
+    /**
+     * See {@link FlowGraph2Dot#toDot(FlowGraph)}.
+     */
+    public String toDot() {
+<span class="nc" id="L153">        return FlowGraph2Dot.toDot(this);</span>
+    }
+
+    /**
+     * See {@link FlowGraph2Dot#toDot(FlowGraph,Collection)}.
+     */
+    public String toDot(Collection&lt;Node&gt; hotspots) {
+<span class="nc" id="L160">        return FlowGraph2Dot.toDot(this, hotspots);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>IntermediateCompletedEvent.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.diagnostics</a> &gt; <span class="el_source">IntermediateCompletedEvent.java</span></div><h1>IntermediateCompletedEvent.java</h1><pre class="source lang-java linenums">package dk.brics.string.diagnostics;
+
+import java.util.Set;
+
+import dk.brics.string.intermediate.Application;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.operations.AliasAnalysis;
+import dk.brics.string.intermediate.operations.OperationAssertionAnalysis;
+import dk.brics.string.intermediate.operations.LivenessAnalysis;
+import dk.brics.string.intermediate.operations.ReachingDefinitions;
+
+/**
+ * Contains information about the intermediate representation. This is a &quot;parameter object&quot;,
+ * so the signature to {@link DiagnosticsStrategy#intermediateCompleted} does not change when we add more information here.
+ */
+public class IntermediateCompletedEvent {
+	private Application application;
+	private LivenessAnalysis liveness;
+	private AliasAnalysis alias;
+	private ReachingDefinitions reachingDefinitions;
+	private OperationAssertionAnalysis assertions;
+	private Set&lt;Statement&gt; hotspots;
+
+<span class="nc" id="L24">	public IntermediateCompletedEvent(Application application,</span>
+            LivenessAnalysis liveness, AliasAnalysis alias,
+            ReachingDefinitions reaching, OperationAssertionAnalysis assertions,
+            Set&lt;Statement&gt; hotspots) {
+<span class="nc" id="L28">        this.application = application;</span>
+<span class="nc" id="L29">        this.liveness = liveness;</span>
+<span class="nc" id="L30">        this.alias = alias;</span>
+<span class="nc" id="L31">        this.reachingDefinitions = reaching;</span>
+<span class="nc" id="L32">        this.assertions = assertions;</span>
+<span class="nc" id="L33">        this.hotspots = hotspots;</span>
+<span class="nc" id="L34">    }</span>
+
+    public Application getApplication() {
+<span class="nc" id="L37">		return application;</span>
+	}
+
+	public LivenessAnalysis getLiveness() {
+<span class="nc" id="L41">		return liveness;</span>
+	}
+
+	public AliasAnalysis getAlias() {
+<span class="nc" id="L45">		return alias;</span>
+	}
+
+	public ReachingDefinitions getReachingDefinitions() {
+<span class="nc" id="L49">		return reachingDefinitions;</span>
+	}
+
+	public Set&lt;Statement&gt; getHotspots() {
+<span class="nc" id="L53">		return hotspots;</span>
+	}
+
+    public OperationAssertionAnalysis getAssertions() {
+<span class="nc" id="L57">        return assertions;</span>
+    }
+	
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

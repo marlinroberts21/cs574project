@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AssertHasNotLength.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.stringoperations</a> &gt; <span class="el_source">AssertHasNotLength.java</span></div><h1>AssertHasNotLength.java</h1><pre class="source lang-java linenums">package dk.brics.string.stringoperations;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.string.charset.CharSet;
+
+/**
+ * Asserts that the string does not have a length between &lt;tt&gt;min&lt;/tt&gt; and &lt;tt&gt;max&lt;/tt&gt; (inclusive)
+ * 
+ * @author Asger
+ *
+ */
+public class AssertHasNotLength extends UnaryOperation {
+    
+    private int min, max;
+    
+<span class="nc" id="L16">    public AssertHasNotLength(int min, int max) {</span>
+<span class="nc" id="L17">        this.min = min;</span>
+<span class="nc" id="L18">        this.max = max;</span>
+<span class="nc" id="L19">    }</span>
+
+    @Override
+    public CharSet charsetTransfer(CharSet a) {
+<span class="nc" id="L23">        return a;</span>
+    }
+
+    @Override
+    public Automaton op(Automaton a) {
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (min &gt; max)</span>
+<span class="nc" id="L29">            return a;</span>
+        // XXX insert safeguard against huge lengths?
+<span class="nc" id="L31">        return a.intersection(Automaton.makeAnyChar().repeat(min,max).complement());</span>
+    }
+    
+    @Override
+    public int getPriority() {
+<span class="nc" id="L36">        return 1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (min == max)</span>
+<span class="nc" id="L42">            return &quot;hasntLength[&quot;+min+&quot;]&quot;;</span>
+        else
+<span class="nc" id="L44">            return &quot;hasntLength[&quot;+min+&quot;..&quot;+max+&quot;]&quot;;</span>
+    }
+    
+    @Override
+    public boolean isAssertion() {
+<span class="nc" id="L49">        return true;</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

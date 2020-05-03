@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>TranslatedStatement.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">TranslatedStatement.java</span></div><h1>TranslatedStatement.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.Statement;
+
+/**
+ * Contains the entry and exit points for the control-flow graph of a single
+ * translated jimple-statement, and a list of all the {@link Hotspot} statements
+ * within.
+ * &lt;p/&gt;
+ * Individual jimple-statement are always translated into a properly nested
+ * control-flow graph, before being connected with the other statements.
+ * &lt;p/&gt;
+ * The statements are created by {@link StatementTranslatorImpl} and wrapped in 
+ * a {@link TranslatedStatement} by {@link StatementTranslatorFacade}.
+ */
+public final class TranslatedStatement {
+	private Statement first;
+	private Statement last;
+<span class="nc" id="L23">    private List&lt;HotspotValueBoxPair&gt; hotspots = new LinkedList&lt;HotspotValueBoxPair&gt;();</span>
+<span class="nc" id="L24">    private List&lt;Statement&gt; statements = new LinkedList&lt;Statement&gt;();</span>
+	
+	/**
+	 * Prepares the results of a translated statement. The list of hotspots is initially empty,
+	 * and should be added to the list returned by {@link #getHotspots()}.
+	 * @param first entry point to the translated statement's control-flow graph
+	 * @param last exit point from the translated statement's control-flow graph
+	 */
+<span class="nc" id="L32">	public TranslatedStatement(Statement first, Statement last) {</span>
+<span class="nc" id="L33">		this.first = first;</span>
+<span class="nc" id="L34">		this.last = last;</span>
+<span class="nc" id="L35">	}</span>
+    
+	/**
+	 * Gets the entry point from the statement's control-flow graph.
+	 */
+	public Statement getFirst() {
+<span class="nc" id="L41">		return first;</span>
+	}
+	
+	/**
+	 * Gets the exit point from the statement's control-flow graph.
+	 */
+	public Statement getLast() {
+<span class="nc" id="L48">		return last;</span>
+	}
+	
+	/**
+	 * Returns all the statements in the translation, in an arbitrary order.
+	 * @return a mutable list backed by this object. 
+	 */
+	public List&lt;Statement&gt; getStatements() {
+<span class="nc" id="L56">		return statements;</span>
+	}
+
+	/**
+	 * Returns the list of hotspots in the statement's control-flow graph, along
+	 * with the jimple expressions they originated from.
+	 * Hotspots may be added to this list.
+	 * @return a mutable reference to the list of hotspots.
+	 */
+	public List&lt;HotspotValueBoxPair&gt; getHotspots() {
+<span class="nc" id="L66">		return hotspots;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

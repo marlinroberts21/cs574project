@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AssertionCreatorImpl.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">AssertionCreatorImpl.java</span></div><h1>AssertionCreatorImpl.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import soot.BooleanType;
+import soot.IntType;
+import soot.Local;
+import soot.SootMethod;
+import soot.SootMethodRef;
+import soot.Type;
+import soot.Unit;
+import soot.Value;
+import soot.ValueBox;
+import soot.jimple.AbstractJimpleValueSwitch;
+import soot.jimple.AndExpr;
+import soot.jimple.BinopExpr;
+import soot.jimple.ConditionExpr;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.EqExpr;
+import soot.jimple.GeExpr;
+import soot.jimple.GtExpr;
+import soot.jimple.IfStmt;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.IntConstant;
+import soot.jimple.InvokeExpr;
+import soot.jimple.LeExpr;
+import soot.jimple.LtExpr;
+import soot.jimple.NeExpr;
+import soot.jimple.OrExpr;
+import soot.jimple.SpecialInvokeExpr;
+import soot.jimple.StaticInvokeExpr;
+import soot.jimple.Stmt;
+import soot.jimple.VirtualInvokeExpr;
+import soot.toolkits.scalar.LocalDefs;
+import dk.brics.automaton.Automaton;
+import dk.brics.string.intermediate.AssertAliases;
+import dk.brics.string.intermediate.AssertBinaryOp;
+import dk.brics.string.intermediate.AssertUnaryOp;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.intermediate.VariableType;
+import dk.brics.string.stringoperations.AssertContainedInOther;
+import dk.brics.string.stringoperations.AssertContainsOther;
+import dk.brics.string.stringoperations.AssertEmpty;
+import dk.brics.string.stringoperations.AssertEndsWith;
+import dk.brics.string.stringoperations.AssertEquals;
+import dk.brics.string.stringoperations.AssertHasLength;
+import dk.brics.string.stringoperations.AssertHasNotLength;
+import dk.brics.string.stringoperations.AssertInLanguage;
+import dk.brics.string.stringoperations.AssertNotEmpty;
+import dk.brics.string.stringoperations.AssertNotEquals;
+import dk.brics.string.stringoperations.AssertPrefixOf;
+import dk.brics.string.stringoperations.AssertStartsWith;
+import dk.brics.string.stringoperations.AssertSuffixOf;
+import dk.brics.string.stringoperations.Basic;
+import dk.brics.string.stringoperations.BinaryOperation;
+import dk.brics.string.stringoperations.UnaryOperation;
+import dk.brics.string.util.Pair;
+
+<span class="nc" id="L64">public class AssertionCreatorImpl implements AssertionCreator {</span>
+    
+    private ControlFlowBuilder builder;
+    private LocalDefs definitions;
+    private TranslationContext context;
+    private Method method;
+    private SootMethod sootMethod;
+<span class="nc" id="L71">    private Set&lt;Value&gt; active = new HashSet&lt;Value&gt;();</span>
+    private Map&lt;Stmt, TranslatedStatement&gt; statements;
+    
+    private void prepare(AssertionContext assertionContext) {
+<span class="nc" id="L75">        this.statements = assertionContext.getStatementTranslations();</span>
+<span class="nc" id="L76">        this.definitions = assertionContext.getLocalDefinitions();</span>
+<span class="nc" id="L77">        this.context = assertionContext.getTranslationContext();</span>
+<span class="nc" id="L78">        this.sootMethod = assertionContext.getMethod();</span>
+<span class="nc" id="L79">        this.method = context.getMethod(sootMethod);</span>
+<span class="nc" id="L80">        this.active.clear();	</span>
+<span class="nc" id="L81">    }</span>
+
+    public AssertionBranches createAssertions(IfStmt branch, AssertionContext assertionContext) {
+<span class="nc" id="L84">    	prepare(assertionContext);</span>
+<span class="nc" id="L85">        ConditionExpr expr = (ConditionExpr)branch.getCondition();</span>
+        
+        // do the positive branch
+<span class="nc" id="L88">        builder = new ControlFlowBuilder(method);</span>
+<span class="nc" id="L89">        assertBoolean(expr, branch, true);</span>
+<span class="nc" id="L90">        Pair&lt;Statement,Statement&gt; pair = builder.finish();</span>
+<span class="nc" id="L91">        AssertionBranch whenTrue = new AssertionBranch(pair.getFirst(), pair.getSecond());</span>
+        
+        // do the negative branch
+<span class="nc" id="L94">        builder = new ControlFlowBuilder(method);</span>
+<span class="nc" id="L95">        assertBoolean(expr, branch, false);</span>
+<span class="nc" id="L96">        pair = builder.finish();</span>
+<span class="nc" id="L97">        AssertionBranch whenFalse = new AssertionBranch(pair.getFirst(), pair.getSecond());</span>
+        
+<span class="nc" id="L99">        return new AssertionBranches(whenFalse, whenTrue);</span>
+    }
+    
+    public AssertionBranch createSwitchAssertions(ValueBox variable, int value, Unit switchStart, AssertionContext assertionContext) {
+<span class="nc" id="L103">    	prepare(assertionContext);</span>
+    	
+<span class="nc" id="L105">    	builder = new ControlFlowBuilder(method);</span>
+<span class="nc" id="L106">    	assertInteger(variable.getValue(), switchStart, Relation.EQUAL, value);</span>
+<span class="nc" id="L107">    	Pair&lt;Statement,Statement&gt; pair = builder.finish();</span>
+    	
+<span class="nc" id="L109">    	return new AssertionBranch(pair.getFirst(), pair.getSecond());</span>
+    }
+    
+    public AssertionBranch createSwitchDefaultAssertions(ValueBox variable, List&lt;Integer&gt; skippedValues, Unit switchStart, AssertionContext assertionContext) {
+<span class="nc" id="L113">    	prepare(assertionContext);</span>
+    	
+<span class="nc" id="L115">    	builder = new ControlFlowBuilder(method);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">    	for (int value : skippedValues) {</span>
+<span class="nc" id="L117">    		assertInteger(variable.getValue(), switchStart, Relation.NOT_EQUAL, value);</span>
+    	}
+<span class="nc" id="L119">    	Pair&lt;Statement,Statement&gt; pair = builder.finish();</span>
+    	
+<span class="nc" id="L121">    	return new AssertionBranch(pair.getFirst(), pair.getSecond());</span>
+    }
+    
+    /** Asserts that the specified expression evaluates to the given boolean value */
+    private void assertBoolean(Value value, Unit unit, boolean b) {
+<span class="nc" id="L126">        assertWithVisitor(value, new BooleanVisitor(b, unit));</span>
+<span class="nc" id="L127">    }</span>
+    /** Asserts that the specified expression evaluates to an integer with the specified relation to the given integer */
+    private void assertInteger(Value value, Unit unit, Relation rel, int i) {
+<span class="nc" id="L130">        assertWithVisitor(value, new IntegerVisitor(unit, i, rel));</span>
+<span class="nc" id="L131">    }</span>
+    private void assertWithVisitor(Value value, AssertionVisitor visitor) {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (active.contains(value))</span>
+<span class="nc" id="L134">            return;</span>
+<span class="nc" id="L135">        active.add(value);</span>
+<span class="nc" id="L136">        value.apply(visitor);</span>
+<span class="nc" id="L137">        active.remove(value); </span>
+<span class="nc" id="L138">    }</span>
+    
+    private boolean isBoolean(Type type) {
+<span class="nc" id="L141">        return type instanceof BooleanType;</span>
+    }
+    
+//    private boolean isString(Type type) {
+//        return type.equals(RefType.v(&quot;java.lang.String&quot;));
+//    }
+    
+    /** Returns true if the type is &lt;tt&gt;int&lt;/tt&gt;, (not long, short, byte, etc) */
+    private boolean isInteger(Type type) {
+<span class="nc" id="L150">        return type instanceof IntType;</span>
+    }
+    
+    private class AssertionVisitor extends AbstractJimpleValueSwitch {
+        Unit unit;
+
+<span class="nc" id="L156">        public AssertionVisitor(Unit unit) {</span>
+<span class="nc" id="L157">            this.unit = unit;</span>
+<span class="nc" id="L158">        }</span>
+
+        void makeBinaryAssertion(Variable first, Variable second, BinaryOperation op) {
+<span class="nc bnc" id="L161" title="All 4 branches missed.">            if (first == null || second == null)</span>
+<span class="nc" id="L162">                return;</span>
+<span class="nc" id="L163">            builder.addStatement(new AssertBinaryOp(statements.get(unit).getLast(), first, second, op));</span>
+<span class="nc" id="L164">        }</span>
+        void makeAliasAssertion(Variable first, Variable second, boolean aliases) {
+<span class="nc bnc" id="L166" title="All 4 branches missed.">            if (first == null || second == null)</span>
+<span class="nc" id="L167">                return;</span>
+<span class="nc" id="L168">            builder.addStatement(new AssertAliases(statements.get(unit).getLast(), first, second, aliases));</span>
+<span class="nc" id="L169">        }</span>
+        void makeUnaryAssertion(Variable var, UnaryOperation op) {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            if (var == null)</span>
+<span class="nc" id="L172">                return;</span>
+<span class="nc" id="L173">            builder.addStatement(new AssertUnaryOp(statements.get(unit).getLast(), var, op));</span>
+<span class="nc" id="L174">        }</span>
+        Variable getBase(InstanceInvokeExpr expr) {
+<span class="nc" id="L176">            return context.getExpressionVariable(expr.getBase());</span>
+        }
+        Variable getArgument(InvokeExpr expr, int index) {
+<span class="nc" id="L179">            return context.getExpressionVariable(expr.getArg(index));</span>
+        }
+    }
+    
+    private class BooleanVisitor extends AssertionVisitor {
+        private boolean expected;
+        
+<span class="nc" id="L186">        public BooleanVisitor(boolean expected, Unit unit) {</span>
+<span class="nc" id="L187">            super(unit);</span>
+<span class="nc" id="L188">            this.expected = expected;</span>
+<span class="nc" id="L189">        }</span>
+
+
+        @Override
+        public void caseLocal(Local v) {
+<span class="nc" id="L194">            builder.startBranch();</span>
+<span class="nc" id="L195">            boolean found = false;</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            for (Unit definition : definitions.getDefsOfAt(v, unit)) {</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">                if (definition instanceof DefinitionStmt) {</span>
+<span class="nc" id="L198">                    found = true;</span>
+<span class="nc" id="L199">                    assertBoolean(((DefinitionStmt)definition).getRightOp(), definition, expected);</span>
+<span class="nc" id="L200">                    builder.useBranch();</span>
+                }
+            }
+<span class="nc bnc" id="L203" title="All 2 branches missed.">            if (!found) {</span>
+<span class="nc" id="L204">                builder.useBranch();</span>
+            }
+<span class="nc" id="L206">            builder.endBranch();</span>
+<span class="nc" id="L207">        }</span>
+        
+        @Override
+        public void caseAndExpr(AndExpr v) {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            if (expected == true) {</span>
+<span class="nc" id="L212">                assertBoolean(v.getOp1(), unit, true);</span>
+<span class="nc" id="L213">                assertBoolean(v.getOp2(), unit, true);</span>
+<span class="nc" id="L214">            } else {</span>
+<span class="nc" id="L215">                builder.startBranch();</span>
+<span class="nc" id="L216">                assertBoolean(v.getOp1(), unit, false);</span>
+<span class="nc" id="L217">                builder.useBranch();</span>
+<span class="nc" id="L218">                assertBoolean(v.getOp2(), unit, false);</span>
+<span class="nc" id="L219">                builder.useBranch();</span>
+<span class="nc" id="L220">                builder.endBranch();</span>
+            }
+<span class="nc" id="L222">        }</span>
+        @Override
+        public void caseOrExpr(OrExpr v) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">            if (expected == true) {</span>
+<span class="nc" id="L226">                builder.startBranch();</span>
+<span class="nc" id="L227">                assertBoolean(v.getOp1(), unit, true);</span>
+<span class="nc" id="L228">                builder.useBranch();</span>
+<span class="nc" id="L229">                assertBoolean(v.getOp2(), unit, true);</span>
+<span class="nc" id="L230">                builder.useBranch();</span>
+<span class="nc" id="L231">                builder.endBranch();</span>
+<span class="nc" id="L232">            } else {</span>
+<span class="nc" id="L233">                assertBoolean(v.getOp1(), unit, false);</span>
+<span class="nc" id="L234">                assertBoolean(v.getOp2(), unit, false);</span>
+            }
+<span class="nc" id="L236">        }</span>
+        @Override
+        public void caseLeExpr(LeExpr v) {
+<span class="nc" id="L239">            assertComparison(v, Relation.LESS_EQ);</span>
+<span class="nc" id="L240">        }</span>
+        @Override
+        public void caseLtExpr(LtExpr v) {
+<span class="nc" id="L243">            assertComparison(v, Relation.LESS);</span>
+<span class="nc" id="L244">        }</span>
+        @Override
+        public void caseGeExpr(GeExpr v) {
+<span class="nc" id="L247">            assertComparison(v, Relation.GREATER_EQ);</span>
+<span class="nc" id="L248">        }</span>
+        @Override
+        public void caseGtExpr(GtExpr v) {
+<span class="nc" id="L251">            assertComparison(v, Relation.GREATER);</span>
+<span class="nc" id="L252">        }</span>
+        @Override
+        public void caseNeExpr(NeExpr v) {
+<span class="nc" id="L255">            assertComparison(v, Relation.NOT_EQUAL);</span>
+<span class="nc" id="L256">        }</span>
+        @Override
+        public void caseEqExpr(EqExpr v) {
+<span class="nc" id="L259">            assertComparison(v, Relation.EQUAL);</span>
+<span class="nc" id="L260">        }</span>
+        /** Returns true if the relation is == or != */
+        private boolean isAbsolute(Relation r) {
+<span class="nc bnc" id="L263" title="All 4 branches missed.">            return r == Relation.EQUAL || r == Relation.NOT_EQUAL;</span>
+        }
+        private void assertComparison(BinopExpr v, Relation relation) {
+<span class="nc" id="L266">            relation = negateUnless(relation, expected);</span>
+            // bool == const
+<span class="nc bnc" id="L268" title="All 6 branches missed.">            if (isAbsolute(relation) &amp;&amp; isBoolean(v.getOp1().getType()) &amp;&amp; v.getOp2() instanceof IntConstant) {</span>
+<span class="nc" id="L269">                int i2 = ((IntConstant)v.getOp2()).value;</span>
+<span class="nc bnc" id="L270" title="All 6 branches missed.">                assertBoolean(v.getOp1(), unit, (i2 == 1) == (relation == Relation.EQUAL));</span>
+<span class="nc" id="L271">            }</span>
+            // eg. f(x) &lt;= const or f(x) == const
+<span class="nc bnc" id="L273" title="All 4 branches missed.">            else if (isInteger(v.getOp1().getType()) &amp;&amp; v.getOp2() instanceof IntConstant) {</span>
+<span class="nc" id="L274">                int i2 = ((IntConstant)v.getOp2()).value;</span>
+<span class="nc" id="L275">                assertInteger(v.getOp1(), unit, relation, i2);</span>
+<span class="nc" id="L276">            }</span>
+            // eg. const &lt;= f(x) or const == f(x)
+<span class="nc bnc" id="L278" title="All 4 branches missed.">            else if (v.getOp1() instanceof IntConstant &amp;&amp; isInteger(v.getOp2().getType())) {</span>
+<span class="nc" id="L279">                int i1 = ((IntConstant)v.getOp1()).value;</span>
+<span class="nc" id="L280">                assertInteger(v.getOp2(), unit, commute(relation), i1);</span>
+            }
+            
+            // string == string
+            // char == char
+            // etc.
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            if (isAbsolute(relation)) {</span>
+<span class="nc bnc" id="L287" title="All 2 branches missed.">                boolean equals = relation == Relation.EQUAL;</span>
+<span class="nc" id="L288">                VariableType lefttype = context.fromSootType(v.getOp1().getType());</span>
+<span class="nc" id="L289">                VariableType righttype = context.fromSootType(v.getOp2().getType());</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">                if (lefttype.leastUpperBound(VariableType.NONE) != VariableType.NONE </span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">                    &amp;&amp; righttype.leastUpperBound(VariableType.NONE) != VariableType.NONE) {</span>
+<span class="nc" id="L292">                    Variable left = context.getExpressionVariable(v.getOp1());</span>
+<span class="nc" id="L293">                    Variable right = context.getExpressionVariable(v.getOp2());</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">                    if (equals == true) {</span>
+<span class="nc" id="L295">                        makeBinaryAssertion(left, right, new AssertEquals());</span>
+<span class="nc" id="L296">                        makeBinaryAssertion(right, left, new AssertEquals());</span>
+                        // assert aliases as well
+<span class="nc bnc" id="L298" title="All 4 branches missed.">                        if (lefttype.mightBeUsefulMutable() &amp;&amp; righttype.mightBeUsefulMutable()) {</span>
+<span class="nc" id="L299">                        	makeAliasAssertion(left, right, true);</span>
+                        }
+<span class="nc" id="L301">                    }</span>
+<span class="nc bnc" id="L302" title="All 6 branches missed.">                    else if (equals == false &amp;&amp; lefttype == VariableType.PRIMITIVE &amp;&amp; righttype == VariableType.PRIMITIVE) {</span>
+                        // only primitive types may get a negative assertion here, since references
+                        // may refer to different objects with same contents
+<span class="nc" id="L305">                        makeBinaryAssertion(left, right, new AssertNotEquals());</span>
+<span class="nc" id="L306">                        makeBinaryAssertion(right, left, new AssertNotEquals());</span>
+<span class="nc" id="L307">                    }</span>
+<span class="nc bnc" id="L308" title="All 6 branches missed.">                    else if (equals == false &amp;&amp; lefttype.mightBeUsefulMutable() &amp;&amp; righttype.mightBeUsefulMutable()) {</span>
+                    	// assert that the variables are not aliases
+                    	// their contents cannot be asserted here, though
+<span class="nc" id="L311">                    	makeAliasAssertion(left, right, false);</span>
+                    }
+                }
+            }
+<span class="nc" id="L315">        }</span>
+        @Override
+        public void caseVirtualInvokeExpr(VirtualInvokeExpr v) {
+<span class="nc" id="L318">            instanceInvokeExpr(v);</span>
+<span class="nc" id="L319">        }</span>
+        @Override
+        public void caseSpecialInvokeExpr(SpecialInvokeExpr v) {
+<span class="nc" id="L322">            instanceInvokeExpr(v);</span>
+<span class="nc" id="L323">        }</span>
+        private void instanceInvokeExpr(InstanceInvokeExpr v) {
+<span class="nc" id="L325">            SootMethodRef m = v.getMethodRef();</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">            if (m.getSignature().equals(&quot;&lt;java.lang.String: boolean contains(java.lang.CharSequence)&gt;&quot;)) {</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">                if (expected == true) {</span>
+<span class="nc" id="L328">                    Variable base = getBase(v);</span>
+<span class="nc" id="L329">                    Variable arg = getArgument(v, 0);</span>
+<span class="nc" id="L330">                    makeBinaryAssertion(base, arg, new AssertContainsOther());</span>
+<span class="nc" id="L331">                    makeBinaryAssertion(arg, base, new AssertContainedInOther());</span>
+                }
+<span class="nc" id="L333">            }</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.String: boolean equals(java.lang.Object)&gt;&quot;)) {</span>
+<span class="nc" id="L335">                Variable base = getBase(v);</span>
+<span class="nc" id="L336">                Variable arg = getArgument(v, 0);</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">                if (expected == true) {</span>
+<span class="nc" id="L338">                    makeBinaryAssertion(base, arg, new AssertEquals());</span>
+<span class="nc" id="L339">                    makeBinaryAssertion(arg, base, new AssertEquals());</span>
+<span class="nc" id="L340">                } else {</span>
+<span class="nc" id="L341">                    makeBinaryAssertion(base, arg, new AssertNotEquals());</span>
+<span class="nc" id="L342">                    makeBinaryAssertion(arg, base, new AssertNotEquals());</span>
+                }
+<span class="nc" id="L344">            }</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.String: boolean startsWith(java.lang.String)&gt;&quot;)) {</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">                if (expected == true) {</span>
+<span class="nc" id="L347">                    Variable base = getBase(v);</span>
+<span class="nc" id="L348">                    Variable arg = getArgument(v, 0);</span>
+<span class="nc" id="L349">                    makeBinaryAssertion(base, arg, new AssertStartsWith());</span>
+<span class="nc" id="L350">                    makeBinaryAssertion(arg, base, new AssertPrefixOf());</span>
+                } else {
+                    // TODO negated startsWith assertions [note: it is sound to ignore this]
+                }
+<span class="nc" id="L354">            }</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.String: boolean endsWith(java.lang.String)&gt;&quot;)) {</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">                if (expected == true) {</span>
+<span class="nc" id="L357">                    Variable base = getBase(v);</span>
+<span class="nc" id="L358">                    Variable arg = getArgument(v, 0);</span>
+<span class="nc" id="L359">                    makeBinaryAssertion(base, arg, new AssertEndsWith());</span>
+<span class="nc" id="L360">                    makeBinaryAssertion(arg, base, new AssertSuffixOf());</span>
+                } else {
+                    // TODO negated endsWith assertions [note: it is sound to ignore this]
+                }
+<span class="nc" id="L364">            }</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.String: boolean isEmpty()&gt;&quot;)) {</span>
+<span class="nc" id="L366">                Variable base = getBase(v);</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">                if (expected == true) {</span>
+<span class="nc" id="L368">                    makeUnaryAssertion(base, new AssertEmpty());</span>
+<span class="nc" id="L369">                } else {</span>
+<span class="nc" id="L370">                    makeUnaryAssertion(base, new AssertNotEmpty());</span>
+                }
+<span class="nc" id="L372">            }</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.String: boolean contentEquals(java.lang.StringBuffer)&gt;&quot;) </span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">                    || m.getSignature().equals(&quot;&lt;java.lang.String: boolean contentEquals(java.lang.CharSequence)&gt;&quot;)) {</span>
+<span class="nc" id="L375">                Variable base = getBase(v);</span>
+<span class="nc" id="L376">                Variable arg = getArgument(v, 0);</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">                if (expected == true) {</span>
+<span class="nc" id="L378">                    makeBinaryAssertion(base, arg, new AssertEquals());</span>
+<span class="nc" id="L379">                    makeBinaryAssertion(arg, base, new AssertEquals());</span>
+<span class="nc" id="L380">                } else {</span>
+<span class="nc" id="L381">                    makeBinaryAssertion(base, arg, new AssertNotEquals());</span>
+<span class="nc" id="L382">                    makeBinaryAssertion(arg, base, new AssertNotEquals());</span>
+                }
+            }
+<span class="nc" id="L385">        }</span>
+        
+        @Override
+        public void caseStaticInvokeExpr(StaticInvokeExpr v) {
+<span class="nc" id="L389">            SootMethodRef m = v.getMethodRef();</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">            if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isDigit(char)&gt;&quot;)) {</span>
+<span class="nc" id="L391">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L392" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L393">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeDigits()));</span>
+<span class="nc" id="L394">            	} else {</span>
+<span class="nc" id="L395">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeDigits().complement()));</span>
+            	}
+<span class="nc" id="L397">            }</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isLetter(char)&gt;&quot;)) {</span>
+<span class="nc" id="L399">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L401">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeLetters()));</span>
+<span class="nc" id="L402">            	} else {</span>
+<span class="nc" id="L403">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeLetters().complement()));</span>
+            	}
+<span class="nc" id="L405">            }</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isLetterOrDigit(char)&gt;&quot;)) {</span>
+<span class="nc" id="L407">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L409">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeLettersAndDigits()));</span>
+<span class="nc" id="L410">            	} else {</span>
+<span class="nc" id="L411">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeLettersAndDigits().complement()));</span>
+            	}
+<span class="nc" id="L413">            }</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isLowerCase(char)&gt;&quot;)) {</span>
+<span class="nc" id="L415">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L417">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeLowerCase()));</span>
+<span class="nc" id="L418">            	} else {</span>
+<span class="nc" id="L419">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeLowerCase().complement()));</span>
+            	}
+<span class="nc" id="L421">            }</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isTitleCase(char)&gt;&quot;)) {</span>
+<span class="nc" id="L423">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L425">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeTitleCase()));</span>
+<span class="nc" id="L426">            	} else {</span>
+<span class="nc" id="L427">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeTitleCase().complement()));</span>
+            	}
+<span class="nc" id="L429">            }</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isUpperCase(char)&gt;&quot;)) {</span>
+<span class="nc" id="L431">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L433">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeUpperCase()));</span>
+<span class="nc" id="L434">            	} else {</span>
+<span class="nc" id="L435">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeUpperCase().complement()));</span>
+            	}
+<span class="nc" id="L437">            }</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isSpaceChar(char)&gt;&quot;)) {</span>
+<span class="nc" id="L439">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L441">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeSpaceChars()));</span>
+<span class="nc" id="L442">            	} else {</span>
+<span class="nc" id="L443">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeSpaceChars().complement()));</span>
+            	}
+<span class="nc" id="L445">            }</span>
+<span class="nc bnc" id="L446" title="All 2 branches missed.">            else if (m.getSignature().equals(&quot;&lt;java.lang.Character: boolean isWhitespace(char)&gt;&quot;)) {</span>
+<span class="nc" id="L447">            	Variable base = getArgument(v, 0);</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">            	if (expected == true) {</span>
+<span class="nc" id="L449">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeWhitespace()));</span>
+<span class="nc" id="L450">            	} else {</span>
+<span class="nc" id="L451">            		makeUnaryAssertion(base, new AssertInLanguage(Basic.getUnicodeWhitespace().complement()));</span>
+            	}
+            }
+<span class="nc" id="L454">        }</span>
+    }
+    
+    
+<span class="nc" id="L458">    enum Relation {</span>
+<span class="nc" id="L459">        EQUAL,</span>
+<span class="nc" id="L460">        NOT_EQUAL,</span>
+<span class="nc" id="L461">        GREATER,</span>
+<span class="nc" id="L462">        LESS,</span>
+<span class="nc" id="L463">        GREATER_EQ,</span>
+<span class="nc" id="L464">        LESS_EQ,</span>
+    }
+    private Relation negate(Relation r) {
+<span class="nc bnc" id="L467" title="All 7 branches missed.">        switch (r) {</span>
+<span class="nc" id="L468">        case EQUAL: return Relation.NOT_EQUAL;</span>
+<span class="nc" id="L469">        case NOT_EQUAL: return Relation.EQUAL;</span>
+<span class="nc" id="L470">        case GREATER: return Relation.LESS_EQ;</span>
+<span class="nc" id="L471">        case LESS: return Relation.GREATER_EQ;</span>
+<span class="nc" id="L472">        case GREATER_EQ: return Relation.LESS;</span>
+<span class="nc" id="L473">        case LESS_EQ: return Relation.GREATER;</span>
+        default: 
+<span class="nc" id="L475">            throw new IllegalArgumentException(&quot;Unknown integer relation: &quot; + r);</span>
+        }
+    }
+    /**
+     * Swaps the left/right sides of the relation, so for example, LESS becomes GREATER,
+     * and LESS_EQ becomes GREATER_EQ.
+     */
+    private Relation commute(Relation r) {
+<span class="nc bnc" id="L483" title="All 7 branches missed.">        switch (r) {</span>
+<span class="nc" id="L484">        case EQUAL: return Relation.EQUAL;</span>
+<span class="nc" id="L485">        case NOT_EQUAL: return Relation.NOT_EQUAL;</span>
+<span class="nc" id="L486">        case GREATER: return Relation.LESS;</span>
+<span class="nc" id="L487">        case GREATER_EQ: return Relation.LESS_EQ;</span>
+<span class="nc" id="L488">        case LESS: return Relation.GREATER;</span>
+<span class="nc" id="L489">        case LESS_EQ: return Relation.LESS;</span>
+        default: 
+<span class="nc" id="L491">            throw new IllegalArgumentException(&quot;Unknown integer relation: &quot; + r);</span>
+        }
+    }
+    
+    /**
+     * If the boolean is false, then the relation is negated, otherwise, it
+     * is returned as it is.
+     */
+    Relation negateUnless(Relation r, boolean expected) {
+<span class="nc bnc" id="L500" title="All 2 branches missed.">        if (expected == true)</span>
+<span class="nc" id="L501">            return r;</span>
+        else
+<span class="nc" id="L503">            return negate(r);</span>
+    }
+    
+    /**
+     * Asserts that the visited statement expression has the specified relation to the specified integer constant.
+     * For example, is the relation is GREATER and the integer is 6, then this asserts that the visited expression
+     * evalutates to something GREATER THAN 6. 
+     */
+    private class IntegerVisitor extends AssertionVisitor {
+        private int expected;
+        private Relation relation;
+        
+<span class="nc" id="L515">        public IntegerVisitor(Unit unit, int expected, Relation relation) {</span>
+<span class="nc" id="L516">            super(unit);</span>
+<span class="nc" id="L517">            this.expected = expected;</span>
+<span class="nc" id="L518">            this.relation = relation;</span>
+<span class="nc" id="L519">        }</span>
+        @Override
+        public void caseLocal(Local v) {
+        	// assert the variable itself in case it is used (important for switch statements on a char)
+<span class="nc bnc" id="L523" title="All 4 branches missed.">        	if (expected &gt;= Character.MIN_VALUE &amp;&amp; expected &lt;= Character.MAX_VALUE) {</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">        		if (relation == Relation.EQUAL) {</span>
+<span class="nc" id="L525">        			makeUnaryAssertion(context.getExpressionVariable(v), new AssertInLanguage(Automaton.makeChar((char)expected)));</span>
+        		}
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        		if (relation == Relation.NOT_EQUAL) {</span>
+<span class="nc" id="L528">        			makeUnaryAssertion(context.getExpressionVariable(v), new AssertInLanguage(Automaton.makeChar((char)expected).complement()));</span>
+        		}
+        	}
+        	
+        	// backtrack to find more assertions
+<span class="nc" id="L533">            builder.startBranch();</span>
+<span class="nc" id="L534">            boolean found = false;</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">            for (Unit definition : definitions.getDefsOfAt(v, unit)) {</span>
+<span class="nc bnc" id="L536" title="All 2 branches missed.">                if (definition instanceof DefinitionStmt) {</span>
+<span class="nc" id="L537">                    found = true;</span>
+<span class="nc" id="L538">                    assertInteger(((DefinitionStmt)definition).getRightOp(), definition, relation, expected);</span>
+<span class="nc" id="L539">                    builder.useBranch();</span>
+                }
+            }
+<span class="nc bnc" id="L542" title="All 2 branches missed.">            if (!found) {</span>
+<span class="nc" id="L543">                builder.useBranch();</span>
+            }
+<span class="nc" id="L545">            builder.endBranch();</span>
+<span class="nc" id="L546">        }</span>
+        
+        @Override
+        public void caseVirtualInvokeExpr(VirtualInvokeExpr v) {
+<span class="nc" id="L550">            handleInvoke(v);</span>
+<span class="nc" id="L551">        }</span>
+        @Override
+        public void caseSpecialInvokeExpr(SpecialInvokeExpr v) {
+<span class="nc" id="L554">            handleInvoke(v);</span>
+<span class="nc" id="L555">        }</span>
+        private void handleInvoke(InstanceInvokeExpr v) {
+<span class="nc" id="L557">            SootMethodRef m = v.getMethodRef();</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">            if (m.getSignature().equals(&quot;&lt;java.lang.String: int length()&gt;&quot;)) {</span>
+<span class="nc bnc" id="L559" title="All 7 branches missed.">                switch (relation) {</span>
+                case EQUAL:
+<span class="nc" id="L561">                    makeUnaryAssertion(getBase(v), new AssertHasLength(expected, expected));</span>
+<span class="nc" id="L562">                    break;</span>
+                case NOT_EQUAL:
+<span class="nc" id="L564">                    makeUnaryAssertion(getBase(v), new AssertHasNotLength(expected, expected));</span>
+<span class="nc" id="L565">                    break;</span>
+                case GREATER:
+<span class="nc" id="L567">                    makeUnaryAssertion(getBase(v), new AssertHasNotLength(0, expected));</span>
+<span class="nc" id="L568">                    break;</span>
+                case GREATER_EQ:
+<span class="nc" id="L570">                    makeUnaryAssertion(getBase(v), new AssertHasNotLength(0, expected-1));</span>
+<span class="nc" id="L571">                    break;</span>
+                case LESS:
+<span class="nc" id="L573">                    makeUnaryAssertion(getBase(v), new AssertHasLength(0, expected-1));</span>
+<span class="nc" id="L574">                    break;</span>
+                case LESS_EQ:
+<span class="nc" id="L576">                    makeUnaryAssertion(getBase(v), new AssertHasLength(0, expected));</span>
+                    break;
+                }
+            }
+<span class="nc" id="L580">        }</span>
+    }
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

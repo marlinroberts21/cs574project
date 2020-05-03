@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Transition.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">Transition.java</span></div><h1>Transition.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.io.Serializable;
+
+/** 
+ * &lt;tt&gt;Automaton&lt;/tt&gt; transition. 
+ * &lt;p&gt;
+ * A transition, which belongs to a source state, consists of a Unicode character interval
+ * and a destination state.
+ * @author Anders M&amp;oslash;ller &amp;lt;&lt;a href=&quot;mailto:amoeller@cs.au.dk&quot;&gt;amoeller@cs.au.dk&lt;/a&gt;&amp;gt;
+ */
+public class Transition implements Serializable, Cloneable {
+	
+	static final long serialVersionUID = 40001;
+	
+	/* 
+	 * CLASS INVARIANT: min&lt;=max
+	 */
+	
+	char min;
+	char max;
+	
+	State to;
+	
+	/** 
+	 * Constructs a new singleton interval transition. 
+	 * @param c transition character
+	 * @param to destination state
+	 */
+<span class="fc" id="L59">	public Transition(char c, State to)	{</span>
+<span class="fc" id="L60">		min = max = c;</span>
+<span class="fc" id="L61">		this.to = to;</span>
+<span class="fc" id="L62">	}</span>
+	
+	/** 
+	 * Constructs a new transition. 
+	 * Both end points are included in the interval.
+	 * @param min transition interval minimum
+	 * @param max transition interval maximum
+	 * @param to destination state
+	 */
+<span class="fc" id="L71">	public Transition(char min, char max, State to)	{</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (max &lt; min) {</span>
+<span class="nc" id="L73">			char t = max;</span>
+<span class="nc" id="L74">			max = min;</span>
+<span class="nc" id="L75">			min = t;</span>
+		}
+<span class="fc" id="L77">		this.min = min;</span>
+<span class="fc" id="L78">		this.max = max;</span>
+<span class="fc" id="L79">		this.to = to;</span>
+<span class="fc" id="L80">	}</span>
+	
+	/** Returns minimum of this transition interval. */
+	public char getMin() {
+<span class="fc" id="L84">		return min;</span>
+	}
+	
+	/** Returns maximum of this transition interval. */
+	public char getMax() {
+<span class="fc" id="L89">		return max;</span>
+	}
+	
+	/** Returns destination of this transition. */
+	public State getDest() {
+<span class="fc" id="L94">		return to;</span>
+	}
+	
+	/** 
+	 * Checks for equality.
+	 * @param obj object to compare with
+	 * @return true if &lt;tt&gt;obj&lt;/tt&gt; is a transition with same 
+	 *         character interval and destination state as this transition.
+	 */
+	@Override
+	public boolean equals(Object obj) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (obj instanceof Transition) {</span>
+<span class="fc" id="L106">			Transition t = (Transition)obj;</span>
+<span class="pc bpc" id="L107" title="2 of 6 branches missed.">			return t.min == min &amp;&amp; t.max == max &amp;&amp; t.to == to;</span>
+		} else
+<span class="nc" id="L109">			return false;</span>
+	}
+	
+	/** 
+	 * Returns hash code.
+	 * The hash code is based on the character interval (not the destination state).
+	 * @return hash code
+	 */
+	@Override
+	public int hashCode() {
+<span class="fc" id="L119">		return min * 2 + max * 3;</span>
+	}
+	
+	/** 
+	 * Clones this transition. 
+	 * @return clone with same character interval and destination state
+	 */
+	@Override
+	public Transition clone() {
+		try {
+<span class="nc" id="L129">			return (Transition)super.clone();</span>
+<span class="nc" id="L130">		} catch (CloneNotSupportedException e) {</span>
+<span class="nc" id="L131">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	static void appendCharString(char c, StringBuilder b) {
+<span class="nc bnc" id="L136" title="All 8 branches missed.">		if (c &gt;= 0x21 &amp;&amp; c &lt;= 0x7e &amp;&amp; c != '\\' &amp;&amp; c != '&quot;')</span>
+<span class="nc" id="L137">			b.append(c);</span>
+		else {
+<span class="nc" id="L139">			b.append(&quot;\\u&quot;);</span>
+<span class="nc" id="L140">			String s = Integer.toHexString(c);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">			if (c &lt; 0x10)</span>
+<span class="nc" id="L142">				b.append(&quot;000&quot;).append(s);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">			else if (c &lt; 0x100)</span>
+<span class="nc" id="L144">				b.append(&quot;00&quot;).append(s);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">			else if (c &lt; 0x1000)</span>
+<span class="nc" id="L146">				b.append(&quot;0&quot;).append(s);</span>
+			else
+<span class="nc" id="L148">				b.append(s);</span>
+		}
+<span class="nc" id="L150">	}</span>
+	
+	/** 
+	 * Returns a string describing this state. Normally invoked via 
+	 * {@link Automaton#toString()}. 
+	 */
+	@Override
+	public String toString() {
+<span class="nc" id="L158">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L159">		appendCharString(min, b);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">		if (min != max) {</span>
+<span class="nc" id="L161">			b.append(&quot;-&quot;);</span>
+<span class="nc" id="L162">			appendCharString(max, b);</span>
+		}
+<span class="nc" id="L164">		b.append(&quot; -&gt; &quot;).append(to.number);</span>
+<span class="nc" id="L165">		return b.toString();</span>
+	}
+
+	void appendDot(StringBuilder b) {
+<span class="nc" id="L169">		b.append(&quot; -&gt; &quot;).append(to.number).append(&quot; [label=\&quot;&quot;);</span>
+<span class="nc" id="L170">		appendCharString(min, b);</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">		if (min != max) {</span>
+<span class="nc" id="L172">			b.append(&quot;-&quot;);</span>
+<span class="nc" id="L173">			appendCharString(max, b);</span>
+		}
+<span class="nc" id="L175">		b.append(&quot;\&quot;]\n&quot;);</span>
+<span class="nc" id="L176">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

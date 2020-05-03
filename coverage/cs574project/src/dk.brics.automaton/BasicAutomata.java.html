@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>BasicAutomata.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.automaton</a> &gt; <span class="el_source">BasicAutomata.java</span></div><h1>BasicAutomata.java</h1><pre class="source lang-java linenums">/*
+ * dk.brics.automaton
+ * 
+ * Copyright (c) 2001-2017 Anders Moeller
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package dk.brics.automaton;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Construction of basic automata.
+ */
+final public class BasicAutomata {
+	
+	private BasicAutomata() {}
+
+	/** 
+	 * Returns a new (deterministic) automaton with the empty language. 
+	 */
+	public static Automaton makeEmpty() {
+<span class="fc" id="L49">		Automaton a = new Automaton();</span>
+<span class="fc" id="L50">		a.initial = new State();</span>
+<span class="fc" id="L51">		a.deterministic = true;</span>
+<span class="fc" id="L52">		return a;</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts only the empty string. 
+	 */
+	public static Automaton makeEmptyString() {
+<span class="fc" id="L59">		Automaton a = new Automaton();</span>
+<span class="fc" id="L60">		a.singleton = &quot;&quot;;</span>
+<span class="fc" id="L61">		a.deterministic = true;</span>
+<span class="fc" id="L62">		return a;</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts all strings. 
+	 */
+	public static Automaton makeAnyString()	{
+<span class="fc" id="L69">		Automaton a = new Automaton();</span>
+<span class="fc" id="L70">		State s = new State();</span>
+<span class="fc" id="L71">		a.initial = s;</span>
+<span class="fc" id="L72">		s.accept = true;</span>
+<span class="fc" id="L73">		s.transitions.add(new Transition(Character.MIN_VALUE, Character.MAX_VALUE, s));</span>
+<span class="fc" id="L74">		a.deterministic = true;</span>
+<span class="fc" id="L75">		return a;</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts any single character. 
+	 */
+	public static Automaton makeAnyChar() {
+<span class="fc" id="L82">		return makeCharRange(Character.MIN_VALUE, Character.MAX_VALUE);</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts a single character of the given value. 
+	 */
+	public static Automaton makeChar(char c) {
+<span class="fc" id="L89">		Automaton a = new Automaton();</span>
+<span class="fc" id="L90">		a.singleton = Character.toString(c);</span>
+<span class="fc" id="L91">		a.deterministic = true;</span>
+<span class="fc" id="L92">		return a;</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts a single char 
+	 * whose value is in the given interval (including both end points). 
+	 */
+	public static Automaton makeCharRange(char min, char max) {
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (min == max)</span>
+<span class="nc" id="L101">			return makeChar(min);</span>
+<span class="fc" id="L102">		Automaton a = new Automaton();</span>
+<span class="fc" id="L103">		State s1 = new State();</span>
+<span class="fc" id="L104">		State s2 = new State();</span>
+<span class="fc" id="L105">		a.initial = s1;</span>
+<span class="fc" id="L106">		s2.accept = true;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (min &lt;= max)</span>
+<span class="fc" id="L108">			s1.transitions.add(new Transition(min, max, s2));</span>
+<span class="fc" id="L109">		a.deterministic = true;</span>
+<span class="fc" id="L110">		return a;</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts a single character in the given set. 
+	 */
+	public static Automaton makeCharSet(String set) {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (set.length() == 1)</span>
+<span class="nc" id="L118">			return makeChar(set.charAt(0));</span>
+<span class="nc" id="L119">		Automaton a = new Automaton();</span>
+<span class="nc" id="L120">		State s1 = new State();</span>
+<span class="nc" id="L121">		State s2 = new State();</span>
+<span class="nc" id="L122">		a.initial = s1;</span>
+<span class="nc" id="L123">		s2.accept = true;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">		for (int i = 0; i &lt; set.length(); i++)</span>
+<span class="nc" id="L125">			s1.transitions.add(new Transition(set.charAt(i), s2));</span>
+<span class="nc" id="L126">		a.deterministic = true;</span>
+<span class="nc" id="L127">		a.reduce();</span>
+<span class="nc" id="L128">		return a;</span>
+	}
+	
+	/**
+	 * Constructs sub-automaton corresponding to decimal numbers of 
+	 * length x.substring(n).length().
+	 */
+	private static State anyOfRightLength(String x, int n) {
+<span class="nc" id="L136">		State s = new State();</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (x.length() == n)</span>
+<span class="nc" id="L138">			s.setAccept(true);</span>
+		else
+<span class="nc" id="L140">			s.addTransition(new Transition('0', '9', anyOfRightLength(x, n + 1)));</span>
+<span class="nc" id="L141">		return s;</span>
+	}
+	
+	/**
+	 * Constructs sub-automaton corresponding to decimal numbers of value 
+	 * at least x.substring(n) and length x.substring(n).length().
+	 */
+	private static State atLeast(String x, int n, Collection&lt;State&gt; initials, boolean zeros) {
+<span class="nc" id="L149">		State s = new State();</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (x.length() == n)</span>
+<span class="nc" id="L151">			s.setAccept(true);</span>
+		else {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">			if (zeros)</span>
+<span class="nc" id="L154">				initials.add(s);</span>
+<span class="nc" id="L155">			char c = x.charAt(n);</span>
+<span class="nc bnc" id="L156" title="All 4 branches missed.">			s.addTransition(new Transition(c, atLeast(x, n + 1, initials, zeros &amp;&amp; c == '0')));</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">			if (c &lt; '9')</span>
+<span class="nc" id="L158">				s.addTransition(new Transition((char)(c + 1), '9', anyOfRightLength(x, n + 1)));</span>
+		}
+<span class="nc" id="L160">		return s;</span>
+	}
+	
+	/**
+	 * Constructs sub-automaton corresponding to decimal numbers of value 
+	 * at most x.substring(n) and length x.substring(n).length().
+	 */
+	private static State atMost(String x, int n) {
+<span class="nc" id="L168">		State s = new State();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">		if (x.length() == n)</span>
+<span class="nc" id="L170">			s.setAccept(true);</span>
+		else {
+<span class="nc" id="L172">			char c = x.charAt(n);</span>
+<span class="nc" id="L173">			s.addTransition(new Transition(c, atMost(x, (char)n + 1)));</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if (c &gt; '0')</span>
+<span class="nc" id="L175">				s.addTransition(new Transition('0', (char)(c - 1), anyOfRightLength(x, n + 1)));</span>
+		}
+<span class="nc" id="L177">		return s;</span>
+	}
+	
+	/**
+	 * Constructs sub-automaton corresponding to decimal numbers of value 
+	 * between x.substring(n) and y.substring(n) and of
+	 * length x.substring(n).length() (which must be equal to y.substring(n).length()).
+	 */
+	private static State between(String x, String y, int n, Collection&lt;State&gt; initials, boolean zeros) {
+<span class="nc" id="L186">		State s = new State();</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">		if (x.length() == n)</span>
+<span class="nc" id="L188">			s.setAccept(true);</span>
+		else {
+<span class="nc bnc" id="L190" title="All 2 branches missed.">			if (zeros)</span>
+<span class="nc" id="L191">				initials.add(s);</span>
+<span class="nc" id="L192">			char cx = x.charAt(n);</span>
+<span class="nc" id="L193">			char cy = y.charAt(n);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">			if (cx == cy)</span>
+<span class="nc bnc" id="L195" title="All 4 branches missed.">				s.addTransition(new Transition(cx, between(x, y, n + 1, initials, zeros &amp;&amp; cx == '0')));</span>
+			else { // cx&lt;cy
+<span class="nc bnc" id="L197" title="All 4 branches missed.">				s.addTransition(new Transition(cx, atLeast(x, n + 1, initials, zeros &amp;&amp; cx == '0')));</span>
+<span class="nc" id="L198">				s.addTransition(new Transition(cy, atMost(y, n + 1)));</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">				if (cx + 1 &lt; cy)</span>
+<span class="nc" id="L200">					s.addTransition(new Transition((char)(cx + 1), (char)(cy - 1), anyOfRightLength(x, n + 1)));</span>
+			}
+		}
+<span class="nc" id="L203">		return s;</span>
+	}
+	
+	/** 
+	 * Returns a new automaton that accepts strings representing 
+	 * decimal non-negative integers in the given interval.
+	 * @param min minimal value of interval
+	 * @param max maximal value of inverval (both end points are included in the interval)
+	 * @param digits if &amp;gt;0, use fixed number of digits (strings must be prefixed
+	 *               by 0's to obtain the right length) -
+	 *               otherwise, the number of digits is not fixed
+	 * @exception IllegalArgumentException if min&amp;gt;max or if numbers in the interval cannot be expressed
+	 *                                     with the given fixed number of digits
+	 */
+	public static Automaton makeInterval(int min, int max, int digits) throws IllegalArgumentException {
+<span class="nc" id="L218">		Automaton a = new Automaton();</span>
+<span class="nc" id="L219">		String x = Integer.toString(min);</span>
+<span class="nc" id="L220">		String y = Integer.toString(max);</span>
+<span class="nc bnc" id="L221" title="All 6 branches missed.">		if (min &gt; max || (digits &gt; 0 &amp;&amp; y.length() &gt; digits))</span>
+<span class="nc" id="L222">			throw new IllegalArgumentException();</span>
+		int d;
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (digits &gt; 0)</span>
+<span class="nc" id="L225">			d = digits;</span>
+		else
+<span class="nc" id="L227">			d = y.length();</span>
+<span class="nc" id="L228">		StringBuilder bx = new StringBuilder();</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">		for (int i = x.length(); i &lt; d; i++)</span>
+<span class="nc" id="L230">			bx.append('0');</span>
+<span class="nc" id="L231">		bx.append(x);</span>
+<span class="nc" id="L232">		x = bx.toString();</span>
+<span class="nc" id="L233">		StringBuilder by = new StringBuilder();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">		for (int i = y.length(); i &lt; d; i++)</span>
+<span class="nc" id="L235">			by.append('0');</span>
+<span class="nc" id="L236">		by.append(y);</span>
+<span class="nc" id="L237">		y = by.toString();</span>
+<span class="nc" id="L238">		Collection&lt;State&gt; initials = new ArrayList&lt;State&gt;();</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">		a.initial = between(x, y, 0, initials, digits &lt;= 0);</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">		if (digits &lt;= 0) {</span>
+<span class="nc" id="L241">			ArrayList&lt;StatePair&gt; pairs = new ArrayList&lt;StatePair&gt;();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">			for (State p : initials)</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">				if (a.initial != p)</span>
+<span class="nc" id="L244">					pairs.add(new StatePair(a.initial, p));</span>
+<span class="nc" id="L245">			a.addEpsilons(pairs);</span>
+<span class="nc" id="L246">			a.initial.addTransition(new Transition('0', a.initial));</span>
+<span class="nc" id="L247">			a.deterministic = false;</span>
+<span class="nc" id="L248">		} else</span>
+<span class="nc" id="L249">			a.deterministic = true;</span>
+<span class="nc" id="L250">		a.checkMinimizeAlways();</span>
+<span class="nc" id="L251">		return a;</span>
+	}
+	
+	/** 
+	 * Returns a new (deterministic) automaton that accepts the single given string.
+	 */
+	public static Automaton makeString(String s) {
+<span class="fc" id="L258">		Automaton a = new Automaton();</span>
+<span class="fc" id="L259">		a.singleton = s;</span>
+<span class="fc" id="L260">		a.deterministic = true;</span>
+<span class="fc" id="L261">		return a;</span>
+	}
+	
+    /**
+     * Returns a new (deterministic and minimal) automaton that accepts the union of the
+     * given set of strings. The input character sequences are internally sorted in-place,
+     * so the input array is modified. 
+     * @see StringUnionOperations
+     */
+    public static Automaton makeStringUnion(CharSequence... strings) {
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        if (strings.length == 0)</span>
+<span class="nc" id="L272">            return makeEmpty();</span>
+<span class="nc" id="L273">        Arrays.sort(strings, StringUnionOperations.LEXICOGRAPHIC_ORDER);</span>
+<span class="nc" id="L274">        Automaton a = new Automaton();</span>
+<span class="nc" id="L275">        a.setInitialState(StringUnionOperations.build(strings));</span>
+<span class="nc" id="L276">        a.setDeterministic(true);</span>
+<span class="nc" id="L277">        a.reduce();</span>
+<span class="nc" id="L278">        a.recomputeHashCode();</span>
+<span class="nc" id="L279">        return a;</span>
+    }
+
+	/**
+	 * Constructs automaton that accept strings representing nonnegative integers
+	 * that are not larger than the given value.
+	 * @param n string representation of maximum value
+	 */
+	public static Automaton makeMaxInteger(String n) {
+<span class="nc" id="L288">		int i = 0;</span>
+<span class="nc bnc" id="L289" title="All 4 branches missed.">		while (i &lt; n.length() &amp;&amp; n.charAt(i) == '0')</span>
+<span class="nc" id="L290">			i++;</span>
+<span class="nc" id="L291">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L292">		b.append(&quot;0*(0|&quot;);</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">		if (i &lt; n.length())</span>
+<span class="nc" id="L294">			b.append(&quot;[0-9]{1,&quot;).append(n.length() - i - 1).append(&quot;}|&quot;);</span>
+<span class="nc" id="L295">		maxInteger(n.substring(i), 0, b);</span>
+<span class="nc" id="L296">		b.append(&quot;)&quot;);</span>
+<span class="nc" id="L297">		return Automaton.minimize((new RegExp(b.toString())).toAutomaton());</span>
+	}
+
+	private static void maxInteger(String n, int i, StringBuilder b) {
+<span class="nc" id="L301">		b.append('(');</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">		if (i &lt; n.length()) {</span>
+<span class="nc" id="L303">			char c = n.charAt(i);</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">			if (c != '0')</span>
+<span class="nc" id="L305">				b.append(&quot;[0-&quot;).append((char) (c - 1)).append(&quot;][0-9]{&quot;).append(n.length() - i - 1).append(&quot;}|&quot;);</span>
+<span class="nc" id="L306">			b.append(c);</span>
+<span class="nc" id="L307">			maxInteger(n, i + 1, b);</span>
+		}
+<span class="nc" id="L309">		b.append(')');</span>
+<span class="nc" id="L310">	}</span>
+
+	/**
+	 * Constructs automaton that accept strings representing nonnegative integers
+	 * that are not less that the given value.
+	 * @param n string representation of minimum value
+	 */
+	public static Automaton makeMinInteger(String n) {
+<span class="nc" id="L318">		int i = 0;</span>
+<span class="nc bnc" id="L319" title="All 4 branches missed.">		while (i + 1 &lt; n.length() &amp;&amp; n.charAt(i) == '0')</span>
+<span class="nc" id="L320">			i++;</span>
+<span class="nc" id="L321">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L322">		b.append(&quot;0*&quot;);</span>
+<span class="nc" id="L323">		minInteger(n.substring(i), 0, b);</span>
+<span class="nc" id="L324">		b.append(&quot;[0-9]*&quot;);</span>
+<span class="nc" id="L325">		return Automaton.minimize((new RegExp(b.toString())).toAutomaton());</span>
+	}
+	
+	private static void minInteger(String n, int i, StringBuilder b) {
+<span class="nc" id="L329">		b.append('(');</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">		if (i &lt; n.length()) {</span>
+<span class="nc" id="L331">			char c = n.charAt(i);</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">			if (c != '9')</span>
+<span class="nc" id="L333">				b.append(&quot;[&quot;).append((char) (c + 1)).append(&quot;-9][0-9]{&quot;).append(n.length() - i - 1).append(&quot;}|&quot;);</span>
+<span class="nc" id="L334">			b.append(c);</span>
+<span class="nc" id="L335">			minInteger(n, i + 1, b);</span>
+		}
+<span class="nc" id="L337">		b.append(')');</span>
+<span class="nc" id="L338">	}</span>
+
+	/**
+	 * Constructs automaton that accept strings representing decimal numbers
+	 * that can be written with at most the given number of digits.
+	 * Surrounding whitespace is permitted.
+	 * @param i max number of necessary digits
+	 */
+	public static Automaton makeTotalDigits(int i) {
+<span class="nc" id="L347">		return Automaton.minimize((new RegExp(&quot;[ \t\n\r]*[-+]?0*([0-9]{0,&quot; + i + &quot;}|((([0-9]\\.*){0,&quot; + i + &quot;})&amp;@\\.@)0*)[ \t\n\r]*&quot;)).toAutomaton());</span>
+	}
+	
+	/**
+	 * Constructs automaton that accept strings representing decimal numbers
+	 * that can be written with at most the given number of digits in the fraction part.
+	 * Surrounding whitespace is permitted.
+	 * @param i max number of necessary fraction digits
+	 */
+	public static Automaton makeFractionDigits(int i) {
+<span class="nc" id="L357">		return Automaton.minimize((new RegExp(&quot;[ \t\n\r]*[-+]?[0-9]+(\\.[0-9]{0,&quot; + i + &quot;}0*)?[ \t\n\r]*&quot;)).toAutomaton());</span>
+	}
+	
+	/**
+	 * Constructs automaton that accept strings representing the given integer.
+	 * Surrounding whitespace is permitted.
+	 * @param value string representation of integer
+	 */
+	public static Automaton makeIntegerValue(String value) {
+<span class="nc" id="L366">		boolean minus = false;</span>
+<span class="nc" id="L367">    	int i = 0;</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">    	while (i &lt; value.length()) {</span>
+<span class="nc" id="L369">    		char c = value.charAt(i);</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">    		if (c == '-')</span>
+<span class="nc" id="L371">    			minus = true;</span>
+<span class="nc bnc" id="L372" title="All 4 branches missed.">    		if (c &gt;= '1' &amp;&amp; c &lt;= '9')</span>
+<span class="nc" id="L373">    			break;</span>
+<span class="nc" id="L374">    		i++;</span>
+    	}
+<span class="nc" id="L376">    	StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L377">		b.append(value.substring(i));</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">		if (b.length() == 0)</span>
+<span class="nc" id="L379">			b.append(&quot;0&quot;);</span>
+		Automaton s;
+<span class="nc bnc" id="L381" title="All 2 branches missed.">		if (minus)</span>
+<span class="nc" id="L382">			s = Automaton.makeChar('-');</span>
+		else
+<span class="nc" id="L384">			s = Automaton.makeChar('+').optional();</span>
+<span class="nc" id="L385">		Automaton ws = Datatypes.getWhitespaceAutomaton();</span>
+<span class="nc" id="L386">		return Automaton.minimize(ws.concatenate(s.concatenate(Automaton.makeChar('0').repeat()).concatenate(Automaton.makeString(b.toString()))).concatenate(ws));		</span>
+	}
+	
+	/**
+	 * Constructs automaton that accept strings representing the given decimal number.
+	 * Surrounding whitespace is permitted.
+	 * @param value string representation of decimal number
+	 */
+	public static Automaton makeDecimalValue(String value) {
+<span class="nc" id="L395">		boolean minus = false;</span>
+<span class="nc" id="L396">    	int i = 0;</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">    	while (i &lt; value.length()) {</span>
+<span class="nc" id="L398">    		char c = value.charAt(i);</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">    		if (c == '-')</span>
+<span class="nc" id="L400">    			minus = true;</span>
+<span class="nc bnc" id="L401" title="All 6 branches missed.">    		if ((c &gt;= '1' &amp;&amp; c &lt;= '9') || c == '.')</span>
+<span class="nc" id="L402">    			break;</span>
+<span class="nc" id="L403">    		i++;</span>
+    	}
+<span class="nc" id="L405">    	StringBuilder b1 = new StringBuilder();</span>
+<span class="nc" id="L406">    	StringBuilder b2 = new StringBuilder();</span>
+<span class="nc" id="L407">    	int p = value.indexOf('.', i);</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">    	if (p == -1)</span>
+<span class="nc" id="L409">    		b1.append(value.substring(i));</span>
+    	else {
+<span class="nc" id="L411">    		b1.append(value.substring(i, p));</span>
+<span class="nc" id="L412">    		i = value.length() - 1;</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">	    	while (i &gt; p) {</span>
+<span class="nc" id="L414">	    		char c = value.charAt(i);</span>
+<span class="nc bnc" id="L415" title="All 4 branches missed.">	    		if (c &gt;= '1' &amp;&amp; c &lt;= '9')</span>
+<span class="nc" id="L416">	    			break;</span>
+<span class="nc" id="L417">	    		i--;</span>
+	    	}
+<span class="nc" id="L419">	    	b2.append(value.substring(p + 1, i + 1));</span>
+    	}
+<span class="nc bnc" id="L421" title="All 2 branches missed.">		if (b1.length() == 0)</span>
+<span class="nc" id="L422">			b1.append(&quot;0&quot;);</span>
+		Automaton s;
+<span class="nc bnc" id="L424" title="All 2 branches missed.">		if (minus)</span>
+<span class="nc" id="L425">			s = Automaton.makeChar('-');</span>
+		else
+<span class="nc" id="L427">			s = Automaton.makeChar('+').optional();</span>
+		Automaton d;
+<span class="nc bnc" id="L429" title="All 2 branches missed.">		if (b2.length() == 0)</span>
+<span class="nc" id="L430">			d = Automaton.makeChar('.').concatenate(Automaton.makeChar('0').repeat(1)).optional();</span>
+		else
+<span class="nc" id="L432">			d = Automaton.makeChar('.').concatenate(Automaton.makeString(b2.toString())).concatenate(Automaton.makeChar('0').repeat());</span>
+<span class="nc" id="L433">		Automaton ws = Datatypes.getWhitespaceAutomaton();</span>
+<span class="nc" id="L434">		return Automaton.minimize(ws.concatenate(s.concatenate(Automaton.makeChar('0').repeat()).concatenate(Automaton.makeString(b1.toString())).concatenate(d)).concatenate(ws));</span>
+	}
+	
+	/**
+	 * Constructs deterministic automaton that matches strings that contain the given substring.
+	 */
+	public static Automaton makeStringMatcher(String s) {
+<span class="nc" id="L441">		Automaton a = new Automaton();</span>
+<span class="nc" id="L442">		State[] states = new State[s.length() + 1];</span>
+<span class="nc" id="L443">		states[0] = a.initial;</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">		for (int i = 0; i &lt; s.length(); i++)</span>
+<span class="nc" id="L445">			states[i+1] = new State();</span>
+<span class="nc" id="L446">		State f = states[s.length()];</span>
+<span class="nc" id="L447">		f.accept = true;</span>
+<span class="nc" id="L448">		f.transitions.add(new Transition(Character.MIN_VALUE, Character.MAX_VALUE, f));</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">		for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="nc" id="L450">			Set&lt;Character&gt; done = new HashSet&lt;Character&gt;();</span>
+<span class="nc" id="L451">			char c = s.charAt(i);</span>
+<span class="nc" id="L452">			states[i].transitions.add(new Transition(c, states[i+1]));</span>
+<span class="nc" id="L453">			done.add(c);</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">			for (int j = i; j &gt;= 1; j--) {</span>
+<span class="nc" id="L455">				char d = s.charAt(j-1);</span>
+<span class="nc bnc" id="L456" title="All 4 branches missed.">				if (!done.contains(d) &amp;&amp; s.substring(0, j-1).equals(s.substring(i-j+1, i))) {</span>
+<span class="nc" id="L457">					states[i].transitions.add(new Transition(d, states[j]));</span>
+<span class="nc" id="L458">					done.add(d);</span>
+				}
+			}
+<span class="nc" id="L461">			char[] da = new char[done.size()];</span>
+<span class="nc" id="L462">			int h = 0;</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">			for (char w : done)</span>
+<span class="nc" id="L464">				da[h++] = w;</span>
+<span class="nc" id="L465">			Arrays.sort(da);</span>
+<span class="nc" id="L466">			int from = Character.MIN_VALUE;</span>
+<span class="nc" id="L467">			int k = 0;</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">			while (from &lt;= Character.MAX_VALUE) {</span>
+<span class="nc bnc" id="L469" title="All 4 branches missed.">				while (k &lt; da.length &amp;&amp; da[k] == from) {</span>
+<span class="nc" id="L470">					k++;</span>
+<span class="nc" id="L471">					from++;</span>
+				}
+<span class="nc bnc" id="L473" title="All 2 branches missed.">				if (from &lt;= Character.MAX_VALUE) {</span>
+<span class="nc" id="L474">					int to = Character.MAX_VALUE;</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">					if (k &lt; da.length) {</span>
+<span class="nc" id="L476">						to = da[k]-1;</span>
+<span class="nc" id="L477">						k++;</span>
+					}
+<span class="nc" id="L479">					states[i].transitions.add(new Transition((char)from, (char)to, states[0]));</span>
+<span class="nc" id="L480">					from = to+2;</span>
+				}
+			}
+		}
+<span class="nc" id="L484">		a.deterministic = true;</span>
+<span class="nc" id="L485">		return a;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>DefinesVisitor.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">DefinesVisitor.java</span></div><h1>DefinesVisitor.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
+
+import dk.brics.string.Debug;
+import dk.brics.string.intermediate.ArrayAddAll;
+import dk.brics.string.intermediate.ArrayAssignment;
+import dk.brics.string.intermediate.ArrayCorrupt;
+import dk.brics.string.intermediate.ArrayFromArray;
+import dk.brics.string.intermediate.ArrayNew;
+import dk.brics.string.intermediate.ArrayWriteArray;
+import dk.brics.string.intermediate.ArrayWriteElement;
+import dk.brics.string.intermediate.AssertAliases;
+import dk.brics.string.intermediate.AssertBinaryOp;
+import dk.brics.string.intermediate.AssertUnaryOp;
+import dk.brics.string.intermediate.BasicBinaryOp;
+import dk.brics.string.intermediate.BasicUnaryOp;
+import dk.brics.string.intermediate.Call;
+import dk.brics.string.intermediate.Catch;
+import dk.brics.string.intermediate.ExceptionalReturn;
+import dk.brics.string.intermediate.FieldAssignment;
+import dk.brics.string.intermediate.FieldReference;
+import dk.brics.string.intermediate.Hotspot;
+import dk.brics.string.intermediate.MethodHead;
+import dk.brics.string.intermediate.Nop;
+import dk.brics.string.intermediate.ObjectAssignment;
+import dk.brics.string.intermediate.ObjectCorrupt;
+import dk.brics.string.intermediate.PrimitiveAssignment;
+import dk.brics.string.intermediate.PrimitiveFromArray;
+import dk.brics.string.intermediate.PrimitiveInit;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+import dk.brics.string.intermediate.StatementVisitor;
+import dk.brics.string.intermediate.StringAssignment;
+import dk.brics.string.intermediate.StringBufferAppend;
+import dk.brics.string.intermediate.StringBufferAppendChar;
+import dk.brics.string.intermediate.StringBufferAssignment;
+import dk.brics.string.intermediate.StringBufferBinaryOp;
+import dk.brics.string.intermediate.StringBufferCorrupt;
+import dk.brics.string.intermediate.StringBufferInit;
+import dk.brics.string.intermediate.StringBufferPrepend;
+import dk.brics.string.intermediate.StringBufferUnaryOp;
+import dk.brics.string.intermediate.StringConcat;
+import dk.brics.string.intermediate.StringFromArray;
+import dk.brics.string.intermediate.StringFromStringBuffer;
+import dk.brics.string.intermediate.StringInit;
+import dk.brics.string.intermediate.Variable;
+
+/**
+ * A statement visitor for querying the set of local variables and fields
+ * written to by a statement, including aliases if provided.
+ * &lt;p/&gt;
+ * Call statements do not define fields, but they do define mutable arguments.
+ */
+public class DefinesVisitor implements StatementVisitor {
+
+    /**
+     * Optional alias analysis.
+     */
+    private AliasAnalysis aa;
+
+    /**
+     * If true, only include variables that are definitely written to.
+     */
+    private boolean strict;
+
+    /**
+     * Current statement.
+     */
+    private Statement s;
+
+    /**
+     * Set by visit methods.
+     */
+    private Set&lt;Variable&gt; vars;
+    
+    /**
+     * Creates a new visitor that does not consider aliasing.
+     */
+    public DefinesVisitor() {
+<span class="nc" id="L85">        this(null, false);</span>
+<span class="nc" id="L86">    }</span>
+
+    /**
+     * Creates a new visitor that considers the given aliasing information.
+     */
+    public DefinesVisitor(AliasAnalysis aa) {
+<span class="nc" id="L92">        this(aa, false);</span>
+<span class="nc" id="L93">    }</span>
+
+    /**
+     * Creates a new visitor that considers the given aliasing information,
+     * optionally only considering variables that are &lt;em&gt;definitely&lt;/em&gt; written to.
+     */
+<span class="nc" id="L99">    public DefinesVisitor(AliasAnalysis aa, boolean strict) {</span>
+<span class="nc" id="L100">        this.aa = aa;</span>
+<span class="nc" id="L101">        this.strict = strict;</span>
+<span class="nc" id="L102">    }</span>
+
+    /**
+     * Checks whether the given variable is defined by the statement.
+     */
+    public boolean defines(Statement s, Variable var) {
+<span class="nc" id="L108">        return definedVars(s).contains(var);</span>
+    }
+
+    /**
+     * Returns the (unmodifiable) set of variables defined by the statement.
+     * The result is sorted if in test mode.
+     */
+    public Set&lt;Variable&gt; definedVars(Statement s) {
+<span class="nc" id="L116">        this.s = s;</span>
+<span class="nc" id="L117">        s.visitBy(this);</span>
+<span class="nc" id="L118">        Set&lt;Variable&gt; t = vars;</span>
+<span class="nc" id="L119">        vars = null;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (Debug.isTest()) {</span>
+<span class="nc" id="L121">            t = new TreeSet&lt;Variable&gt;(t);</span>
+        }
+<span class="nc" id="L123">        return Collections.unmodifiableSet(t);</span>
+    }
+
+    /**
+     * Adds the given variable and its aliases.
+     */
+    private void aliasOp(Variable to) {
+<span class="nc" id="L130">        vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc" id="L131">        vars.add(to);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (aa != null) {</span>
+<span class="nc" id="L133">            vars.addAll(aa.getInfoBefore(s).getAliasesForExclusive(to, strict));</span>
+        }
+<span class="nc" id="L135">    }</span>
+    
+    private void singletonOp(Variable to) {
+<span class="nc" id="L138">        vars = Collections.singleton(to);</span>
+<span class="nc" id="L139">    }</span>
+    private void emptyOp() {
+<span class="nc" id="L141">        vars = Collections.emptySet();</span>
+<span class="nc" id="L142">    }</span>
+    
+    public void visitPrimitiveAssignment(PrimitiveAssignment s) {
+<span class="nc" id="L145">        singletonOp(s.to);</span>
+<span class="nc" id="L146">    }</span>
+    public void visitPrimitiveInit(PrimitiveInit s) {
+<span class="nc" id="L148">        singletonOp(s.to);</span>
+<span class="nc" id="L149">    }</span>
+    public void visitStringBufferAppendChar(StringBufferAppendChar s) {
+<span class="nc" id="L151">        singletonOp(s.to);</span>
+<span class="nc" id="L152">    }</span>
+    public void visitBasicUnaryOp(BasicUnaryOp s) {
+<span class="nc" id="L154">        singletonOp(s.to);</span>
+<span class="nc" id="L155">    }</span>
+    public void visitBasicBinaryOp(BasicBinaryOp s) {
+<span class="nc" id="L157">        singletonOp(s.to);</span>
+<span class="nc" id="L158">    }</span>
+    public void visitAssertBinaryOp(AssertBinaryOp s) {
+<span class="nc" id="L160">        aliasOp(s.to);</span>
+<span class="nc" id="L161">    }</span>
+    public void visitAssertUnaryOp(AssertUnaryOp s) {
+<span class="nc" id="L163">        aliasOp(s.to);</span>
+<span class="nc" id="L164">    }</span>
+    public void visitAssertAliases(AssertAliases s) {
+<span class="nc" id="L166">    	emptyOp();</span>
+<span class="nc" id="L167">    }</span>
+    
+    public void visitArrayAssignment(ArrayAssignment s) {
+<span class="nc" id="L170">        singletonOp(s.to);</span>
+<span class="nc" id="L171">    }</span>
+
+    public void visitArrayCorrupt(ArrayCorrupt s) {
+<span class="nc" id="L174">        aliasOp(s.to);</span>
+<span class="nc" id="L175">    }</span>
+    
+    public void visitArrayAddAll(ArrayAddAll s) {
+<span class="nc" id="L178">        aliasOp(s.to);</span>
+<span class="nc" id="L179">    }</span>
+
+    public void visitArrayFromArray(ArrayFromArray s) {
+<span class="nc" id="L182">        singletonOp(s.to);</span>
+<span class="nc" id="L183">    }</span>
+
+    public void visitArrayNew(ArrayNew s) {
+<span class="nc" id="L186">        singletonOp(s.to);</span>
+<span class="nc" id="L187">    }</span>
+
+    public void visitArrayWriteArray(ArrayWriteArray s) {
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (strict) {</span>
+<span class="nc" id="L191">            emptyOp();</span>
+<span class="nc" id="L192">        } else {</span>
+<span class="nc" id="L193">            aliasOp(s.to);</span>
+        }
+<span class="nc" id="L195">    }</span>
+
+    public void visitArrayWriteElement(ArrayWriteElement s) {
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (strict) {</span>
+<span class="nc" id="L199">            emptyOp();</span>
+<span class="nc" id="L200">        } else {</span>
+<span class="nc" id="L201">            aliasOp(s.to);</span>
+        }
+<span class="nc" id="L203">    }</span>
+
+    public void visitCall(Call s) { // add retvar and all (aliases to) mutable parameters
+<span class="nc" id="L206">        vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc" id="L207">        vars.add(s.retvar);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        for (int i = 0; i &lt; s.args.length; i++) {</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        	if (!s.args[i].isMutable())</span>
+<span class="nc" id="L210">        		continue;</span>
+<span class="nc" id="L211">        	vars.add(s.args[i]);</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (aa != null) {</span>
+<span class="nc" id="L213">                vars.addAll(aa.getInfoBefore(s).getAliasesForExclusive(s.args[i], strict));</span>
+            }
+        }
+<span class="nc" id="L216">    }</span>
+    
+    public void visitMethodHead(MethodHead s) { // add all formal parameters and their alias variables
+<span class="nc" id="L219">        vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc" id="L220">        Variable[] pa = s.getMethod().getParamAlias();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        for (int i = 0; i &lt; s.params.length; i++) {</span>
+<span class="nc" id="L222">            vars.add(s.params[i]);</span>
+<span class="nc bnc" id="L223" title="All 4 branches missed.">            if (aa != null &amp;&amp; pa[i] != null) {</span>
+<span class="nc" id="L224">                vars.add(pa[i]);</span>
+            }
+        }
+<span class="nc" id="L227">    }</span>
+    
+    public void visitNop(Nop s) {
+<span class="nc" id="L230">        emptyOp();</span>
+<span class="nc" id="L231">    }</span>
+
+    public void visitReturn(Return s) {
+<span class="nc" id="L234">        emptyOp();</span>
+<span class="nc" id="L235">    }</span>
+
+    public void visitStringAssignment(StringAssignment s) {
+<span class="nc" id="L238">        singletonOp(s.to);</span>
+<span class="nc" id="L239">    }</span>
+
+    public void visitStringBufferAppend(StringBufferAppend s) {
+<span class="nc" id="L242">        aliasOp(s.to);</span>
+<span class="nc" id="L243">    }</span>
+
+    public void visitStringBufferAssignment(StringBufferAssignment s) {
+<span class="nc" id="L246">        singletonOp(s.to);</span>
+<span class="nc" id="L247">    }</span>
+
+    public void visitStringBufferBinaryOp(StringBufferBinaryOp s) {
+<span class="nc" id="L250">        aliasOp(s.to);</span>
+<span class="nc" id="L251">    }</span>
+
+    public void visitStringBufferCorrupt(StringBufferCorrupt s) {
+<span class="nc" id="L254">        aliasOp(s.to);</span>
+<span class="nc" id="L255">    }</span>
+
+    public void visitStringBufferInit(StringBufferInit s) {
+<span class="nc" id="L258">        singletonOp(s.to);</span>
+<span class="nc" id="L259">    }</span>
+
+    public void visitStringBufferPrepend(StringBufferPrepend s) {
+<span class="nc" id="L262">        aliasOp(s.to);</span>
+<span class="nc" id="L263">    }</span>
+
+    public void visitStringBufferUnaryOp(StringBufferUnaryOp s) {
+<span class="nc" id="L266">        aliasOp(s.to);</span>
+<span class="nc" id="L267">    }</span>
+
+    public void visitStringConcat(StringConcat s) {
+<span class="nc" id="L270">        singletonOp(s.to);</span>
+<span class="nc" id="L271">    }</span>
+
+    public void visitStringFromArray(StringFromArray s) {
+<span class="nc" id="L274">        singletonOp(s.to);</span>
+<span class="nc" id="L275">    }</span>
+    public void visitPrimitiveFromArray(PrimitiveFromArray s) {
+<span class="nc" id="L277">        singletonOp(s.to);</span>
+<span class="nc" id="L278">    }</span>
+
+    public void visitStringFromStringBuffer(StringFromStringBuffer s) {
+<span class="nc" id="L281">        singletonOp(s.to);</span>
+<span class="nc" id="L282">    }</span>
+
+    public void visitStringInit(StringInit s) {
+<span class="nc" id="L285">        singletonOp(s.to);</span>
+<span class="nc" id="L286">    }</span>
+
+	public void visitObjectAssignment(ObjectAssignment s) {
+<span class="nc" id="L289">		singletonOp(s.to);</span>
+<span class="nc" id="L290">	}</span>
+
+	public void visitObjectCorrupt(ObjectCorrupt s) {
+<span class="nc" id="L293">		aliasOp(s.to);</span>
+<span class="nc" id="L294">	}</span>
+
+	public void visitHotspot(Hotspot s) {
+<span class="nc" id="L297">		singletonOp(s.to);</span>
+<span class="nc" id="L298">	}</span>
+	
+	public void visitFieldAssignment(FieldAssignment s) {
+<span class="nc" id="L301">		vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L302" title="All 4 branches missed.">		if (strict &amp;&amp; !s.getField().isStatic()) {</span>
+			// instance fields are only weakly defined
+		} else {
+<span class="nc" id="L305">			aliasOp(s.getTo());</span>
+		}
+<span class="nc" id="L307">	}</span>
+	
+	public void visitFieldReference(FieldReference s) {
+<span class="nc" id="L310">		singletonOp(s.getTo());</span>
+<span class="nc" id="L311">	}</span>
+	
+	public void visitCatch(Catch s) {
+		// Catch weakly defines all mutable arguments passed to calls in its
+		// try block, to accommodate for their exceptional returns.
+		// Non-call statement cannot define variables if they throw an exception,
+		// so they need not be handled by Catch.
+<span class="nc" id="L318">		vars = new HashSet&lt;Variable&gt;();</span>
+		
+		// the variables are weakly defined.
+<span class="nc bnc" id="L321" title="All 2 branches missed.">		if (strict)</span>
+<span class="nc" id="L322">			return;</span>
+		
+<span class="nc bnc" id="L324" title="All 2 branches missed.">		for (Statement pred : s.getPreds()) {</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">			if (!(pred instanceof Call))</span>
+<span class="nc" id="L326">				continue;</span>
+			
+<span class="nc" id="L328">			Call call = (Call)pred;</span>
+			
+<span class="nc bnc" id="L330" title="All 2 branches missed.">			for (Variable arg : call.args){</span>
+<span class="nc bnc" id="L331" title="All 4 branches missed.">				if (arg.isMutable() &amp;&amp; !arg.isField()) {</span>
+<span class="nc" id="L332">					vars.add(arg);</span>
+					
+					// also define aliases
+<span class="nc bnc" id="L335" title="All 2 branches missed.">					if (aa != null) {</span>
+<span class="nc" id="L336">						vars.addAll(aa.getInfoBefore(call).getAliasesForExclusive(arg, false));</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L341">	}</span>
+	
+	public void visitExceptionalReturn(ExceptionalReturn s) {
+<span class="nc" id="L344">		vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">		if (strict)</span>
+<span class="nc" id="L346">			return;</span>
+		
+<span class="nc" id="L348">		vars.addAll(Arrays.asList(s.getMethod().getEntry().params));</span>
+<span class="nc" id="L349">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

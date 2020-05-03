@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FlowGraph2Dot.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.flow.operations</a> &gt; <span class="el_source">FlowGraph2Dot.java</span></div><h1>FlowGraph2Dot.java</h1><pre class="source lang-java linenums">package dk.brics.string.flow.operations;
+
+import dk.brics.string.Misc;
+import dk.brics.string.flow.*;
+import dk.brics.string.stringoperations.Basic;
+
+import java.util.Collection;
+
+/**
+ * Converter from flow graphs to
+ * &lt;a href=&quot;http://www.research.att.com/sw/tools/graphviz/&quot;
+ * target=&quot;_top&quot;&gt;Graphviz Dot&lt;/a&gt; representation.
+ */
+public class FlowGraph2Dot {
+
+    private FlowGraph2Dot() {
+    }
+
+    /**
+     * Returns &lt;a href=&quot;http://www.research.att.com/sw/tools/graphviz/&quot;
+     * target=&quot;_top&quot;&gt;Graphviz Dot&lt;/a&gt; representation of the given graph.
+     * All nodes are shown as hotspots.
+     */
+    public static String toDot(FlowGraph g) {
+<span class="nc" id="L25">        return toDot(g, null);</span>
+    }
+
+    /**
+     * Returns &lt;a href=&quot;http://www.research.att.com/sw/tools/graphviz/&quot;
+     * target=&quot;_top&quot;&gt;Graphviz Dot&lt;/a&gt; representation of the given graph.
+     */
+    public static String toDot(FlowGraph g, final Collection&lt;Node&gt; hotspots) {
+<span class="nc" id="L33">        final StringBuilder s = new StringBuilder();</span>
+<span class="nc" id="L34">        s.append(&quot;digraph FlowGraph {\n&quot;);</span>
+<span class="nc" id="L35">        g.visitNodes(new NodeVisitor() {</span>
+
+            private String hot(Node n) {
+<span class="nc bnc" id="L38" title="All 4 branches missed.">                if (hotspots != null &amp;&amp; hotspots.contains(n)) {</span>
+<span class="nc" id="L39">                    return &quot;,style=bold&quot;;</span>
+                } else {
+<span class="nc" id="L41">                    return &quot;&quot;;</span>
+                }
+            }
+
+            public void visitAssignmentNode(AssignmentNode n) {
+<span class="nc" id="L46">                s.append(&quot;  &quot;).append(n).append(&quot; [label=\&quot;\&quot;,shape=circle&quot; + hot(n) + &quot;]\n&quot;);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">                for (Node m : n.getArg().getDefs()) {</span>
+<span class="nc" id="L48">                    s.append(&quot;  &quot;).append(m).append(&quot; -&gt; &quot;).append(n).append(&quot;\n&quot;);</span>
+                }
+<span class="nc" id="L50">            }</span>
+
+            public void visitConcatenationNode(ConcatenationNode n) {
+<span class="nc" id="L53">                s.append(&quot;  &quot;).append(n).append(&quot; [label=\&quot;concat|&lt;arg1&gt;|&lt;arg2&gt;\&quot;,shape=record&quot; + hot(n) + &quot;]\n&quot;);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                for (Node m : n.getArg1().getDefs()) {</span>
+<span class="nc" id="L55">                    s.append(&quot;  &quot;).append(m).append(&quot; -&gt; &quot;).append(n).append(&quot;:arg1\n&quot;);</span>
+                }
+<span class="nc bnc" id="L57" title="All 2 branches missed.">                for (Node m : n.getArg2().getDefs()) {</span>
+<span class="nc" id="L58">                    s.append(&quot;  &quot;).append(m).append(&quot; -&gt; &quot;).append(n).append(&quot;:arg2\n&quot;);</span>
+                }
+<span class="nc" id="L60">            }</span>
+
+            public void visitInitializationNode(InitializationNode n) {
+<span class="nc" id="L63">                s.append(&quot;  &quot;).append(n).append(&quot; [label=\&quot;&quot; + Misc.escape(Basic.getName(n.getReg())) + &quot;\&quot;&quot; + hot(n) + &quot;]\n&quot;);</span>
+<span class="nc" id="L64">            }</span>
+
+            public void visitUnaryNode(UnaryNode n) {
+<span class="nc" id="L67">                s.append(&quot;  &quot;).append(n).append(&quot; [label=\&quot;&quot; + n.getOp() + &quot;|&lt;arg&gt;\&quot;,shape=record&quot; + hot(n) + &quot;]\n&quot;);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">                for (Node m : n.getArg().getDefs()) {</span>
+<span class="nc" id="L69">                    s.append(&quot;  &quot;).append(m).append(&quot; -&gt; &quot;).append(n).append(&quot;:arg\n&quot;);</span>
+                }
+<span class="nc" id="L71">            }</span>
+
+            public void visitBinaryNode(BinaryNode n) {
+<span class="nc" id="L74">                s.append(&quot;  &quot;).append(n).append(&quot; [label=\&quot;&quot; + n.getOp() + &quot;|&lt;arg1&gt;|&lt;arg2&gt;\&quot;,shape=record&quot; + hot(n) + &quot;]\n&quot;);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">                for (Node m : n.getArg1().getDefs()) {</span>
+<span class="nc" id="L76">                    s.append(&quot;  &quot;).append(m).append(&quot; -&gt; &quot;).append(n).append(&quot;:arg1\n&quot;);</span>
+                }
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                for (Node m : n.getArg2().getDefs()) {</span>
+<span class="nc" id="L79">                    s.append(&quot;  &quot;).append(m).append(&quot; -&gt; &quot;).append(n).append(&quot;:arg2\n&quot;);</span>
+                }
+<span class="nc" id="L81">            }</span>
+        });
+<span class="nc" id="L83">        s.append(&quot;}\n&quot;);</span>
+<span class="nc" id="L84">        return s.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

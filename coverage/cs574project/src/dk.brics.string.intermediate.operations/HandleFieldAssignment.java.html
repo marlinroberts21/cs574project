@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>HandleFieldAssignment.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">HandleFieldAssignment.java</span></div><h1>HandleFieldAssignment.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+
+import dk.brics.string.intermediate.FieldAssignment;
+import dk.brics.string.intermediate.Method;
+import dk.brics.string.intermediate.Return;
+import dk.brics.string.intermediate.Statement;
+
+/**
+ * To get a sound analysis for fields containing mutable types, 
+ * we must use a flow insensitive analysis or use the hack 
+ * implemented by this class. 
+ * 
+ * If fields containing mutable fields are handled in another
+ * way, then this phase can safely be removed
+ * 
+ * @author B�r�ur
+ *
+ */
+public class HandleFieldAssignment {
+
+<span class="nc" id="L24">	public HandleFieldAssignment(Method[] methods) {</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">		for (Method m : methods) {</span>
+<span class="nc" id="L26">			LinkedList&lt;FieldAssignment&gt; assigns = new LinkedList&lt;FieldAssignment&gt;();</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">			for (Statement s : m.getStatements()) {</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">				if (s instanceof FieldAssignment) {</span>
+<span class="nc" id="L29">					FieldAssignment assign = (FieldAssignment)s;</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">					if (assign.getTo().getType().mightBeUsefulMutable()) {</span>
+<span class="nc" id="L31">						assigns.add(assign);</span>
+					}
+				}
+			}
+<span class="nc bnc" id="L35" title="All 2 branches missed.">			if (!assigns.isEmpty()) {</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">				for (Return r : m.getReturns()) {</span>
+<span class="nc" id="L37">					LinkedList&lt;FieldAssignment&gt; copiedAssigns = new LinkedList&lt;FieldAssignment&gt;();</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">					for (FieldAssignment assign : assigns) {</span>
+<span class="nc" id="L39">						FieldAssignment copiedAssign = new FieldAssignment(assign.getField(), assign.getFrom());</span>
+<span class="nc" id="L40">						m.addStatement(copiedAssign);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">						if (!copiedAssigns.isEmpty()) {</span>
+<span class="nc" id="L42">							FieldAssignment pred = copiedAssigns.getLast();</span>
+<span class="nc" id="L43">							pred.addSucc(copiedAssign);</span>
+						}
+<span class="nc" id="L45">						copiedAssigns.add(copiedAssign);</span>
+					}
+<span class="nc bnc" id="L47" title="All 2 branches missed.">					if (!copiedAssigns.isEmpty()) {</span>
+<span class="nc" id="L48">						HashMap&lt;Integer,Statement&gt; predsMap = new HashMap&lt;Integer,Statement&gt;();</span>
+<span class="nc" id="L49">						int counter = 0;</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">						for (Statement pred : r.getPreds()) {</span>
+<span class="nc" id="L51">							predsMap.put(counter, pred);</span>
+<span class="nc" id="L52">							counter++;</span>
+						}
+<span class="nc" id="L54">						Statement first = copiedAssigns.getFirst();</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">						for (int i=0; i&lt;predsMap.size(); i++) {</span>
+<span class="nc" id="L56">							Statement pred = predsMap.get(i);</span>
+<span class="nc" id="L57">							pred.getSuccs().remove(r);</span>
+<span class="nc" id="L58">							pred.addSucc(first);</span>
+<span class="nc" id="L59">							r.getPreds().remove(pred);</span>
+						}
+<span class="nc" id="L61">						copiedAssigns.getLast().addSucc(r);</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L66">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

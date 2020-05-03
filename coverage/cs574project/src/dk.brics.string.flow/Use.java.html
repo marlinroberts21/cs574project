@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Use.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.flow</a> &gt; <span class="el_source">Use.java</span></div><h1>Use.java</h1><pre class="source lang-java linenums">package dk.brics.string.flow;
+
+import dk.brics.string.Debug;
+
+import java.util.*;
+
+/**
+ * Set of incoming flow edges.
+ * Has references to all corresponding definitions.
+ */
+public class Use {
+
+    /**
+     * Flow graph node of this use.
+     */
+    private Node user;
+
+    /**
+     * Definitions for this use.
+     */
+    Set&lt;Node&gt; defs;
+
+    /**
+     * Constructs a bew use.
+     */
+<span class="nc" id="L26">    public Use(Node user) {</span>
+<span class="nc" id="L27">        this.user = user;</span>
+<span class="nc" id="L28">        defs = new HashSet&lt;Node&gt;();</span>
+<span class="nc" id="L29">    }</span>
+
+    /**
+     * Returns user node for this use.
+     */
+    public Node getUser() {
+<span class="nc" id="L35">        return user;</span>
+    }
+
+    /**
+     * Adds definition node to this use and vice versa.
+     * Should be invoked if there is a possible flow from the given definition to this use.
+     */
+    public void addDefUse(Node def) {
+<span class="nc" id="L43">        defs.add(def);</span>
+<span class="nc" id="L44">        def.getUses().add(this);</span>
+<span class="nc" id="L45">    }</span>
+
+    /**
+     * Adds definition node to this use.
+     */
+    public void addDef(Node def) {
+<span class="nc" id="L51">        defs.add(def);</span>
+<span class="nc" id="L52">    }</span>
+
+    /**
+     * Removes definition node from this use.
+     */
+    public void removeDef(Node def) {
+<span class="nc" id="L58">        defs.remove(def);</span>
+<span class="nc" id="L59">    }</span>
+
+    /**
+     * Returns (unmodifiable) collection of definition nodes for this use.
+     * The result is sorted if in test mode.
+     */
+    public Collection&lt;Node&gt; getDefs() {
+<span class="nc" id="L66">        Collection&lt;Node&gt; r = defs;</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (Debug.isTest()) {</span>
+<span class="nc" id="L68">            r = new TreeSet&lt;Node&gt;(r);</span>
+        }
+<span class="nc" id="L70">        return Collections.unmodifiableCollection(r);</span>
+    }
+
+    /**
+     * Returns hashcode for the definition nodes for this use.
+     */
+    public int getDefsHashCode() {
+<span class="nc" id="L77">        return defs.hashCode();</span>
+    }
+
+    /**
+     * Checks whether this and the given use have the same definition nodes.
+     */
+    public boolean equalDefs(Use u) {
+<span class="nc" id="L84">        return defs.equals(u.defs);</span>
+    }
+
+    /**
+     * Clears the set of definitions.
+     */
+    public void clearDefs() {
+<span class="nc" id="L91">        defs.clear();</span>
+<span class="nc" id="L92">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>Automatons.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">Automatons.java</span></div><h1>Automatons.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.HashMap;
+
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.AutomatonProvider;
+import dk.brics.automaton.RegExp;
+
+/**
+ * Provides automatons for common Java types. All automatons
+ * are defined to accept the possible output of a &lt;tt&gt;toString&lt;/tt&gt; method,
+ * so integer literals like &lt;tt&gt;-0&lt;/tt&gt; and float literals &lt;tt&gt;.45&lt;/tt&gt; are &lt;i&gt;not&lt;/i&gt;
+ * accepted!
+ */
+<span class="nc" id="L15">public class Automatons implements AutomatonProvider {</span>
+	private static Automaton intAuto;
+	private static Automaton uintAuto;
+	private static Automaton floatAuto;
+	private static Automaton booleanAuto;
+	private static Automaton nullAuto;
+	private static Automaton charAuto;
+	
+<span class="nc" id="L23">	private static HashMap&lt;String, Automaton&gt; automatonMap = new HashMap&lt;String, Automaton&gt;();;</span>
+	
+	static {
+<span class="nc" id="L26">		intAuto = new RegExp(&quot;0|-?[1-9][0-9]*&quot;).toAutomaton();</span>
+<span class="nc" id="L27">		uintAuto = new RegExp(&quot;0|[1-9][0-9]*&quot;).toAutomaton();</span>
+<span class="nc" id="L28">		floatAuto = new RegExp(&quot;&lt;int&gt;\&quot;.\&quot;(0|[0-9]*[1-9])(E&lt;int&gt;)?|NaN|Infinity|-Infinity&quot;).toAutomaton(new Automatons());</span>
+<span class="nc" id="L29">		booleanAuto = new RegExp(&quot;true|false&quot;).toAutomaton();</span>
+<span class="nc" id="L30">		nullAuto = Automaton.makeString(&quot;null&quot;);</span>
+<span class="nc" id="L31">		charAuto = Automaton.makeAnyChar();</span>
+		
+<span class="nc" id="L33">		automatonMap.put(&quot;int&quot;, intAuto);</span>
+<span class="nc" id="L34">		automatonMap.put(&quot;long&quot;, intAuto);</span>
+<span class="nc" id="L35">		automatonMap.put(&quot;short&quot;, intAuto);</span>
+<span class="nc" id="L36">		automatonMap.put(&quot;byte&quot;, intAuto);</span>
+<span class="nc" id="L37">		automatonMap.put(&quot;float&quot;, floatAuto);</span>
+<span class="nc" id="L38">		automatonMap.put(&quot;double&quot;, floatAuto);</span>
+<span class="nc" id="L39">		automatonMap.put(&quot;boolean&quot;, booleanAuto);</span>
+<span class="nc" id="L40">		automatonMap.put(&quot;char&quot;, charAuto);</span>
+		
+<span class="nc" id="L42">		automatonMap.put(&quot;java.lang.Integer&quot;, intAuto);</span>
+<span class="nc" id="L43">		automatonMap.put(&quot;java.lang.Long&quot;, intAuto);</span>
+<span class="nc" id="L44">		automatonMap.put(&quot;java.lang.Short&quot;, intAuto);</span>
+<span class="nc" id="L45">		automatonMap.put(&quot;java.lang.Byte&quot;, intAuto);</span>
+<span class="nc" id="L46">		automatonMap.put(&quot;java.lang.Float&quot;, floatAuto);</span>
+<span class="nc" id="L47">		automatonMap.put(&quot;java.lang.Double&quot;, floatAuto);</span>
+<span class="nc" id="L48">		automatonMap.put(&quot;java.lang.Boolean&quot;, booleanAuto);</span>
+<span class="nc" id="L49">		automatonMap.put(&quot;java.lang.Character&quot;, charAuto);</span>
+<span class="nc" id="L50">	}</span>
+	
+	public Automaton getAutomaton(String name) {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (name.equals(&quot;int&quot;)) {</span>
+<span class="nc" id="L54">			return intAuto;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		} else if (name.equals(&quot;uint&quot;)) {</span>
+<span class="nc" id="L56">			return uintAuto;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		} else if (name.equals(&quot;float&quot;)) {</span>
+<span class="nc" id="L58">			return floatAuto;</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		} else if (name.equals(&quot;boolean&quot;)) {</span>
+<span class="nc" id="L60">			return booleanAuto;</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		} else if (name.equals(&quot;null&quot;)) {</span>
+<span class="nc" id="L62">			return nullAuto;</span>
+		}
+<span class="nc" id="L64">		return null;</span>
+	}
+	
+	/**
+	 * Gets an automaton accepting the possible return values
+	 * of &lt;tt&gt;Integer.toString()&lt;/tt&gt;, &lt;tt&gt;Long.toString()&lt;/tt&gt;, &lt;tt&gt;Byte.toString()&lt;/tt&gt;
+	 * and &lt;tt&gt;Short.toString()&lt;/tt&gt;.
+	 * Does not accept the string &lt;tt&gt;&quot;null&quot;&lt;/tt&gt;.
+	 * &lt;p/&gt;
+	 * Integer literals like &lt;tt&gt;-0&lt;/tt&gt; and &lt;tt&gt;034&lt;/tt&gt; are not accepted,
+	 * because such literals cannot be returned by the &lt;tt&gt;toString&lt;/tt&gt; method.
+	 */
+	public static Automaton getInteger() {
+<span class="nc" id="L77">		return intAuto;</span>
+	}
+	
+	/**
+	 * Gets an automaton accepting the possible return values
+	 * of &lt;tt&gt;Integer.toString()&lt;/tt&gt; and &lt;tt&gt;Long.toString()&lt;/tt&gt;
+	 * for non-negative integers.
+	 * Does not accept the string &lt;tt&gt;&quot;null&quot;&lt;/tt&gt;.
+	 * &lt;p/&gt;
+	 * Integer literals like &lt;tt&gt;034&lt;/tt&gt; are not accepted,
+	 * because such literals cannot be returned by the &lt;tt&gt;toString&lt;/tt&gt; method.
+	 */
+	public static Automaton getUnsignedInteger() {
+<span class="nc" id="L90">		return uintAuto;</span>
+	}
+	
+	/**
+	 * Gets an automaton accepting the possible return values
+	 * of &lt;tt&gt;Float.toString()&lt;/tt&gt; and &lt;tt&gt;Double.toString()&lt;/tt&gt;.
+	 * Does not accept the string &lt;tt&gt;&quot;null&quot;&lt;/tt&gt;.
+	 * &lt;p/&gt;
+	 * Note that this includes the strings &lt;tt&gt;&quot;NaN&quot;&lt;/tt&gt;, &lt;tt&gt;&quot;Infinity&quot;&lt;/tt&gt;
+	 * and &lt;tt&gt;&quot;-Infinity&quot;&lt;/tt&gt; (without the quotes).
+	 */
+	public static Automaton getFloat() {
+<span class="nc" id="L102">		return floatAuto;</span>
+	}
+	
+	/**
+	 * Gets an automaton accepting the possible return values
+	 * of &lt;tt&gt;Boolean.toString()&lt;/tt&gt;, which are the strings &lt;tt&gt;&quot;true&quot;&lt;/tt&gt; and &lt;tt&gt;&quot;false&quot;&lt;/tt&gt;.
+	 * Does not accept the string &lt;tt&gt;&quot;null&quot;&lt;/tt&gt;.
+	 */
+	public static Automaton getBoolean() {
+<span class="nc" id="L111">		return booleanAuto;</span>
+	}
+	
+	/**
+	 * Gets an automaton accepting only the string &lt;tt&gt;&quot;null&quot;&lt;/tt&gt;.
+	 */
+	public static Automaton getNull() {
+<span class="nc" id="L118">		return nullAuto;</span>
+	}
+	
+	/**
+	 * Gets an automaton accepting values of the specified type converted to a string.
+	 * @param name name of a primitive type or a wrapper type. For example, &lt;tt&gt;int&lt;/tt&gt; or &lt;tt&gt;java.lang.Boolean&lt;/tt&gt;.
+	 * @return an automaton accepting values of the specified type converted to a string, or &lt;tt&gt;null&lt;/tt&gt; if the
+	 * 		name was not a primitive or wrapper type.
+	 */
+	public static Automaton fromType(String name) {
+<span class="nc" id="L128">		return automatonMap.get(name);</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

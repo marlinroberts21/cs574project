@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>FieldAssignment.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate</a> &gt; <span class="el_source">FieldAssignment.java</span></div><h1>FieldAssignment.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate;
+
+/**
+ * Assignment from a local varable to a field.
+ * @see Field
+ */
+<span class="nc bnc" id="L7" title="All 2 branches missed.">public class FieldAssignment extends Statement implements FieldStatement {</span>
+
+	private Field field;
+	private Variable from;
+	
+<span class="nc" id="L12">	public FieldAssignment(Field field, Variable from) {</span>
+<span class="nc" id="L13">		this.field = field;</span>
+<span class="nc" id="L14">		this.from = from;</span>
+<span class="nc" id="L15">		field.addFieldAssignment(this);</span>
+		
+<span class="nc bnc" id="L17" title="All 4 branches missed.">        assert from.isLocal();</span>
+<span class="nc" id="L18">	}</span>
+	
+	@Override
+	public void visitBy(StatementVisitor v) {
+<span class="nc" id="L22">		v.visitFieldAssignment(this);</span>
+<span class="nc" id="L23">	}</span>
+	
+	/**
+	 * Returns the weak variable of the field being assigned to.
+	 */
+	public Variable getTo() {
+<span class="nc" id="L29">		return field.getVariable();</span>
+	}
+	
+	/**
+	 * Returns the variable being assigned from.
+	 */
+	public Variable getFrom() {
+<span class="nc" id="L36">		return from;</span>
+	}
+	
+	/**
+	 * Returns the field being assigned to.
+	 */
+	public Field getField() {
+<span class="nc" id="L43">		return field;</span>
+	}
+	
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

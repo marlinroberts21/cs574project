@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>AliasInfo.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.intermediate.operations</a> &gt; <span class="el_source">AliasInfo.java</span></div><h1>AliasInfo.java</h1><pre class="source lang-java linenums">package dk.brics.string.intermediate.operations;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import dk.brics.string.intermediate.Variable;
+import dk.brics.string.util.UnorderedPair;
+
+/**
+ * Alias and corruption information for a specific program point.
+ */
+<span class="nc bnc" id="L13" title="All 2 branches missed.">public class AliasInfo {</span>
+	/**
+	 * Alias relations between the live and mutable variables.
+	 */
+    private AliasTable aliasing;
+
+    /**
+     * Set of corrupted variables (i.e. their values can be anything).
+     */
+    private Set&lt;Variable&gt; corrupted;
+
+    /**
+     * Set (unmodifiable) of potentially live variables, as provided by the liveness analysis.
+     */
+    private Set&lt;Variable&gt; live;
+
+<span class="nc" id="L29">    AliasInfo(Set&lt;Variable&gt; live) {</span>
+<span class="nc" id="L30">        this.live = live;</span>
+<span class="nc" id="L31">        aliasing = new AliasTable(live, AliasStatus.BOTTOM);</span>
+<span class="nc" id="L32">        corrupted = new HashSet&lt;Variable&gt;();</span>
+<span class="nc" id="L33">    }</span>
+
+    /**
+     * Returns the aliasing relation between two variables at this
+     * program point. The variables must be live, or the result is undefined.
+     * @param pair a pair of live variables
+     * @return an {@link AliasStatus}, never &lt;tt&gt;null&lt;/tt&gt;.
+     */
+    public AliasStatus getAliasStatus(UnorderedPair&lt;Variable&gt; pair) {
+<span class="nc" id="L42">		return aliasing.getAliasStatus(pair);</span>
+	}
+    
+    /**
+     * Returns the aliasing relation between two variables at this
+     * program point. The variables must be live, or the result is undefined.
+     * @param a a live variable
+     * @param b a live variable
+     * @return an {@link AliasStatus}, never &lt;tt&gt;null&lt;/tt&gt;.
+     */
+	public AliasStatus getAliasStatus(Variable a, Variable b) {
+<span class="nc" id="L53">		return aliasing.getAliasStatus(a, b);</span>
+	}
+
+
+
+	/**
+     * Merge this element with the given.
+     * Only live variables are considered.
+     */
+    boolean mergeIdentity(AliasInfo other) {
+<span class="nc" id="L63">        return mergeFilter(other, null);</span>
+    }
+    
+    /**
+     * Merge, where the specified variable is not an alias of anything.
+     */
+    boolean mergeNew(Variable v) {
+<span class="nc bnc" id="L70" title="All 2 branches missed.">    	if (!live.contains(v))</span>
+<span class="nc" id="L71">    		return false;</span>
+<span class="nc" id="L72">    	boolean changed = false;</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">    	for (Variable var : live) {</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">    		if (var == v)</span>
+<span class="nc" id="L75">    			continue;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">    		if (var.getType().cannotBeUsefulAliasOf(v.getType()))</span>
+<span class="nc" id="L77">    			continue;</span>
+<span class="nc" id="L78">    		AliasStatus status = aliasing.getAliasStatus(var, v).leastUpperBound(AliasStatus.NOT);</span>
+<span class="nc" id="L79">    		changed |= aliasing.setAliasStatus(var, v, status);</span>
+    	}
+<span class="nc" id="L81">    	return changed;</span>
+    }
+    
+    private UnorderedPair&lt;Variable&gt; pair(Variable var1, Variable var2) {
+<span class="nc" id="L85">    	return new UnorderedPair&lt;Variable&gt;(var1, var2);</span>
+    }
+    
+    /**
+     * Merge this element with the given, except for
+     * all aliases with the given variable if non-null.
+     * Only live variables are considered.
+     */
+    boolean mergeFilter(AliasInfo other, Variable a) {
+<span class="nc" id="L94">        boolean changed = false;</span>
+        
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        for (Variable var1 : live) {</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        	if (!other.live.contains(var1))</span>
+<span class="nc" id="L98">        		continue;</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        	if (var1 == a)</span>
+<span class="nc" id="L100">        		continue;</span>
+        	
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        	for (Variable var2 : live) {</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        		if (var1.getKey() &lt;= var2.getKey()) // only bother with the unordered pairs (var1,var2) and var1!=var2</span>
+<span class="nc" id="L104">        			continue;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        		if (!other.live.contains(var2))</span>
+<span class="nc" id="L106">        			continue;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        		if (var2 == a)</span>
+<span class="nc" id="L108">        			continue;</span>
+        		
+<span class="nc" id="L110">        		UnorderedPair&lt;Variable&gt; pair = pair(var1, var2);</span>
+<span class="nc" id="L111">        		AliasStatus status = aliasing.getAliasStatus(pair).leastUpperBound(other.aliasing.getAliasStatus(pair));</span>
+<span class="nc" id="L112">        		changed |= aliasing.setAliasStatus(pair, status);</span>
+        	}
+        }
+        
+        // Merge corrupted status
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        for (Variable oc : other.corrupted) {</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">            if (a != oc &amp;&amp; live.contains(oc)) {</span>
+<span class="nc" id="L119">                changed |= corrupted.add(oc);</span>
+            }
+        }
+<span class="nc" id="L122">        return changed;</span>
+    }
+    
+    /**
+     * Alias a with b and with all variables aliased with b.
+     * If a possible alias of b was corrupt, a will become corrupt.
+     */
+    boolean mergeAssign(AliasInfo other, Variable a, Variable b) {
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (!live.contains(a))</span>
+<span class="nc" id="L131">            return false;</span>
+        
+<span class="nc" id="L133">        boolean changed = false;</span>
+        // every variable alised with 'b' must become an alias with 'a', even if 'b' is no longer live
+<span class="nc bnc" id="L135" title="All 2 branches missed.">        for (Variable var : live) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        	if (!other.live.contains(var))</span>
+<span class="nc" id="L137">        		continue;</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        	if (var == a)</span>
+<span class="nc" id="L139">        		continue;</span>
+        	
+<span class="nc" id="L141">        	AliasStatus status = aliasing.getAliasStatus(a, var).leastUpperBound(other.aliasing.getAliasStatus(b, var));</span>
+<span class="nc" id="L142">        	changed |= aliasing.setAliasStatus(a, var, status);</span>
+        }
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (other.corrupted.contains(b)) {</span>
+<span class="nc" id="L145">        	changed |= corrupted.add(a);</span>
+        }
+<span class="nc" id="L147">        return changed;</span>
+    }
+    
+    /**
+     * Set aliasing status between a and b and with all variables aliased with b.
+     * Also updates corruption.
+     * @param status the new aliasing status between &lt;tt&gt;a&lt;/tt&gt; and &lt;tt&gt;b&lt;/tt&gt;
+     */
+    boolean mergeStatus(AliasInfo other, Variable a, Variable b, AliasStatus status) {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">        if (!live.contains(a))</span>
+<span class="nc" id="L157">            return false;</span>
+        
+<span class="nc" id="L159">    	boolean changed = false;</span>
+<span class="nc bnc" id="L160" title="All 5 branches missed.">    	switch (status) {</span>
+    	case DEFINITELY:
+<span class="nc" id="L162">    		changed = mergeAssign(other, a, b);</span>
+<span class="nc" id="L163">    		break;</span>
+    		
+    	case BOTTOM:
+<span class="nc" id="L166">    		break; // nothing changes</span>
+    		
+    	case NOT:
+<span class="nc bnc" id="L169" title="All 2 branches missed.">    		for (Variable var : live) {</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">    			if (!other.live.contains(var))</span>
+<span class="nc" id="L171">    				continue;</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">    			if (var == a)</span>
+<span class="nc" id="L173">    				continue;</span>
+<span class="nc" id="L174">    			AliasStatus otherStatus = other.aliasing.getAliasStatus(b, var);</span>
+<span class="nc" id="L175">    			AliasStatus currentStatus = aliasing.getAliasStatus(a, var);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">    			if (otherStatus == AliasStatus.DEFINITELY) { // FIXME: Make some tests for this case</span>
+    				// a!=b and b=c  ==&gt;  a!=c 
+<span class="nc" id="L178">    				changed |= aliasing.setAliasStatus(a, var, currentStatus.leastUpperBound(AliasStatus.NOT));</span>
+    			}
+    		}
+<span class="nc" id="L181">    		break;</span>
+    		
+    	case MAYBE:
+<span class="nc bnc" id="L184" title="All 2 branches missed.">    		for (Variable var : live) {</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    			if (!other.live.contains(var))</span>
+<span class="nc" id="L186">    				continue;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">    			if (var == a)</span>
+<span class="nc" id="L188">    				continue;</span>
+<span class="nc" id="L189">    			AliasStatus otherStatus = other.aliasing.getAliasStatus(b, var);</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">    			if (otherStatus.mightBeAlias()) {</span>
+<span class="nc" id="L191">    				changed |= aliasing.setAliasStatus(a, var, AliasStatus.MAYBE);</span>
+    			}
+    		}
+<span class="nc bnc" id="L194" title="All 2 branches missed.">			if (other.corrupted.contains(b)) {</span>
+<span class="nc" id="L195">				changed |= corrupted.add(a);</span>
+			}
+    		break;
+    	}
+    	
+<span class="nc" id="L200">        return changed;</span>
+    }
+    
+    /**
+     * Every possible alias of the specified variable is marked corrupt, including the variable
+     * itself.
+     * &lt;p/&gt;
+     * Always consider carefully which one of {@link #mergeCorrupt} and {@link #setCorrupt} you want to use. They are somewhat
+     * similar, but the small difference is essential for a correct analysis.
+     * @param a a variable to corrupt.
+     * @return &lt;tt&gt;true&lt;/tt&gt; if something changed.
+     */
+    boolean setCorrupt(Variable a) {
+<span class="nc" id="L213">        boolean changed = false;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        for (Variable var : live) {</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        	if (aliasing.getAliasStatus(var, a).mightBeAlias()) {</span>
+<span class="nc" id="L216">        		changed |= corrupted.add(var);</span>
+        	}
+        }
+<span class="nc" id="L219">        return changed;</span>
+    }
+    
+    /**
+     * Every variable that might have been an alias of the specified variable at another specified program point
+     * are corrupted at this program point. This includes the variable itself, if it is still live.
+     * &lt;p/&gt;
+     * Always consider carefully which one of {@link #mergeCorrupt} and {@link #setCorrupt} you want to use. They are somewhat
+     * similar, but the small difference is essential for a correct analysis.
+     * @param other the node to use aliasing info from.
+     * @param variableToCorrupt a variable to corrupt
+     * @return true if changed
+     */
+    boolean mergeCorrupt(AliasInfo other, Variable variableToCorrupt) {
+<span class="nc" id="L233">    	boolean changed = false;</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">    	for (Variable var : live) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">    		if (other.aliasing.getAliasStatus(var, variableToCorrupt).mightBeAlias()) {</span>
+<span class="nc" id="L236">    			changed |= corrupted.add(var);</span>
+    		}
+    	}
+<span class="nc" id="L239">    	return changed;</span>
+    }
+    
+    boolean mergeAssertAliases(AliasInfo other, Variable a, Variable b) {
+<span class="nc" id="L243">    	boolean changed = false;</span>
+    	
+    	// merge aliasing for 'a' and 'b'
+<span class="nc bnc" id="L246" title="All 4 branches missed.">    	if (live.contains(a) &amp;&amp; live.contains(b)) {</span>
+<span class="nc" id="L247">    		changed |= aliasing.setAliasStatus(a, b, aliasing.getAliasStatus(a, b).leastUpperBound(AliasStatus.DEFINITELY));</span>
+    	}
+    	
+    	// for all other variable pairs
+<span class="nc bnc" id="L251" title="All 2 branches missed.">    	for (Variable var1 : live) {</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">    		assert other.live.contains(var1);</span>
+    		
+<span class="nc bnc" id="L254" title="All 4 branches missed.">    		if (var1 == a || var1 == b)</span>
+<span class="nc" id="L255">    			continue;</span>
+    		
+    		// set aliasing with variables other than 'a' and 'b'
+<span class="nc bnc" id="L258" title="All 2 branches missed.">    		for (Variable var2 : live) {</span>
+<span class="nc bnc" id="L259" title="All 6 branches missed.">    			if (var2 == a || var2 == b || var2 == var1)</span>
+<span class="nc" id="L260">    				continue;</span>
+    			
+<span class="nc" id="L262">    			AliasStatus before = aliasing.getAliasStatus(var1,var2);</span>
+<span class="nc" id="L263">    			AliasStatus after = other.aliasing.getAliasStatus(var1,var2);</span>
+<span class="nc" id="L264">    			changed |= aliasing.setAliasStatus(var1, var2, before.leastUpperBound(after));</span>
+    		}
+    		
+    		// set aliasing with 'a' and 'b'
+<span class="nc" id="L268">    		AliasStatus beforeA = other.aliasing.getAliasStatus(var1, a);</span>
+<span class="nc" id="L269">    		AliasStatus beforeB = other.aliasing.getAliasStatus(var1, b);</span>
+    		
+    		AliasStatus newA, newB;
+<span class="nc bnc" id="L272" title="All 4 branches missed.">    		if (beforeA.isDefinitelyOrBottom() || beforeB.isDefinitelyOrBottom()) {</span>
+<span class="nc" id="L273">    			newA = newB = beforeA.greatestLowerBound(beforeB);</span>
+<span class="nc" id="L274">    		} else {</span>
+<span class="nc" id="L275">    			newA = beforeA;</span>
+<span class="nc" id="L276">    			newB = beforeB;</span>
+    		}
+    		
+<span class="nc bnc" id="L279" title="All 2 branches missed.">    		if (live.contains(a)) {</span>
+<span class="nc" id="L280">        		AliasStatus afterA = aliasing.getAliasStatus(var1, a);</span>
+<span class="nc" id="L281">        		changed |= aliasing.setAliasStatus(var1, a, afterA.leastUpperBound(newA));</span>
+    		}
+<span class="nc bnc" id="L283" title="All 2 branches missed.">    		if (live.contains(b)) {</span>
+<span class="nc" id="L284">        		AliasStatus afterB = aliasing.getAliasStatus(var1, b);</span>
+<span class="nc" id="L285">        		changed |= aliasing.setAliasStatus(var1, b, afterB.leastUpperBound(newB));</span>
+    		}
+    	}
+    	
+<span class="nc" id="L289">    	return changed;</span>
+    }
+    
+    boolean mergeAssertNotAliases(AliasInfo other, Variable a, Variable b) {
+<span class="nc" id="L293">    	boolean changed = false;</span>
+    	
+    	// merge aliasing for 'a' and 'b'
+<span class="nc bnc" id="L296" title="All 4 branches missed.">    	if (live.contains(a) &amp;&amp; live.contains(b)) {</span>
+<span class="nc" id="L297">    		changed |= aliasing.setAliasStatus(a, b, aliasing.getAliasStatus(a, b).leastUpperBound(AliasStatus.NOT));</span>
+    	}
+    	
+    	// for all other variable pairs
+<span class="nc bnc" id="L301" title="All 2 branches missed.">    	for (Variable var1 : live) {</span>
+<span class="nc bnc" id="L302" title="All 4 branches missed.">    		assert other.live.contains(var1);</span>
+    		
+<span class="nc bnc" id="L304" title="All 4 branches missed.">    		if (var1 == a || var1 == b)</span>
+<span class="nc" id="L305">    			continue;</span>
+    		
+    		// set aliasing with variables other than 'a' and 'b'
+<span class="nc bnc" id="L308" title="All 2 branches missed.">    		for (Variable var2 : live) {</span>
+<span class="nc bnc" id="L309" title="All 6 branches missed.">    			if (var2 == a || var2 == b || var2 == var1)</span>
+<span class="nc" id="L310">    				continue;</span>
+    			
+<span class="nc" id="L312">    			AliasStatus before = aliasing.getAliasStatus(var1,var2);</span>
+<span class="nc" id="L313">    			AliasStatus after = other.aliasing.getAliasStatus(var1,var2);</span>
+<span class="nc" id="L314">    			changed |= aliasing.setAliasStatus(var1, var2, before.leastUpperBound(after));</span>
+    		}
+    		
+    		// set aliasing with 'a' and 'b'
+<span class="nc" id="L318">    		AliasStatus beforeA = other.aliasing.getAliasStatus(var1, a);</span>
+<span class="nc" id="L319">    		AliasStatus beforeB = other.aliasing.getAliasStatus(var1, b);</span>
+    		
+<span class="nc bnc" id="L321" title="All 2 branches missed.">    		if (live.contains(a)) {</span>
+<span class="nc" id="L322">        		AliasStatus afterA = aliasing.getAliasStatus(var1, a);</span>
+        		AliasStatus newA;
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        		if (beforeB.isDefinitelyOrBottom()) {</span>
+<span class="nc" id="L325">        			newA = beforeA.greatestLowerBound(AliasStatus.NOT);</span>
+<span class="nc" id="L326">        		} else {</span>
+<span class="nc" id="L327">        			newA = beforeA;</span>
+        		}
+<span class="nc" id="L329">        		changed |= aliasing.setAliasStatus(var1, a, afterA.leastUpperBound(newA));</span>
+    		}
+<span class="nc bnc" id="L331" title="All 2 branches missed.">    		if (live.contains(b)) {</span>
+<span class="nc" id="L332">        		AliasStatus afterB = aliasing.getAliasStatus(var1, b);</span>
+        		AliasStatus newB;
+<span class="nc bnc" id="L334" title="All 2 branches missed.">        		if (beforeA.isDefinitelyOrBottom()) {</span>
+<span class="nc" id="L335">        			newB = beforeB.greatestLowerBound(AliasStatus.NOT);</span>
+<span class="nc" id="L336">        		} else {</span>
+<span class="nc" id="L337">        			newB = beforeB;</span>
+        		}
+<span class="nc" id="L339">        		changed |= aliasing.setAliasStatus(var1, b, afterB.leastUpperBound(newB));</span>
+    		}
+    	}
+    	
+<span class="nc" id="L343">    	return changed;</span>
+    }
+    
+    /**
+     * Returns a set variables containing all possible aliases of the specified variable, optionally
+     * including only definite aliases. The variable itself is always included in the set.
+     * @param v the variable to get aliases for
+     * @param onlyDefinite if &lt;tt&gt;true&lt;/tt&gt;, only definite aliases of &lt;tt&gt;v&lt;/tt&gt; are included (this also includes &lt;tt&gt;v&lt;/tt&gt; itself).
+     * @return a newly created set, that is modifiable and independant of the &lt;tt&gt;AliasInfo&lt;/tt&gt; object.
+     */
+    public Set&lt;Variable&gt; getAliasesForInclusive(Variable v, boolean onlyDefinite) {
+<span class="nc" id="L354">    	Set&lt;Variable&gt; vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">    	for (Variable var : live) {</span>
+<span class="nc" id="L356">    		AliasStatus status = aliasing.getAliasStatus(v, var);		</span>
+<span class="nc bnc" id="L357" title="All 6 branches missed.">    		if (status == AliasStatus.DEFINITELY || (!onlyDefinite &amp;&amp; status == AliasStatus.MAYBE)) {</span>
+<span class="nc" id="L358">    			vars.add(var);</span>
+    		}
+    	}
+<span class="nc" id="L361">    	return vars;</span>
+    }
+    
+    /**
+     * Returns a set variables containing all possible aliases of the specified variable, optionally
+     * including only definite aliases. The variable itself is never included in the set.
+     * @param v the variable to get aliases for
+     * @param onlyDefinite if &lt;tt&gt;true&lt;/tt&gt;, only definite aliases of &lt;tt&gt;v&lt;/tt&gt; are included (except &lt;tt&gt;v&lt;/tt&gt; itself).
+     * @return a newly created set, that is modifiable and independant of the &lt;tt&gt;AliasInfo&lt;/tt&gt; object.
+     */
+    public Set&lt;Variable&gt; getAliasesForExclusive(Variable v, boolean onlyDefinite) {
+<span class="nc" id="L372">    	Set&lt;Variable&gt; vars = new HashSet&lt;Variable&gt;();</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">    	for (Variable var : live) {</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">    		if (var == v)</span>
+<span class="nc" id="L375">    			continue;</span>
+<span class="nc" id="L376">    		AliasStatus status = aliasing.getAliasStatus(v, var);		</span>
+<span class="nc bnc" id="L377" title="All 6 branches missed.">    		if (status == AliasStatus.DEFINITELY || (!onlyDefinite &amp;&amp; status == AliasStatus.MAYBE)) {</span>
+<span class="nc" id="L378">    			vars.add(var);</span>
+    		}
+    	}
+<span class="nc" id="L381">    	return vars;</span>
+    }
+    
+    /**
+     * Returns whether the two variables are the same, or might be aliases.
+     * Different from using {@link #getAliasesForInclusive(Variable, boolean)}, because this returns &lt;tt&gt;true&lt;/tt&gt;
+     * if the two variables are the same.
+     */
+    public boolean mightBeAliases(Variable a, Variable b) {
+<span class="nc" id="L390">    	return aliasing.getAliasStatus(a, b).mightBeAlias();</span>
+    }
+    
+    /**
+     * Returns whether the two variables are the same, or are definitely aliases.
+     */
+    public boolean definitelyAliases(Variable a, Variable b) {
+<span class="nc bnc" id="L397" title="All 2 branches missed.">    	return aliasing.getAliasStatus(a, b) == AliasStatus.DEFINITELY;</span>
+    }
+    
+    /**
+     * Returns whether or not the given variable is corrupt.
+     */
+    public boolean isCorrupt(Variable v) {
+<span class="nc" id="L404">        return corrupted.contains(v);</span>
+    }
+    
+    /**
+     * Returns whether at least one of the specified variables are corrupt.
+     */
+    public boolean isAnyCorrupt(Collection&lt;? extends Variable&gt; variables) {
+<span class="nc bnc" id="L411" title="All 2 branches missed.">    	for (Variable v : variables) {</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">    		if (isCorrupt(v))</span>
+<span class="nc" id="L413">    			return true;</span>
+    	}
+<span class="nc" id="L415">    	return false;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L420">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L421">        sb.append(&quot;Def. Aliases:&quot;);</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        for (Variable var1 : live) {</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        	for (Variable var2 : live) {</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">        		if (var1.getKey() &gt;= var2.getKey())</span>
+<span class="nc" id="L425">        			continue;</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">        		if (aliasing.getAliasStatus(var1, var2) != AliasStatus.DEFINITELY)</span>
+<span class="nc" id="L427">        			continue;</span>
+<span class="nc" id="L428">        		sb.append(&quot; (&quot; + var1 + &quot;,&quot; + var2 + &quot;)&quot;);</span>
+        	}
+        }
+<span class="nc" id="L431">        sb.append(&quot;\nNot Aliases:&quot;);</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (Variable var1 : live) {</span>
+<span class="nc bnc" id="L433" title="All 2 branches missed.">        	for (Variable var2 : live) {</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">        		if (var1.getKey() &gt;= var2.getKey())</span>
+<span class="nc" id="L435">        			continue;</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">        		if (aliasing.getAliasStatus(var1, var2) != AliasStatus.NOT)</span>
+<span class="nc" id="L437">        			continue;</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        		if (var1.getType().cannotBeAliasOf(var2.getType()))</span>
+<span class="nc" id="L439">        			continue; // ignore the trivial non-aliases</span>
+<span class="nc" id="L440">        		sb.append(&quot; (&quot; + var1 + &quot;,&quot; + var2 + &quot;)&quot;);</span>
+        	}
+        }
+<span class="nc" id="L443">        sb.append(&quot;\nLive: &quot; + live + &quot;\n&quot;);</span>
+<span class="nc" id="L444">        sb.append(&quot;Corrupted: &quot; + corrupted + &quot;\n&quot;);</span>
+<span class="nc" id="L445">        return sb.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>ExprAnswerVisitor.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">ExprAnswerVisitor.java</span></div><h1>ExprAnswerVisitor.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import soot.Local;
+import soot.jimple.AddExpr;
+import soot.jimple.AndExpr;
+import soot.jimple.ArrayRef;
+import soot.jimple.CastExpr;
+import soot.jimple.CaughtExceptionRef;
+import soot.jimple.ClassConstant;
+import soot.jimple.CmpExpr;
+import soot.jimple.CmpgExpr;
+import soot.jimple.CmplExpr;
+import soot.jimple.DivExpr;
+import soot.jimple.DoubleConstant;
+import soot.jimple.EqExpr;
+import soot.jimple.ExprSwitch;
+import soot.jimple.FloatConstant;
+import soot.jimple.GeExpr;
+import soot.jimple.GtExpr;
+import soot.jimple.InstanceFieldRef;
+import soot.jimple.InstanceOfExpr;
+import soot.jimple.IntConstant;
+import soot.jimple.InterfaceInvokeExpr;
+import soot.jimple.JimpleValueSwitch;
+import soot.jimple.LeExpr;
+import soot.jimple.LengthExpr;
+import soot.jimple.LongConstant;
+import soot.jimple.LtExpr;
+import soot.jimple.MulExpr;
+import soot.jimple.NeExpr;
+import soot.jimple.NegExpr;
+import soot.jimple.NewArrayExpr;
+import soot.jimple.NewExpr;
+import soot.jimple.NewMultiArrayExpr;
+import soot.jimple.NullConstant;
+import soot.jimple.OrExpr;
+import soot.jimple.ParameterRef;
+import soot.jimple.RemExpr;
+import soot.jimple.ShlExpr;
+import soot.jimple.ShrExpr;
+import soot.jimple.SpecialInvokeExpr;
+import soot.jimple.StaticFieldRef;
+import soot.jimple.StaticInvokeExpr;
+import soot.jimple.StringConstant;
+import soot.jimple.SubExpr;
+import soot.jimple.ThisRef;
+import soot.jimple.UshrExpr;
+import soot.jimple.VirtualInvokeExpr;
+import soot.jimple.XorExpr;
+import soot.util.Switchable;
+
+/**
+ * Jimple visitor pattern that takes an auxillary parameter and has a return value.
+ * &lt;p/&gt;
+ * To use it, a class should extend this and override the desired &lt;tt&gt;case&lt;/tt&gt; methods.
+ * The visitor can then be applied with the {@link #applyTo(Switchable, Object)} method.
+ * 
+ * @author Asger
+ *
+ * @param &lt;Q&gt; the visit method's auxillary parameter type
+ * @param &lt;A&gt; the visit method's return type
+ */
+<span class="nc" id="L63">public abstract class ExprAnswerVisitor&lt;Q, A&gt; {</span>
+	
+	private A answer;
+	private Q question;
+<span class="nc" id="L67">	private MiddleMan middle = new MiddleMan();</span>
+	
+	/**
+	 * Applies the visitor to the specified Jimple object.
+	 * @param sw a Jimple object to visit.
+	 * @param question argument to pass as &lt;tt&gt;question&lt;/tt&gt; to the corresponding &lt;tt&gt;caseXXX&lt;/tt&gt; implementation.
+	 * @return value returned by the corresponding &lt;tt&gt;caseXXX&lt;/tt&gt; implementation, or &lt;tt&gt;null&lt;/tt&gt; if
+	 * 	the subclass did not override it.
+	 */
+	public final A applyTo(Switchable sw, Q question) {
+<span class="nc" id="L77">		this.question = question;</span>
+<span class="nc" id="L78">		sw.apply(middle);</span>
+<span class="nc" id="L79">		return answer;</span>
+	}
+	
+	// this was awful to write
+	
+<span class="nc" id="L84">	private class MiddleMan implements ExprSwitch, JimpleValueSwitch {</span>
+	    
+        public void caseAddExpr(AddExpr v) {
+<span class="nc" id="L87">            answer = ExprAnswerVisitor.this.caseAddExpr(v, question);</span>
+<span class="nc" id="L88">        }</span>
+        
+        public void caseAndExpr(AndExpr v) {
+<span class="nc" id="L91">            answer = ExprAnswerVisitor.this.caseAndExpr(v, question);</span>
+<span class="nc" id="L92">        }</span>
+
+        public void caseCastExpr(CastExpr v) {
+<span class="nc" id="L95">            answer = ExprAnswerVisitor.this.caseCastExpr(v, question);</span>
+<span class="nc" id="L96">        }</span>
+
+        public void caseCmpExpr(CmpExpr v) {
+<span class="nc" id="L99">            answer = ExprAnswerVisitor.this.caseCmpExpr(v, question);</span>
+<span class="nc" id="L100">        }</span>
+
+        public void caseCmpgExpr(CmpgExpr v) {
+<span class="nc" id="L103">            answer = ExprAnswerVisitor.this.caseCmpgExpr(v, question);</span>
+<span class="nc" id="L104">        }</span>
+
+        public void caseCmplExpr(CmplExpr v) {
+<span class="nc" id="L107">            answer = ExprAnswerVisitor.this.caseCmplExpr(v, question);</span>
+<span class="nc" id="L108">        }</span>
+
+        public void caseDivExpr(DivExpr v) {
+<span class="nc" id="L111">            answer = ExprAnswerVisitor.this.caseDivExpr(v, question);</span>
+<span class="nc" id="L112">        }</span>
+
+        public void caseEqExpr(EqExpr v) {
+<span class="nc" id="L115">            answer = ExprAnswerVisitor.this.caseEqExpr(v, question);</span>
+<span class="nc" id="L116">        }</span>
+
+        public void caseGeExpr(GeExpr v) {
+<span class="nc" id="L119">            answer = ExprAnswerVisitor.this.caseGeExpr(v, question);</span>
+<span class="nc" id="L120">        }</span>
+
+        public void caseGtExpr(GtExpr v) {
+<span class="nc" id="L123">            answer = ExprAnswerVisitor.this.caseGtExpr(v, question);</span>
+<span class="nc" id="L124">        }</span>
+
+        public void caseInstanceOfExpr(InstanceOfExpr v) {
+<span class="nc" id="L127">            answer = ExprAnswerVisitor.this.caseInstanceOfExpr(v, question);</span>
+<span class="nc" id="L128">        }</span>
+
+        public void caseInterfaceInvokeExpr(InterfaceInvokeExpr v) {
+<span class="nc" id="L131">            answer = ExprAnswerVisitor.this.caseInterfaceInvokeExpr(v, question);</span>
+<span class="nc" id="L132">        }</span>
+
+        public void caseLeExpr(LeExpr v) {
+<span class="nc" id="L135">            answer = ExprAnswerVisitor.this.caseLeExpr(v, question);</span>
+<span class="nc" id="L136">        }</span>
+
+        public void caseLengthExpr(LengthExpr v) {
+<span class="nc" id="L139">            answer = ExprAnswerVisitor.this.caseLengthExpr(v, question);</span>
+<span class="nc" id="L140">        }</span>
+
+        public void caseLtExpr(LtExpr v) {
+<span class="nc" id="L143">            answer = ExprAnswerVisitor.this.caseLtExpr(v, question);</span>
+<span class="nc" id="L144">        }</span>
+
+        public void caseMulExpr(MulExpr v) {
+<span class="nc" id="L147">            answer = ExprAnswerVisitor.this.caseMulExpr(v, question);</span>
+<span class="nc" id="L148">        }</span>
+
+        public void caseNeExpr(NeExpr v) {
+<span class="nc" id="L151">            answer = ExprAnswerVisitor.this.caseNeExpr(v, question);</span>
+<span class="nc" id="L152">        }</span>
+
+        public void caseNegExpr(NegExpr v) {
+<span class="nc" id="L155">            answer = ExprAnswerVisitor.this.caseNegExpr(v, question);</span>
+<span class="nc" id="L156">        }</span>
+
+        public void caseNewArrayExpr(NewArrayExpr v) {
+<span class="nc" id="L159">            answer = ExprAnswerVisitor.this.caseNewArrayExpr(v, question);</span>
+<span class="nc" id="L160">        }</span>
+
+        public void caseNewExpr(NewExpr v) {
+<span class="nc" id="L163">            answer = ExprAnswerVisitor.this.caseNewExpr(v, question);</span>
+<span class="nc" id="L164">        }</span>
+
+        public void caseNewMultiArrayExpr(NewMultiArrayExpr v) {
+<span class="nc" id="L167">            answer = ExprAnswerVisitor.this.caseNewMultiArrayExpr(v, question);</span>
+<span class="nc" id="L168">        }</span>
+
+        public void caseOrExpr(OrExpr v) {
+<span class="nc" id="L171">            answer = ExprAnswerVisitor.this.caseOrExpr(v, question);</span>
+<span class="nc" id="L172">        }</span>
+
+        public void caseRemExpr(RemExpr v) {
+<span class="nc" id="L175">            answer = ExprAnswerVisitor.this.caseRemExpr(v, question);</span>
+<span class="nc" id="L176">        }</span>
+
+        public void caseShlExpr(ShlExpr v) {
+<span class="nc" id="L179">            answer = ExprAnswerVisitor.this.caseShlExpr(v, question);</span>
+<span class="nc" id="L180">        }</span>
+
+        public void caseShrExpr(ShrExpr v) {
+<span class="nc" id="L183">            answer = ExprAnswerVisitor.this.caseShrExpr(v, question);</span>
+<span class="nc" id="L184">        }</span>
+
+        public void caseSpecialInvokeExpr(SpecialInvokeExpr v) {
+<span class="nc" id="L187">            answer = ExprAnswerVisitor.this.caseSpecialInvokeExpr(v, question);</span>
+<span class="nc" id="L188">        }</span>
+
+        public void caseStaticInvokeExpr(StaticInvokeExpr v) {
+<span class="nc" id="L191">            answer = ExprAnswerVisitor.this.caseStaticInvokeExpr(v, question);</span>
+<span class="nc" id="L192">        }</span>
+
+        public void caseSubExpr(SubExpr v) {
+<span class="nc" id="L195">            answer = ExprAnswerVisitor.this.caseSubExpr(v, question);</span>
+<span class="nc" id="L196">        }</span>
+
+        public void caseUshrExpr(UshrExpr v) {
+<span class="nc" id="L199">            answer = ExprAnswerVisitor.this.caseUshrExpr(v, question);</span>
+<span class="nc" id="L200">        }</span>
+
+        public void caseVirtualInvokeExpr(VirtualInvokeExpr v) {
+<span class="nc" id="L203">            answer = ExprAnswerVisitor.this.caseVirtualInvokeExpr(v, question);</span>
+<span class="nc" id="L204">        }</span>
+
+        public void caseXorExpr(XorExpr v) {
+<span class="nc" id="L207">            answer = ExprAnswerVisitor.this.caseXorExpr(v, question);</span>
+<span class="nc" id="L208">        }</span>
+
+        public void defaultCase(Object obj) {
+<span class="nc" id="L211">            answer = ExprAnswerVisitor.this.defaultExpr(obj, question);</span>
+<span class="nc" id="L212">        }</span>
+
+        public void caseLocal(Local l) {
+<span class="nc" id="L215">            answer = ExprAnswerVisitor.this.caseLocal(l, question);</span>
+<span class="nc" id="L216">        }</span>
+
+        public void caseClassConstant(ClassConstant v) {
+<span class="nc" id="L219">            answer = ExprAnswerVisitor.this.caseClassConstant(v, question);</span>
+<span class="nc" id="L220">        }</span>
+
+        public void caseDoubleConstant(DoubleConstant v) {
+<span class="nc" id="L223">            answer = ExprAnswerVisitor.this.caseDoubleConstant(v, question);</span>
+<span class="nc" id="L224">        }</span>
+
+        public void caseFloatConstant(FloatConstant v) {
+<span class="nc" id="L227">            answer = ExprAnswerVisitor.this.caseFloatConstant(v, question);</span>
+<span class="nc" id="L228">        }</span>
+
+        public void caseIntConstant(IntConstant v) {
+<span class="nc" id="L231">            answer = ExprAnswerVisitor.this.caseIntConstant(v, question);</span>
+<span class="nc" id="L232">        }</span>
+
+        public void caseLongConstant(LongConstant v) {
+<span class="nc" id="L235">            answer = ExprAnswerVisitor.this.caseLongConstant(v, question);</span>
+<span class="nc" id="L236">        }</span>
+
+        public void caseNullConstant(NullConstant v) {
+<span class="nc" id="L239">            answer = ExprAnswerVisitor.this.caseNullConstant(v, question);</span>
+<span class="nc" id="L240">        }</span>
+
+        public void caseStringConstant(StringConstant v) {
+<span class="nc" id="L243">            answer = ExprAnswerVisitor.this.caseStringConstant(v, question);</span>
+<span class="nc" id="L244">        }</span>
+
+        public void caseArrayRef(ArrayRef v) {
+<span class="nc" id="L247">            answer = ExprAnswerVisitor.this.caseArrayRef(v, question);</span>
+<span class="nc" id="L248">        }</span>
+
+        public void caseCaughtExceptionRef(CaughtExceptionRef v) {
+<span class="nc" id="L251">            answer = ExprAnswerVisitor.this.caseCaughtExceptionRef(v, question);</span>
+<span class="nc" id="L252">        }</span>
+
+        public void caseInstanceFieldRef(InstanceFieldRef v) {
+<span class="nc" id="L255">            answer = ExprAnswerVisitor.this.caseInstanceFieldRef(v, question);</span>
+<span class="nc" id="L256">        }</span>
+
+        public void caseParameterRef(ParameterRef v) {
+<span class="nc" id="L259">            answer = ExprAnswerVisitor.this.caseParameterRef(v, question);</span>
+<span class="nc" id="L260">        }</span>
+
+        public void caseStaticFieldRef(StaticFieldRef v) {
+<span class="nc" id="L263">            answer = ExprAnswerVisitor.this.caseStaticFieldRef(v, question);</span>
+<span class="nc" id="L264">        }</span>
+
+        public void caseThisRef(ThisRef v) {
+<span class="nc" id="L267">            answer = ExprAnswerVisitor.this.caseThisRef(v, question);</span>
+<span class="nc" id="L268">        }</span>
+	    
+	}
+	
+	public A caseArrayRef(ArrayRef v, Q question)
+    {
+<span class="nc" id="L274">        return defaultExpr(v, question);</span>
+    }
+	
+    public A caseDoubleConstant(DoubleConstant v, Q question)
+    {
+<span class="nc" id="L279">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseFloatConstant(FloatConstant v, Q question)
+    {
+<span class="nc" id="L284">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseIntConstant(IntConstant v, Q question)
+    {
+<span class="nc" id="L289">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseLongConstant(LongConstant v, Q question)
+    {
+<span class="nc" id="L294">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseNullConstant(NullConstant v, Q question)
+    {
+<span class="nc" id="L299">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseStringConstant(StringConstant v, Q question)
+    {
+<span class="nc" id="L304">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseClassConstant(ClassConstant v, Q question)
+    {
+<span class="nc" id="L309">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseAddExpr(AddExpr v, Q question)
+    {
+<span class="nc" id="L314">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseAndExpr(AndExpr v, Q question)
+    {
+<span class="nc" id="L319">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseCmpExpr(CmpExpr v, Q question)
+    {
+<span class="nc" id="L324">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseCmpgExpr(CmpgExpr v, Q question)
+    {
+<span class="nc" id="L329">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseCmplExpr(CmplExpr v, Q question)
+    {
+<span class="nc" id="L334">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseDivExpr(DivExpr v, Q question)
+    {
+<span class="nc" id="L339">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseEqExpr(EqExpr v, Q question)
+    {
+<span class="nc" id="L344">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseGeExpr(GeExpr v, Q question)
+    {
+<span class="nc" id="L349">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseGtExpr(GtExpr v, Q question)
+    {
+<span class="nc" id="L354">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseLeExpr(LeExpr v, Q question)
+    {
+<span class="nc" id="L359">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseLtExpr(LtExpr v, Q question)
+    {
+<span class="nc" id="L364">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseMulExpr(MulExpr v, Q question)
+    {
+<span class="nc" id="L369">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseNeExpr(NeExpr v, Q question)
+    {
+<span class="nc" id="L374">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseOrExpr(OrExpr v, Q question)
+    {
+<span class="nc" id="L379">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseRemExpr(RemExpr v, Q question)
+    {
+<span class="nc" id="L384">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseShlExpr(ShlExpr v, Q question)
+    {
+<span class="nc" id="L389">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseShrExpr(ShrExpr v, Q question)
+    {
+<span class="nc" id="L394">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseSubExpr(SubExpr v, Q question)
+    {
+<span class="nc" id="L399">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseUshrExpr(UshrExpr v, Q question)
+    {
+<span class="nc" id="L404">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseXorExpr(XorExpr v, Q question)
+    {
+<span class="nc" id="L409">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseInterfaceInvokeExpr(InterfaceInvokeExpr v, Q question)
+    {
+<span class="nc" id="L414">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseSpecialInvokeExpr(SpecialInvokeExpr v, Q question)
+    {
+<span class="nc" id="L419">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseStaticInvokeExpr(StaticInvokeExpr v, Q question)
+    {
+<span class="nc" id="L424">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseVirtualInvokeExpr(VirtualInvokeExpr v, Q question)
+    {
+<span class="nc" id="L429">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseCastExpr(CastExpr v, Q question)
+    {
+<span class="nc" id="L434">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseInstanceOfExpr(InstanceOfExpr v, Q question)
+    {
+<span class="nc" id="L439">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseNewArrayExpr(NewArrayExpr v, Q question)
+    {
+<span class="nc" id="L444">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseNewMultiArrayExpr(NewMultiArrayExpr v, Q question)
+    {
+<span class="nc" id="L449">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseNewExpr(NewExpr v, Q question)
+    {
+<span class="nc" id="L454">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseLengthExpr(LengthExpr v, Q question)
+    {
+<span class="nc" id="L459">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseNegExpr(NegExpr v, Q question)
+    {
+<span class="nc" id="L464">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseInstanceFieldRef(InstanceFieldRef v, Q question)
+    {
+<span class="nc" id="L469">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseLocal(Local v, Q question)
+    {
+<span class="nc" id="L474">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseParameterRef(ParameterRef v, Q question)
+    {
+<span class="nc" id="L479">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseCaughtExceptionRef(CaughtExceptionRef v, Q question)
+    {
+<span class="nc" id="L484">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseThisRef(ThisRef v, Q question)
+    {
+<span class="nc" id="L489">        return defaultExpr(v, question);</span>
+    }
+
+    public A caseStaticFieldRef(StaticFieldRef v, Q question)
+    {
+<span class="nc" id="L494">        return defaultExpr(v, question);</span>
+    }
+    
+    public A defaultExpr(Object v, Q question)
+    {
+<span class="nc" id="L499">    	return null;</span>
+    }
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>

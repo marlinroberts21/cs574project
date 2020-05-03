@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../../jacoco-resources/report.gif" type="image/gif"/><title>CompositeMethodCallTranslator.java</title><link rel="stylesheet" href="../../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../../index.html" class="el_report">TestStringOperations (1) (May 3, 2020 12:22:55 PM)</a> &gt; <a href="../../index.html" class="el_group">cs574project</a> &gt; <a href="../index.html" class="el_bundle">src</a> &gt; <a href="index.source.html" class="el_package">dk.brics.string.java</a> &gt; <span class="el_source">CompositeMethodCallTranslator.java</span></div><h1>CompositeMethodCallTranslator.java</h1><pre class="source lang-java linenums">package dk.brics.string.java;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import soot.SootMethod;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.InvokeExpr;
+import dk.brics.string.intermediate.Variable;
+
+/**
+ * Groups multiple translators together. The underlying translators are called
+ * the children of the composite translator.
+ * &lt;p/&gt;
+ * A method call is handled if any of the children can handle it. If more than one child
+ * can handle a method call, only the first of these children is assigned to handle it.
+ */
+public class CompositeMethodCallTranslator implements MethodCallTranslator {
+	
+<span class="nc" id="L20">	private List&lt;MethodCallTranslator&gt; children = new ArrayList&lt;MethodCallTranslator&gt;();</span>
+	
+	/**
+	 * Creates a composite translator without any children.
+	 */
+<span class="nc" id="L25">	public CompositeMethodCallTranslator() {</span>
+<span class="nc" id="L26">	}</span>
+	
+	/**
+	 * Creates a translator that groups multiple other translators together.
+	 * @param translators translators to use, ordered by priority.
+	 */
+<span class="nc" id="L32">	public CompositeMethodCallTranslator(MethodCallTranslator ... translators) {</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">		for (MethodCallTranslator translator : translators) {</span>
+<span class="nc" id="L34">			children.add(translator);</span>
+		}
+<span class="nc" id="L36">	}</span>
+	
+	/**
+	 * Gets a reference to the list of children.
+	 * @return a mutable reference to the list of children.
+	 */
+	public List&lt;MethodCallTranslator&gt; getChildren() {
+<span class="nc" id="L43">		return children;</span>
+	}
+	
+	public Variable translateAbstractMethodCall(InstanceInvokeExpr expr,
+			SootMethod target, Variable callee, List&lt;Variable&gt; arguments,
+			IntermediateFactory factory) {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">		for (MethodCallTranslator child : children) {</span>
+<span class="nc" id="L50">			Variable r = child.translateAbstractMethodCall(expr, target, callee, arguments, factory); </span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">			if (r != null)</span>
+<span class="nc" id="L52">				return r;</span>
+		}
+<span class="nc" id="L54">		return null;</span>
+	}
+	
+	public boolean translateConstructorCall(InstanceInvokeExpr expr,
+			Variable callee, List&lt;Variable&gt; arguments,
+			IntermediateFactory factory) {
+		// try each of the children in the order they were added
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		for (MethodCallTranslator child : children) {</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			if (child.translateConstructorCall(expr, callee, arguments, factory))</span>
+<span class="nc" id="L63">				return true;</span>
+		}
+<span class="nc" id="L65">		return false;</span>
+	}
+
+	public Variable translateMethodCall(InstanceInvokeExpr expr,
+			SootMethod target, Variable callee, List&lt;Variable&gt; arguments,
+			IntermediateFactory factory) {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">		for (MethodCallTranslator child : children) {</span>
+<span class="nc" id="L72">			Variable result = child.translateMethodCall(expr, target, callee, arguments, factory);</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">			if (result != null)</span>
+<span class="nc" id="L74">				return result;</span>
+		}
+<span class="nc" id="L76">		return null;</span>
+	}
+
+	public Variable translateStaticMethodCall(InvokeExpr expr,
+			List&lt;Variable&gt; arguments, IntermediateFactory factory) {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">		for (MethodCallTranslator child : children) {</span>
+<span class="nc" id="L82">			Variable result = child.translateStaticMethodCall(expr, arguments, factory);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">			if (result != null)</span>
+<span class="nc" id="L84">				return result;</span>
+		}
+<span class="nc" id="L86">		return null;</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span>TestStringOperations (1) (May 3, 2020 12:22:55 PM)</div></body></html>
