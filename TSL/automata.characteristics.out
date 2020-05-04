@@ -1,0 +1,92 @@
+Properties and Values:
+
+Length
+	MIN 	[4]
+	MED		[100]
+	MAX		[200] * Note 1
+	
+Alphabet
+	MIN		[3 Characters]
+	MED		[26 Characters]
+	MAX		[All Possible]
+	
+Empty String
+	YES		[Accepts Empty String]
+	NO		[Rejects Empty String]
+	
+Empty
+	YES		[Rejects All Strings]
+	NO		[Accepts Some Strings]
+	
+* Note 1 
+Strings in Java are represented as character arrays internally. The arrays are indexed by the integer data type, which has a maximum value of 2,147,483,648. This may be considered the maximum length of a string, however memory and performance limitations limit what can be realistically implemented. 
+
+
+CASA	TSL		TC
+------------------
+2 4 7	3.2.2	16
+2 3 6	3.1.1	13
+0 3 7	1.1.2	 2
+1 5 7	2.3.2	12
+1 3 7	2.1.2	 8
+2 5 6	3.3.1	17
+0 4 6	1.2.1	 3
+0 5 6	1.3.1	 5
+1 4 6	2.2.1	 9
+
+
+Final Automata Characteristic Test Cases
+
+a_min_min_n
+Test Case 2  		(Key = 1.1.2.)
+   length       :  MIN
+   alphabet     :  MIN
+   empty_string :  NO
+
+a_min_med_y
+Test Case 3  		(Key = 1.2.1.)
+   length       :  MIN
+   alphabet     :  MED
+   empty_string :  YES
+
+a_min_max_y
+Test Case 5  		(Key = 1.3.1.)
+   length       :  MIN
+   alphabet     :  MAX
+   empty_string :  YES
+
+a_med_min_n
+Test Case 8  		(Key = 2.1.2.)
+   length       :  MED
+   alphabet     :  MIN
+   empty_string :  NO
+
+a_med_med_y
+Test Case 9  		(Key = 2.2.1.)
+   length       :  MED
+   alphabet     :  MED
+   empty_string :  YES
+
+a_med_max_n
+Test Case 12 		(Key = 2.3.2.)
+   length       :  MED
+   alphabet     :  MAX
+   empty_string :  NO
+
+a_max_min_y
+Test Case 13 		(Key = 3.1.1.)
+   length       :  MAX
+   alphabet     :  MIN
+   empty_string :  YES
+
+a_max_med_n
+Test Case 16 		(Key = 3.2.2.)
+   length      :  MAX
+   alphabet     :  MED
+   empty_string :  NO
+
+a_max_max_y
+Test Case 17 		(Key = 3.3.1.)
+   length       :  MAX
+   alphabet     :  MAX
+   empty_string :  YES

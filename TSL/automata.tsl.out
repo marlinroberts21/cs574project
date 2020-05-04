@@ -1,0 +1,108 @@
+
+Test Case 1  		(Key = 1.1.1.)
+   length       :  MIN
+   alphabet     :  MIN
+   empty_string :  YES
+
+
+Test Case 2  		(Key = 1.1.2.)
+   length       :  MIN
+   alphabet     :  MIN
+   empty_string :  NO
+
+
+Test Case 3  		(Key = 1.2.1.)
+   length       :  MIN
+   alphabet     :  MED
+   empty_string :  YES
+
+
+Test Case 4  		(Key = 1.2.2.)
+   length       :  MIN
+   alphabet     :  MED
+   empty_string :  NO
+
+
+Test Case 5  		(Key = 1.3.1.)
+   length       :  MIN
+   alphabet     :  MAX
+   empty_string :  YES
+
+
+Test Case 6  		(Key = 1.3.2.)
+   length       :  MIN
+   alphabet     :  MAX
+   empty_string :  NO
+
+
+Test Case 7  		(Key = 2.1.1.)
+   length       :  MED
+   alphabet     :  MIN
+   empty_string :  YES
+
+
+Test Case 8  		(Key = 2.1.2.)
+   length       :  MED
+   alphabet     :  MIN
+   empty_string :  NO
+
+
+Test Case 9  		(Key = 2.2.1.)
+   length       :  MED
+   alphabet     :  MED
+   empty_string :  YES
+
+
+Test Case 10 		(Key = 2.2.2.)
+   length       :  MED
+   alphabet     :  MED
+   empty_string :  NO
+
+
+Test Case 11 		(Key = 2.3.1.)
+   length       :  MED
+   alphabet     :  MAX
+   empty_string :  YES
+
+
+Test Case 12 		(Key = 2.3.2.)
+   length       :  MED
+   alphabet     :  MAX
+   empty_string :  NO
+
+
+Test Case 13 		(Key = 3.1.1.)
+   length       :  MAX
+   alphabet     :  MIN
+   empty_string :  YES
+
+
+Test Case 14 		(Key = 3.1.2.)
+   length       :  MAX
+   alphabet     :  MIN
+   empty_string :  NO
+
+
+Test Case 15 		(Key = 3.2.1.)
+   length       :  MAX
+   alphabet     :  MED
+   empty_string :  YES
+
+
+Test Case 16 		(Key = 3.2.2.)
+   length       :  MAX
+   alphabet     :  MED
+   empty_string :  NO
+
+
+Test Case 17 		(Key = 3.3.1.)
+   length       :  MAX
+   alphabet     :  MAX
+   empty_string :  YES
+
+
+Test Case 18 		(Key = 3.3.2.)
+   length       :  MAX
+   alphabet     :  MAX
+   empty_string :  NO
+

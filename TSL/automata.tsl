@@ -1,0 +1,15 @@
+Parameters:
+        length:
+			MIN.                 
+			MED.
+			MAX.
+		   
+		alphabet:
+			MIN.                 
+			MED.
+			MAX.
+		  
+		empty_string:
+			YES.
+			NO.
+	
