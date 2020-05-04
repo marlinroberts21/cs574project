@@ -29,6 +29,8 @@
 
 package dk.brics.automaton;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,6 +51,7 @@ final public class BasicAutomata {
 		Automaton a = new Automaton();
 		a.initial = new State();
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		return a;
 	}
 	
@@ -59,6 +62,7 @@ final public class BasicAutomata {
 		Automaton a = new Automaton();
 		a.singleton = "";
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		return a;
 	}
 	
@@ -72,6 +76,7 @@ final public class BasicAutomata {
 		s.accept = true;
 		s.transitions.add(new Transition(Character.MIN_VALUE, Character.MAX_VALUE, s));
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		return a;
 	}
 	
@@ -89,6 +94,7 @@ final public class BasicAutomata {
 		Automaton a = new Automaton();
 		a.singleton = Character.toString(c);
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		return a;
 	}
 	
@@ -107,6 +113,7 @@ final public class BasicAutomata {
 		if (min <= max)
 			s1.transitions.add(new Transition(min, max, s2));
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		return a;
 	}
 	
@@ -124,6 +131,7 @@ final public class BasicAutomata {
 		for (int i = 0; i < set.length(); i++)
 			s1.transitions.add(new Transition(set.charAt(i), s2));
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		a.reduce();
 		return a;
 	}
@@ -258,6 +266,7 @@ final public class BasicAutomata {
 		Automaton a = new Automaton();
 		a.singleton = s;
 		a.deterministic = true;
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
 		return a;
 	}
 	
@@ -276,6 +285,7 @@ final public class BasicAutomata {
         a.setDeterministic(true);
         a.reduce();
         a.recomputeHashCode();
+		assertTrue("ASSERT FAIL: Automata not deterministic...", a.isDeterministic());
         return a;
     }
 

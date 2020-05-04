@@ -31,6 +31,8 @@ import org.junit.runners.Suite.SuiteClasses;
 				Test_Minimize.class,
 				Test_Union.class,
 				Test_Intersect.class,
+				// Very time consuming
+				// Test_OpSeq.class,
 				Test_Minus.class})
 
 public class TestStringOperations {

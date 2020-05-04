@@ -30,7 +30,7 @@ public class Test_Minimize {
 
 	// test specific objects
 	static Automaton 	a1,a2,a3,a4,a5,a6,
-						b1,c1,d1,
+						b1,c1,d1,a1m,b1m,c1m,d1m,
 						preMin,empty,emptyString,
 						minAlpha,medAlpha,maxAlpha;
 	
@@ -129,19 +129,32 @@ public class Test_Minimize {
     d1.setInfo("d1");
     
     d1.minimize();
+    d1m = d1.clone();
+    d1.minimize();
+    assertTrue("ASSERT FAIL: - Hopcroft minimization fail...", d1.equals(d1m));
     
     a1.setMinimization(0);
     a1.minimize();
-    
+    a1m = a1.clone();
+    a1.minimize();
+    assertTrue("ASSERT FAIL: - Huffman minimization fail...", a1.equals(a1m));
+        
     b1.setMinimization(1);
     b1.minimize();
+    b1m = b1.clone();
+    b1.minimize();
+    assertTrue("ASSERT FAIL: - BRZOZOWSKI minimization fail...", b1.equals(b1m));
     
     c1.setMinimization(3);
     c1.minimize();
+    c1m = c1.clone();
+    c1.minimize();
+    assertTrue("ASSERT FAIL: - VALMARI minimization fail...", c1.equals(c1m));
     
     assertTrue("ASSERT FAIL: - d1 != a1", d1.equals(a1));
     assertTrue("ASSERT FAIL: - d1 != b1", d1.equals(b1));
     assertTrue("ASSERT FAIL: - d1 != c1", d1.equals(c1));
+    
 
     System.out.println("END:  " + testName);
   }
