@@ -1,0 +1,16 @@
+JUnit Test Suite
+
+Tests developed in JUnit 4
+
+Tests are located in package test (src/test)
+
+Most tests are parameterized.
+
+The most comprehensive set of tests can be executed with the TestStringOperations.java test suite.
+
+The test Test_OpSeq.java only tests 2 sequences of 3 operations, however it is quite time consuming so it is commented out of the test suite.
+
+There is a parameter value set in Test_Replace5 that is commented out at lines 69-70. This test can cause a stack overflow during serialization/deserialization.
+
+The tests currently default to both writing results out to file as well as reading them in and comparing. If they were used as regression tests, they would be executed once with the save flag and then only with the compare flag.
+

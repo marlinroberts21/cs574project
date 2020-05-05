@@ -1,0 +1,8 @@
+
+
+Artifact Folders:
+
+/CASA		CASA Input and output files
+/TSL		TSL Input and output files
+/coverage	HTML Coverage report
+/src/test	JUnit test classes and MOP definition file automata2.MOP
