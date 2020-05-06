@@ -17,6 +17,10 @@ Kenny Ballou, Marlin Roberts
   * [DK Brics Automata GitHub][brics-automata-github]
   * [DK Brics Automata Project Homepage][brics-automata]
 
+### Project Report: ###
+
+  * [Report][report-pdf]
+
 ### Summary:
 
 We will be examining the properties of string operations provided in the
@@ -62,3 +66,4 @@ code:
 [junit]: https://junit.org/
 [aspectj]: https://www.eclipse.org/aspectj/
 [javamop]: http://fsl.cs.illinois.edu/index.php/JavaMOP4
+[report-pdf]: https://github.com/marlinroberts21/cs574project/blob/master/src/tex/report.pdf
