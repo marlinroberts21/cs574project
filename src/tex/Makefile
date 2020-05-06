@@ -2,10 +2,10 @@
 all: proposal.pdf report.pdf
 
 %.pdf: %.tex references.bib
-	@xelatex -halt-on-error $<
+	@pdflatex -halt-on-error $<
 	@bibtex $(basename $<).aux
-	@xelatex -halt-on-error $<
-	@xelatex -halt-on-error $<
+	@pdflatex -halt-on-error $<
+	@pdflatex -halt-on-error $<
 
 .PHONY: clean
 clean:
